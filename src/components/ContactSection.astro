@@ -1,9 +1,8 @@
 ---
-// Form submissions are routed via FormSubmit (no account needed).
-// On the FIRST submission, FormSubmit emails shalaghquinns@gmail.com with an
-// activation link that must be clicked once. After that, all submissions
-// arrive automatically with the styled "table" email template below.
-const FORM_ENDPOINT = "https://formsubmit.co/shalaghquinns@gmail.com";
+// The form opens the visitor's email client (mailto:) pre-filled with their
+// data, so the message arrives at this address as a real email from the
+// visitor. Clicking "Reply" in Gmail goes straight back to them with no
+// quoted form-data clutter.
 const RECIPIENT_EMAIL = "shalaghquinns@gmail.com";
 ---
 
@@ -32,13 +31,7 @@ const RECIPIENT_EMAIL = "shalaghquinns@gmail.com";
       </ul>
     </header>
 
-    <form class="contact__form reveal" action={FORM_ENDPOINT} method="POST">
-      {/* FormSubmit configuration — controls subject, layout, and protection */}
-      <input type="hidden" name="_subject" value="New inquiry from your website — shalaghquinn.com" />
-      <input type="hidden" name="_template" value="table" />
-      <input type="hidden" name="_captcha" value="false" />
-      <input type="hidden" name="_autoresponse" value="Thank you for reaching out — I've received your message and will be in touch within a few days. — Shalagh" />
-
+    <form class="contact__form reveal" data-mailto-form data-recipient={RECIPIENT_EMAIL} novalidate>
       <div class="contact__row">
         <label class="contact__field">
           <span class="contact__label">Name</span>
@@ -82,7 +75,7 @@ const RECIPIENT_EMAIL = "shalaghquinns@gmail.com";
       <input type="text" name="_honey" tabindex="-1" autocomplete="off" class="contact__honey" aria-hidden="true" />
 
       <div class="contact__submit-row">
-        <p class="contact__small">By sending, you agree to be contacted at the email above.</p>
+        <p class="contact__small">Pressing send opens your email app with the message ready to send.</p>
         <button type="submit" class="contact__submit">
           <span>Send message</span>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -90,7 +83,71 @@ const RECIPIENT_EMAIL = "shalaghquinns@gmail.com";
           </svg>
         </button>
       </div>
+
+      <p class="contact__fallback" data-mailto-fallback hidden>
+        <strong>If your email app didn&rsquo;t open</strong>, just send a message
+        directly to <a href={`mailto:${RECIPIENT_EMAIL}`}>{RECIPIENT_EMAIL}</a>.
+      </p>
     </form>
+
+    <script>
+      const form = document.querySelector<HTMLFormElement>("[data-mailto-form]");
+      const fallback = document.querySelector<HTMLElement>("[data-mailto-fallback]");
+
+      if (form) {
+        const recipient = form.dataset.recipient || "";
+
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          // Drop spam from honeypot
+          const honey = (form.elements.namedItem("_honey") as HTMLInputElement | null)?.value;
+          if (honey) return;
+
+          const data = new FormData(form);
+          const name = (data.get("Name") as string || "").trim();
+          const email = (data.get("Email") as string || "").trim();
+          const phone = (data.get("Phone") as string || "").trim();
+          const inquiry = (data.get("Inquiry Type") as string || "").trim();
+          const message = (data.get("Message") as string || "").trim();
+
+          // Soft validation (browsers usually catch via required, but novalidate is set)
+          if (!name || !email || !message) {
+            form.reportValidity();
+            return;
+          }
+
+          const subject = inquiry ? `${inquiry} — ${name}` : `Website inquiry — ${name}`;
+
+          const bodyLines = [
+            message,
+            "",
+            "—",
+            `From: ${name}`,
+            `Email: ${email}`,
+          ];
+          if (phone) bodyLines.push(`Phone: ${phone}`);
+          if (inquiry) bodyLines.push(`Inquiry: ${inquiry}`);
+
+          const body = bodyLines.join("\n");
+
+          const mailto = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+          // Show fallback after a short delay if mailto handler is missing
+          let opened = false;
+          window.addEventListener("blur", () => { opened = true; }, { once: true });
+
+          window.location.href = mailto;
+
+          window.setTimeout(() => {
+            if (!opened && fallback) {
+              fallback.hidden = false;
+              fallback.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+          }, 1200);
+        });
+      }
+    </script>
   </div>
 </section>
 
@@ -320,6 +377,22 @@ const RECIPIENT_EMAIL = "shalaghquinns@gmail.com";
 
   .contact__submit:hover svg {
     transform: translateX(3px);
+  }
+
+  .contact__fallback {
+    margin: var(--sp-3) 0 0;
+    padding: var(--sp-3);
+    background: var(--color-paper-warm);
+    border: 1px solid var(--color-line);
+    font-family: var(--font-body);
+    font-size: var(--fs-sm);
+    color: var(--color-ink-soft);
+    line-height: 1.6;
+  }
+
+  .contact__fallback a {
+    color: var(--color-ink);
+    border-bottom: 1px solid var(--color-ink);
   }
 
   @media (min-width: 700px) {
