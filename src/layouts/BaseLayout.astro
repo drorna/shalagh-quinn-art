@@ -14,7 +14,7 @@ interface Props {
 
 const {
   title = "Shalagh Quinn",
-  description = "Murals, paintings, portraits, and portrait photography.",
+  description = "",
   hideContactLink = false,
   ogImage = "/og-image.jpg",
 } = Astro.props;
@@ -29,7 +29,7 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content={description} />
+    {description && <meta name="description" content={description} />}
     <meta name="generator" content={Astro.generator} />
     <meta name="theme-color" content="#0c0a08" />
 
@@ -43,7 +43,6 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Shalagh Quinn" />
     <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={absoluteOgImage} />
     <meta property="og:image:width" content="1200" />
@@ -54,7 +53,6 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
     {/* Twitter / X */}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={absoluteOgImage} />
 
     {/* Structured data for search engines */}
