@@ -3,21 +3,21 @@
    ========================================================= */
 
 :root {
-  /* Color palette */
-  --color-paper: #faf6ef;
-  --color-paper-warm: #f5efe4;
-  --color-ink: #1a1614;
-  --color-ink-soft: #4a4138;
+  /* Dark theme */
+  --color-paper: #0c0a08;
+  --color-paper-warm: #15110d;
+  --color-ink: #f4eee2;
+  --color-ink-soft: #c5bcaf;
   --color-ink-mute: #8a7f72;
 
-  --color-name: #7a1a2e;          /* deep burgundy - artist name */
-  --color-murals: #6b8e4e;         /* sage green */
-  --color-painting: #b03e6f;       /* dusty rose-magenta */
-  --color-portraits: #2a2622;      /* warm black */
-  --color-photography: #b85a2e;    /* burnt sienna */
+  --color-name: #d8546b;           /* lifted burgundy/rose for dark bg */
+  --color-murals: #9bbf6c;          /* brighter sage */
+  --color-painting: #d96a96;        /* brighter rose-magenta */
+  --color-portraits: #e8dcc8;       /* warm cream */
+  --color-photography: #df8253;     /* brighter sienna */
 
-  --color-line: rgba(26, 22, 20, 0.12);
-  --color-line-soft: rgba(26, 22, 20, 0.06);
+  --color-line: rgba(244, 238, 226, 0.14);
+  --color-line-soft: rgba(244, 238, 226, 0.06);
 
   /* Typography */
   --font-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
