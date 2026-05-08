@@ -1,8 +1,10 @@
 ---
-// NOTE: Replace FORMSPREE_ENDPOINT below with your real Formspree URL once you
-// create a free account at formspree.io and set up a form. Until then, the
-// form will display correctly but submissions won't go anywhere.
-const FORMSPREE_ENDPOINT = "https://formspree.io/f/your-form-id";
+// Form submissions are routed via FormSubmit (no account needed).
+// On the FIRST submission, FormSubmit emails shalaghquinns@gmail.com with an
+// activation link that must be clicked once. After that, all submissions
+// arrive automatically with the styled "table" email template below.
+const FORM_ENDPOINT = "https://formsubmit.co/shalaghquinns@gmail.com";
+const RECIPIENT_EMAIL = "shalaghquinns@gmail.com";
 ---
 
 <section class="contact" id="contact" aria-labelledby="contact-title">
@@ -10,8 +12,8 @@ const FORMSPREE_ENDPOINT = "https://formspree.io/f/your-form-id";
     <header class="contact__head reveal">
       <p class="eyebrow contact__eyebrow">Get in touch</p>
       <h2 id="contact-title" class="contact__title">
-        Let&rsquo;s make<br />
-        <span>something together.</span>
+        Let&rsquo;s create.<br />
+        <span>mural inquiries, commissions,<br />and portrait photography.</span>
       </h2>
       <p class="contact__lede">
         Commissions, collaborations, studio visits, or just a hello —
@@ -21,7 +23,7 @@ const FORMSPREE_ENDPOINT = "https://formspree.io/f/your-form-id";
       <ul class="contact__direct">
         <li>
           <span class="contact__direct-label">Email</span>
-          <a href="mailto:hello@shalaghquinn.com">hello@shalaghquinn.com</a>
+          <a href={`mailto:${RECIPIENT_EMAIL}`}>{RECIPIENT_EMAIL}</a>
         </li>
         <li>
           <span class="contact__direct-label">Studio</span>
@@ -34,47 +36,54 @@ const FORMSPREE_ENDPOINT = "https://formspree.io/f/your-form-id";
       </ul>
     </header>
 
-    <form class="contact__form reveal" action={FORMSPREE_ENDPOINT} method="POST">
+    <form class="contact__form reveal" action={FORM_ENDPOINT} method="POST">
+      {/* FormSubmit configuration — controls subject, layout, and protection */}
+      <input type="hidden" name="_subject" value="New inquiry from your website — shalaghquinn.com" />
+      <input type="hidden" name="_template" value="table" />
+      <input type="hidden" name="_captcha" value="false" />
+      <input type="hidden" name="_autoresponse" value="Thank you for reaching out — I've received your message and will be in touch within a few days. — Shalagh" />
+
       <div class="contact__row">
         <label class="contact__field">
           <span class="contact__label">Name</span>
-          <input type="text" name="name" required autocomplete="name" />
+          <input type="text" name="Name" required autocomplete="name" />
         </label>
         <label class="contact__field">
           <span class="contact__label">Email</span>
-          <input type="email" name="email" required autocomplete="email" />
+          <input type="email" name="Email" required autocomplete="email" />
         </label>
       </div>
 
       <div class="contact__row">
         <label class="contact__field">
           <span class="contact__label">Phone <span class="contact__optional">(optional)</span></span>
-          <input type="tel" name="phone" autocomplete="tel" placeholder="+1 (555) 123-4567" />
+          <input type="tel" name="Phone" autocomplete="tel" placeholder="+1 (555) 123-4567" />
         </label>
         <label class="contact__field">
           <span class="contact__label">What&rsquo;s this about?</span>
-          <select name="subject">
-          <option value="commission-mural">Mural commission</option>
-          <option value="commission-painting">Painting commission</option>
-          <option value="commission-portrait">Portrait commission</option>
-          <option value="photography">Photography session</option>
-          <option value="press">Press / press inquiry</option>
-          <option value="hello">Just saying hello</option>
-        </select>
+          <select name="Inquiry Type">
+            <option value="Mural commission">Mural commission</option>
+            <option value="Painting commission">Painting commission</option>
+            <option value="Portrait commission">Portrait commission</option>
+            <option value="Photography session">Photography session</option>
+            <option value="Press / press inquiry">Press / press inquiry</option>
+            <option value="Just saying hello">Just saying hello</option>
+          </select>
         </label>
       </div>
 
       <label class="contact__field">
         <span class="contact__label">Message</span>
         <textarea
-          name="message"
+          name="Message"
           rows="6"
           required
           placeholder="Tell me about your space, your idea, or what you&rsquo;re hoping to make."
         ></textarea>
       </label>
 
-      <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="contact__honey" aria-hidden="true" />
+      {/* Honeypot — bots fill this, humans don't see it */}
+      <input type="text" name="_honey" tabindex="-1" autocomplete="off" class="contact__honey" aria-hidden="true" />
 
       <div class="contact__submit-row">
         <p class="contact__small">By sending, you agree to be contacted at the email above.</p>
@@ -115,7 +124,7 @@ const FORMSPREE_ENDPOINT = "https://formspree.io/f/your-form-id";
     font-family: var(--font-display);
     font-style: italic;
     font-weight: 500;
-    line-height: 0.98;
+    line-height: 1.05;
     letter-spacing: -0.02em;
     color: var(--color-ink);
     font-size: clamp(2.5rem, 5.5vw, 4.5rem);
@@ -123,7 +132,13 @@ const FORMSPREE_ENDPOINT = "https://formspree.io/f/your-form-id";
   }
 
   .contact__title span {
-    color: var(--color-name);
+    color: var(--color-ink);
+    display: block;
+    font-size: 0.55em;
+    margin-top: 0.4em;
+    line-height: 1.25;
+    color: var(--color-ink-soft);
+    font-style: italic;
   }
 
   .contact__lede {
