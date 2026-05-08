@@ -11,7 +11,7 @@ const contactHref = isHome ? "#contact" : "/#contact";
 <header class="site-header" data-header>
   <div class="site-header__inner container">
     <a href="/" class="site-header__brand" aria-label="Shalagh Quinn — Home">
-      <span class="site-header__brand-name">shalagh quinn</span>
+      <span class="site-header__brand-name">shalagh</span>
     </a>
 
     <nav class="site-header__nav" aria-label="Primary">
@@ -114,16 +114,28 @@ const contactHref = isHome ? "#contact" : "/#contact";
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 0.6rem 1.1rem;
+    padding-block: 4px;
     font-family: var(--font-meta);
     font-size: var(--fs-sm);
     font-weight: 500;
-    color: var(--color-paper);
+    color: var(--color-ink);
+    background: transparent;
+    border-radius: 0;
+    position: relative;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .site-header__cta::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 1px;
     background: var(--color-ink);
-    border-radius: 999px;
+    transform: scaleX(1);
+    transform-origin: left center;
     transition:
-      transform var(--duration-fast) var(--ease-out),
-      background-color var(--duration-fast) var(--ease-out);
+      transform var(--duration-base) var(--ease-out),
+      background-color var(--duration-base) var(--ease-out);
   }
 
   .site-header__cta svg {
@@ -131,7 +143,11 @@ const contactHref = isHome ? "#contact" : "/#contact";
   }
 
   .site-header__cta:hover {
-    background: var(--color-name);
+    color: var(--color-name);
+  }
+
+  .site-header__cta:hover::after {
+    background-color: var(--color-name);
   }
 
   .site-header__cta:hover svg {
