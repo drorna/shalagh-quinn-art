@@ -1,0 +1,171 @@
+<section class="hero" aria-labelledby="hero-name">
+  <div class="container hero__inner">
+    <p class="hero__eyebrow eyebrow reveal">Artist · Painter · Photographer</p>
+
+    <h1 id="hero-name" class="hero__name reveal">
+      <span class="hero__name-first">shalagh</span>
+      <span class="hero__name-last">quinn</span>
+    </h1>
+
+    <p class="hero__intro reveal">
+      Murals, paintings, portraits, and photography &mdash;
+      a body of work made slowly and with care, rooted in
+      place, people, and the small moments in between.
+    </p>
+
+    <div class="hero__actions reveal">
+      <a href="#work" class="hero__btn hero__btn--primary">
+        <span>See the work</span>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M7 3v8M3 7l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <a href="#contact" class="hero__btn hero__btn--ghost">Commission a work</a>
+    </div>
+  </div>
+
+  <a href="#about" class="hero__scroll" aria-label="Scroll to about">
+    <span class="hero__scroll-line"></span>
+    <span class="hero__scroll-text">scroll</span>
+  </a>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    padding-top: calc(var(--sp-20) + var(--sp-2));
+    padding-bottom: var(--sp-12);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .hero__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    max-width: 880px;
+  }
+
+  .hero__eyebrow {
+    margin: 0 0 var(--sp-4);
+  }
+
+  .hero__name {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--color-name);
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    margin: 0 0 var(--sp-5);
+    font-size: clamp(4rem, 14vw, 9rem);
+  }
+
+  .hero__name-first,
+  .hero__name-last {
+    display: block;
+  }
+
+  .hero__name-last {
+    color: var(--color-ink);
+    margin-left: 0.6em;
+    font-weight: 500;
+  }
+
+  .hero__intro {
+    font-family: var(--font-body);
+    font-size: clamp(1.05rem, 1.5vw, 1.4rem);
+    line-height: 1.55;
+    color: var(--color-ink-soft);
+    max-width: 52ch;
+    margin: 0 0 var(--sp-6);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+
+  .hero__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.95rem 1.6rem;
+    font-family: var(--font-meta);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    border-radius: 999px;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+
+  .hero__btn--primary {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .hero__btn--primary:hover {
+    background: var(--color-name);
+  }
+
+  .hero__btn--ghost {
+    border: 1px solid var(--color-line);
+    color: var(--color-ink-soft);
+  }
+
+  .hero__btn--ghost:hover {
+    border-color: var(--color-ink);
+    color: var(--color-ink);
+  }
+
+  .hero__btn svg {
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  .hero__btn:hover svg {
+    transform: translateY(2px);
+  }
+
+  .hero__scroll {
+    position: absolute;
+    inset: auto auto var(--sp-4) 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-meta);
+    font-size: var(--fs-xs);
+    color: var(--color-ink-mute);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .hero__scroll-line {
+    display: block;
+    width: 1px;
+    height: 36px;
+    background: var(--color-ink-mute);
+    transform-origin: top center;
+    animation: scroll-pulse 2.4s var(--ease-in-out) infinite;
+  }
+
+  @keyframes scroll-pulse {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.4; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+
+  @media (max-width: 600px) {
+    .hero {
+      min-height: auto;
+      padding-top: calc(var(--sp-16) + var(--sp-2));
+    }
+    .hero__scroll { display: none; }
+  }
+</style>

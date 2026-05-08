@@ -1,0 +1,75 @@
+<section class="about" id="about" aria-labelledby="about-title">
+  <div class="container about__inner">
+    <p class="eyebrow about__eyebrow reveal">About</p>
+
+    <div class="about__body reveal">
+      <p>
+        My art and creation are fueled by a fascination with time. I am
+        curious what happens when we learn to trust in the time and what the
+        creative process reveals to us when we do. All my work as an artist
+        is an expression of a trust in the process of creation, everything I
+        create is an expression of the moment.
+      </p>
+      <p>
+        This is a place to share my portfolio and creative offerings.
+      </p>
+    </div>
+
+    <p class="about__close reveal" id="about-title">explore and enjoy.</p>
+  </div>
+</section>
+
+<style>
+  .about {
+    padding-block: var(--sp-12) var(--sp-12);
+  }
+
+  .about__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
+    max-width: 880px;
+    margin: 0 auto;
+  }
+
+  .about__eyebrow {
+    margin: 0;
+    color: var(--color-name);
+  }
+
+  .about__body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+    max-width: 60ch;
+  }
+
+  .about__body p {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: clamp(1.05rem, 1.4vw, 1.35rem);
+    line-height: 1.65;
+    color: var(--color-ink-soft);
+  }
+
+  .about__body p:last-child {
+    color: var(--color-ink);
+  }
+
+  .about__close {
+    margin: var(--sp-4) 0 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    color: var(--color-name);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  @media (min-width: 700px) {
+    .about__inner {
+      gap: var(--sp-6);
+    }
+  }
+</style>

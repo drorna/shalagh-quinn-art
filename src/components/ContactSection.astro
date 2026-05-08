@@ -1,0 +1,327 @@
+---
+// NOTE: Replace FORMSPREE_ENDPOINT below with your real Formspree URL once you
+// create a free account at formspree.io and set up a form. Until then, the
+// form will display correctly but submissions won't go anywhere.
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/your-form-id";
+---
+
+<section class="contact" id="contact" aria-labelledby="contact-title">
+  <div class="container contact__inner">
+    <header class="contact__head reveal">
+      <p class="eyebrow contact__eyebrow">Get in touch</p>
+      <h2 id="contact-title" class="contact__title">
+        Let&rsquo;s make<br />
+        <span>something together.</span>
+      </h2>
+      <p class="contact__lede">
+        Commissions, collaborations, studio visits, or just a hello —
+        I read every message and reply within a few days.
+      </p>
+
+      <ul class="contact__direct">
+        <li>
+          <span class="contact__direct-label">Email</span>
+          <a href="mailto:hello@shalaghquinn.com">hello@shalaghquinn.com</a>
+        </li>
+        <li>
+          <span class="contact__direct-label">Studio</span>
+          <span>By appointment</span>
+        </li>
+        <li>
+          <span class="contact__direct-label">Instagram</span>
+          <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer">@shalaghquinn</a>
+        </li>
+      </ul>
+    </header>
+
+    <form class="contact__form reveal" action={FORMSPREE_ENDPOINT} method="POST">
+      <div class="contact__row">
+        <label class="contact__field">
+          <span class="contact__label">Name</span>
+          <input type="text" name="name" required autocomplete="name" />
+        </label>
+        <label class="contact__field">
+          <span class="contact__label">Email</span>
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+      </div>
+
+      <div class="contact__row">
+        <label class="contact__field">
+          <span class="contact__label">Phone <span class="contact__optional">(optional)</span></span>
+          <input type="tel" name="phone" autocomplete="tel" placeholder="+1 (555) 123-4567" />
+        </label>
+        <label class="contact__field">
+          <span class="contact__label">What&rsquo;s this about?</span>
+          <select name="subject">
+          <option value="commission-mural">Mural commission</option>
+          <option value="commission-painting">Painting commission</option>
+          <option value="commission-portrait">Portrait commission</option>
+          <option value="photography">Photography session</option>
+          <option value="press">Press / press inquiry</option>
+          <option value="hello">Just saying hello</option>
+        </select>
+        </label>
+      </div>
+
+      <label class="contact__field">
+        <span class="contact__label">Message</span>
+        <textarea
+          name="message"
+          rows="6"
+          required
+          placeholder="Tell me about your space, your idea, or what you&rsquo;re hoping to make."
+        ></textarea>
+      </label>
+
+      <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="contact__honey" aria-hidden="true" />
+
+      <div class="contact__submit-row">
+        <p class="contact__small">By sending, you agree to be contacted at the email above.</p>
+        <button type="submit" class="contact__submit">
+          <span>Send message</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  .contact {
+    padding-block: var(--sp-16);
+    background: linear-gradient(180deg, var(--color-paper) 0%, var(--color-paper-warm) 100%);
+    border-top: 1px solid var(--color-line-soft);
+  }
+
+  .contact__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-8);
+  }
+
+  .contact__head {
+    max-width: 520px;
+  }
+
+  .contact__eyebrow {
+    margin: 0 0 var(--sp-3);
+    color: var(--color-name);
+  }
+
+  .contact__title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+    margin: 0 0 var(--sp-4);
+  }
+
+  .contact__title span {
+    color: var(--color-name);
+  }
+
+  .contact__lede {
+    font-family: var(--font-body);
+    font-size: var(--fs-md);
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+    margin: 0 0 var(--sp-6);
+    max-width: 44ch;
+  }
+
+  .contact__direct {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    border-top: 1px solid var(--color-line-soft);
+    padding-top: var(--sp-4);
+  }
+
+  .contact__direct li {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    align-items: baseline;
+    gap: var(--sp-2);
+    font-family: var(--font-body);
+    font-size: var(--fs-base);
+  }
+
+  .contact__direct-label {
+    font-family: var(--font-meta);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--color-ink-mute);
+  }
+
+  .contact__direct a {
+    color: var(--color-ink);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .contact__direct a:hover {
+    border-bottom-color: var(--color-ink);
+  }
+
+  /* Form */
+  .contact__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    background: var(--color-paper);
+    padding: var(--sp-4);
+    border: 1px solid var(--color-line-soft);
+  }
+
+  .contact__row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+  }
+
+  .contact__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .contact__label {
+    font-family: var(--font-meta);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--color-ink-mute);
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .contact__optional {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: var(--fs-xs);
+    color: var(--color-ink-mute);
+    opacity: 0.7;
+    font-style: italic;
+  }
+
+  .contact__form input,
+  .contact__form select,
+  .contact__form textarea {
+    border: 0;
+    border-bottom: 1px solid var(--color-line);
+    background: transparent;
+    padding: 10px 0;
+    font-family: var(--font-body);
+    font-size: var(--fs-base);
+    color: var(--color-ink);
+    transition: border-color var(--duration-fast) var(--ease-out);
+    border-radius: 0;
+  }
+
+  .contact__form select {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--color-ink-mute) 50%),
+                      linear-gradient(135deg, var(--color-ink-mute) 50%, transparent 50%);
+    background-position: calc(100% - 14px) 50%, calc(100% - 8px) 50%;
+    background-size: 6px 6px;
+    background-repeat: no-repeat;
+    padding-right: 24px;
+  }
+
+  .contact__form textarea {
+    resize: vertical;
+    min-height: 140px;
+    padding: 10px 0;
+    line-height: 1.6;
+  }
+
+  .contact__form input:focus,
+  .contact__form select:focus,
+  .contact__form textarea:focus {
+    outline: 0;
+    border-bottom-color: var(--color-ink);
+  }
+
+  .contact__honey {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  .contact__submit-row {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--sp-2);
+    align-items: stretch;
+    margin-top: var(--sp-2);
+  }
+
+  .contact__small {
+    margin: 0;
+    font-family: var(--font-meta);
+    font-size: var(--fs-xs);
+    color: var(--color-ink-mute);
+    line-height: 1.5;
+  }
+
+  .contact__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0.95rem 1.6rem;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-family: var(--font-meta);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    border-radius: 999px;
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  .contact__submit svg {
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  .contact__submit:hover {
+    background: var(--color-name);
+  }
+
+  .contact__submit:hover svg {
+    transform: translateX(3px);
+  }
+
+  @media (min-width: 700px) {
+    .contact__row {
+      grid-template-columns: 1fr 1fr;
+    }
+    .contact__submit-row {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .contact__inner {
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: var(--sp-12);
+    }
+    .contact__form {
+      padding: var(--sp-6);
+    }
+  }
+</style>

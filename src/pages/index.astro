@@ -1,0 +1,30 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Hero from "../components/Hero.astro";
+import About from "../components/About.astro";
+import SectionPreview from "../components/SectionPreview.astro";
+import ContactSection from "../components/ContactSection.astro";
+import { sections } from "../utils/galleries";
+---
+
+<BaseLayout
+  title="Shalagh Quinn — Artist · Murals, Painting, Portraits, Photography"
+  description="The portfolio of artist Shalagh Quinn — murals, paintings, portraits, and portrait photography."
+>
+  <Hero />
+  <About />
+
+  <div id="work" class="work">
+    {sections.map((section, i) => (
+      <SectionPreview sectionKey={section.key} index={i} />
+    ))}
+  </div>
+
+  <ContactSection />
+</BaseLayout>
+
+<style>
+  .work {
+    padding-top: var(--sp-4);
+  }
+</style>

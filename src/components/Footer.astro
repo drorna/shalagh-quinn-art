@@ -1,0 +1,96 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <div class="site-footer__brand">
+      <span class="site-footer__name">shalagh quinn</span>
+      <span class="site-footer__tag">artist · murals · portraits · photography</span>
+    </div>
+
+    <nav class="site-footer__nav" aria-label="Footer">
+      <a href="/murals/">Murals</a>
+      <a href="/painting/">Painting</a>
+      <a href="/portraits/">Portraits</a>
+      <a href="/photography/">Photography</a>
+      <a href="/#contact">Contact</a>
+    </nav>
+
+    <p class="site-footer__copy">© {year} Shalagh Quinn. All rights reserved.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: var(--sp-20);
+    padding: var(--sp-12) 0 var(--sp-8);
+    border-top: 1px solid var(--color-line-soft);
+    background: var(--color-paper-warm);
+  }
+
+  .site-footer__inner {
+    display: grid;
+    gap: var(--sp-6);
+    grid-template-columns: 1fr;
+    align-items: end;
+  }
+
+  .site-footer__brand {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .site-footer__name {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.875rem;
+    color: var(--color-name);
+    line-height: 1;
+  }
+
+  .site-footer__tag {
+    font-family: var(--font-meta);
+    font-size: var(--fs-xs);
+    color: var(--color-ink-mute);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .site-footer__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    font-family: var(--font-meta);
+    font-size: var(--fs-sm);
+    color: var(--color-ink-soft);
+  }
+
+  .site-footer__nav a {
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .site-footer__nav a:hover { color: var(--color-ink); }
+
+  .site-footer__copy {
+    margin: 0;
+    font-family: var(--font-meta);
+    font-size: var(--fs-xs);
+    color: var(--color-ink-mute);
+  }
+
+  @media (min-width: 768px) {
+    .site-footer__inner {
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "brand nav"
+        "copy  copy";
+      gap: var(--sp-4) var(--sp-6);
+    }
+    .site-footer__brand { grid-area: brand; }
+    .site-footer__nav { grid-area: nav; justify-content: flex-end; }
+    .site-footer__copy { grid-area: copy; padding-top: var(--sp-4); border-top: 1px solid var(--color-line-soft); }
+  }
+</style>
