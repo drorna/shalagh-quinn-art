@@ -83,8 +83,6 @@ const isEmpty = items.length === 0;
   }
 
   .section-preview__head {
-    position: sticky;
-    top: var(--sp-12);
     align-self: start;
     max-width: 420px;
   }
@@ -204,6 +202,11 @@ const isEmpty = items.length === 0;
     .section-preview__inner {
       grid-template-columns: 0.9fr 1.4fr;
       gap: var(--sp-8);
+    }
+
+    .section-preview__head {
+      position: sticky;
+      top: var(--sp-12);
     }
 
     .section-preview__grid {
