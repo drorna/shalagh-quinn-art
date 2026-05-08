@@ -1,0 +1,132 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Thank you — Shalagh Quinn"
+  description="Your message was sent successfully."
+  hideContactLink={true}
+>
+  <section class="thanks">
+    <div class="container thanks__inner">
+      <p class="eyebrow thanks__eyebrow">Message received</p>
+
+      <h1 class="thanks__title">
+        Thank you.<br />
+        <span>I&rsquo;ll be in touch soon.</span>
+      </h1>
+
+      <p class="thanks__lede">
+        Your message has been sent. I read everything personally and
+        usually reply within a few days.
+      </p>
+
+      <div class="thanks__actions">
+        <a href="/" class="thanks__btn thanks__btn--primary">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Back to home</span>
+        </a>
+        <a href="/#work" class="thanks__btn thanks__btn--ghost">Browse the work</a>
+      </div>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .thanks {
+    min-height: calc(100vh - 200px);
+    padding-top: calc(var(--sp-20) + var(--sp-4));
+    padding-bottom: var(--sp-16);
+    display: flex;
+    align-items: center;
+  }
+
+  .thanks__inner {
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: left;
+  }
+
+  .thanks__eyebrow {
+    margin: 0 0 var(--sp-3);
+    color: var(--color-name);
+  }
+
+  .thanks__title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    color: var(--color-ink);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--sp-4);
+    font-size: clamp(2.5rem, 7vw, 5rem);
+  }
+
+  .thanks__title span {
+    color: var(--color-ink-soft);
+    display: block;
+    margin-top: 0.15em;
+  }
+
+  .thanks__lede {
+    font-family: var(--font-body);
+    font-size: var(--fs-md);
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+    margin: 0 0 var(--sp-6);
+    max-width: 52ch;
+  }
+
+  .thanks__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+
+  .thanks__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.85rem 1.4rem;
+    font-family: var(--font-meta);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    border-radius: 999px;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .thanks__btn--primary {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .thanks__btn--primary:hover {
+    background: var(--color-name);
+  }
+
+  .thanks__btn--ghost {
+    border: 1px solid var(--color-line);
+    color: var(--color-ink-soft);
+  }
+
+  .thanks__btn--ghost:hover {
+    border-color: var(--color-ink);
+    color: var(--color-ink);
+  }
+
+  .thanks__btn svg {
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  .thanks__btn--primary:hover svg {
+    transform: translateX(-2px);
+  }
+
+</style>
