@@ -14,7 +14,7 @@ interface Props {
 
 const {
   title = "Shalagh Quinn",
-  description = "Murals, paintings, portraits and portrait photography by Shalagh Quinn.",
+  description = "Murals, paintings, portraits, and portrait photography.",
   hideContactLink = false,
   ogImage = "/og-image.jpg",
 } = Astro.props;
@@ -34,6 +34,10 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
     <meta name="theme-color" content="#0c0a08" />
 
     <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
 
     {/* Open Graph (WhatsApp, Facebook, LinkedIn, iMessage, etc.) */}
     <meta property="og:type" content="website" />
@@ -52,6 +56,16 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={absoluteOgImage} />
+
+    {/* Structured data for search engines */}
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Shalagh Quinn",
+      "url": siteUrl,
+      "image": absoluteOgImage,
+      "sameAs": ["https://instagram.com/shalagh"],
+    })} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
