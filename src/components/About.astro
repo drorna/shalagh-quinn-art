@@ -2,20 +2,27 @@
   <div class="container about__inner">
     <p class="eyebrow about__eyebrow reveal">About</p>
 
+    <h2 id="about-title" class="about__heading reveal">a trust in time.</h2>
+
     <div class="about__body reveal">
       <p>
-        My art and creation are fueled by a fascination with time. I am
-        curious what happens when we learn to trust in the time and what the
-        creative process reveals to us when we do. All my work as an artist
-        is an expression of a trust in the process of creation, everything I
-        create is an expression of the moment.
+        my creation is fueled by a fascination with time. I am curious what
+        happens when we learn to trust in the creative process and see where
+        it takes us. Everything I create is an expression of the moment.
       </p>
       <p>
-        This is a place to share my portfolio and creative offerings.
+        This is a space to share the journey of my creative work and my
+        offerings with the people I meet.
       </p>
     </div>
 
-    <p class="about__close reveal" id="about-title">explore and enjoy.</p>
+    <p class="about__follow reveal">
+      follow my journey online to further explore the intertwining dance
+      between time and creation&hellip;
+      <a href="https://instagram.com/shalagh" target="_blank" rel="noopener noreferrer" class="about__handle">
+        @shalagh
+      </a>
+    </p>
   </div>
 </section>
 
@@ -37,6 +44,17 @@
     color: var(--color-name);
   }
 
+  .about__heading {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    color: var(--color-name);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--sp-3);
+  }
+
   .about__body {
     display: grid;
     grid-template-columns: 1fr;
@@ -52,24 +70,38 @@
     color: var(--color-ink-soft);
   }
 
-  .about__body p:last-child {
-    color: var(--color-ink);
+  .about__follow {
+    margin: var(--sp-6) 0 0;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: clamp(1rem, 1.3vw, 1.2rem);
+    line-height: 1.6;
+    color: var(--color-ink-soft);
+    max-width: 60ch;
   }
 
-  .about__close {
-    margin: var(--sp-4) 0 0;
-    font-family: var(--font-display);
+  .about__handle {
+    display: inline-block;
+    margin-left: 6px;
+    color: var(--color-name);
     font-style: italic;
     font-weight: 500;
-    font-size: clamp(1.75rem, 3vw, 2.5rem);
-    color: var(--color-name);
-    letter-spacing: -0.01em;
-    line-height: 1.1;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 1px;
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+    text-decoration: none;
+  }
+
+  .about__handle:hover {
+    color: var(--color-brand);
+    border-bottom-color: var(--color-brand);
   }
 
   @media (min-width: 700px) {
     .about__inner {
-      gap: var(--sp-6);
+      gap: var(--sp-5);
     }
   }
 </style>
