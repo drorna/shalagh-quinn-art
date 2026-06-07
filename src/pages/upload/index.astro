@@ -1,0 +1,257 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+// Form submissions go through FormSubmit (no account required).
+// Visitors are redirected to /thanks/ after upload.
+const FORM_ENDPOINT = "https://formsubmit.co/shalaghquinns@gmail.com";
+const THANK_YOU_URL = "https://shalagh.com/thanks/";
+---
+
+<BaseLayout title="upload — shalagh quinn" bare>
+  <div class="upload-page">
+    <a href="/" class="upload-page__back" aria-label="back home">
+      <span aria-hidden="true">&lt;</span>
+    </a>
+
+    <main class="upload-page__inner">
+      <h1 class="upload-page__title">hi —</h1>
+
+      <p class="upload-page__copy">
+        you can upload a photo of your piece so it can be shared
+        on social media. tagging is optional.
+      </p>
+
+      <form
+        class="upload-form"
+        action={FORM_ENDPOINT}
+        method="POST"
+        enctype="multipart/form-data"
+      >
+        <input type="hidden" name="_subject" value="New upload from shalagh.com/upload" />
+        <input type="hidden" name="_template" value="table" />
+        <input type="hidden" name="_captcha" value="false" />
+        <input type="hidden" name="_next" value={THANK_YOU_URL} />
+
+        <label class="upload-form__field">
+          <span class="upload-form__label">your name (optional)</span>
+          <input type="text" name="Name" autocomplete="name" />
+        </label>
+
+        <label class="upload-form__field">
+          <span class="upload-form__label">tag — instagram handle, etc. (optional)</span>
+          <input type="text" name="Tag" placeholder="@yourhandle" />
+        </label>
+
+        <div class="upload-form__field">
+          <span class="upload-form__label">photo</span>
+          <div class="upload-form__filebox">
+            <label class="upload-form__filebtn" for="upload-camera">
+              take a photo
+              <input
+                id="upload-camera"
+                type="file"
+                name="Photo (camera)"
+                accept="image/*"
+                capture="environment"
+                hidden
+              />
+            </label>
+            <label class="upload-form__filebtn" for="upload-gallery">
+              choose from gallery
+              <input
+                id="upload-gallery"
+                type="file"
+                name="Photo (gallery)"
+                accept="image/*"
+                hidden
+              />
+            </label>
+          </div>
+          <p class="upload-form__filename" id="upload-filename" aria-live="polite"></p>
+        </div>
+
+        <div class="upload-form__submit-row">
+          <button type="submit" class="upload-form__submit">
+            <span>upload</span>
+            <span class="upload-form__submit-arrow" aria-hidden="true">&gt;</span>
+          </button>
+        </div>
+      </form>
+    </main>
+
+    <script>
+      const inputs = document.querySelectorAll<HTMLInputElement>(
+        '#upload-camera, #upload-gallery'
+      );
+      const nameEl = document.getElementById('upload-filename');
+      inputs.forEach((inp) => {
+        inp.addEventListener('change', () => {
+          const f = inp.files?.[0];
+          if (f && nameEl) {
+            nameEl.textContent = `selected: ${f.name}`;
+          }
+        });
+      });
+    </script>
+  </div>
+</BaseLayout>
+
+<style>
+  :global(body.is-bare) {
+    background: #000;
+    color: #fff;
+    font-family: var(--font-sans);
+  }
+
+  .upload-page {
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(var(--sp-4), 5vw, var(--sp-8)) clamp(var(--sp-3), 4vw, var(--sp-8)) var(--sp-16);
+    position: relative;
+  }
+
+  .upload-page__back {
+    position: absolute;
+    top: clamp(var(--sp-3), 4vw, var(--sp-6));
+    left: clamp(var(--sp-3), 4vw, var(--sp-6));
+    color: #fff;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    line-height: 1;
+    opacity: 0.85;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .upload-page__back:hover { opacity: 1; }
+
+  .upload-page__inner {
+    max-width: 560px;
+    margin: 0 auto;
+    padding-top: var(--sp-8);
+  }
+
+  .upload-page__title {
+    margin: 0 0 var(--sp-3);
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+    line-height: 1;
+  }
+
+  .upload-page__copy {
+    margin: 0 0 var(--sp-6);
+    font-family: "Times New Roman", Times, serif;
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+    line-height: 1.55;
+    color: #fff;
+    max-width: 38ch;
+  }
+
+  /* ---------- Form ---------- */
+  .upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+  }
+
+  .upload-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .upload-form__label {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-size: clamp(0.9rem, 1.1vw, 1rem);
+    color: #fff;
+    opacity: 0.75;
+  }
+
+  .upload-form input[type="text"] {
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+    background: transparent;
+    padding: 10px 0;
+    font-family: var(--font-sans);
+    font-size: clamp(1rem, 1.2vw, 1.1rem);
+    color: #fff;
+    transition: border-color var(--duration-fast) var(--ease-out);
+    border-radius: 0;
+  }
+
+  .upload-form input[type="text"]:focus {
+    outline: 0;
+    border-bottom-color: #fff;
+  }
+
+  .upload-form__filebox {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-top: 6px;
+  }
+
+  .upload-form__filebtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 22px;
+    border: 1px solid #fff;
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .upload-form__filebtn:hover {
+    background: #fff;
+    color: #000;
+  }
+
+  .upload-form__filename {
+    margin: 6px 0 0;
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: #fff;
+    opacity: 0.8;
+    min-height: 1.2em;
+  }
+
+  .upload-form__submit-row {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: var(--sp-3);
+  }
+
+  .upload-form__submit {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4em;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.4rem, 2vw, 1.75rem);
+    color: #fff;
+    padding: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .upload-form__submit-arrow {
+    font-weight: 700;
+    font-size: 0.9em;
+    transition: transform var(--duration-base) var(--ease-out);
+    display: inline-block;
+  }
+
+  .upload-form__submit:hover { opacity: 0.75; }
+  .upload-form__submit:hover .upload-form__submit-arrow { transform: translateX(6px); }
+</style>

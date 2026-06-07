@@ -11,26 +11,24 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
 <section class="contact" id="contact" aria-labelledby="contact-title">
   <div class="container contact__inner">
     <header class="contact__head reveal">
-      <p class="eyebrow contact__eyebrow">Get in touch</p>
-      <h2 id="contact-title" class="contact__title">
-        Let&rsquo;s create.<br />
-        <span>mural inquiries, commissions,<br />and portrait photography.</span>
-      </h2>
+      <h2 id="contact-title" class="contact__title">contact</h2>
+      <p class="contact__lede">
+        for mural inquiries, commissions, and conversations &mdash;
+      </p>
 
       <ul class="contact__direct">
         <li>
-          <span class="contact__direct-label">Email</span>
+          <span class="contact__direct-label">email</span>
           <a href={`mailto:${RECIPIENT_EMAIL}`}>{RECIPIENT_EMAIL}</a>
         </li>
         <li>
-          <span class="contact__direct-label">Instagram</span>
+          <span class="contact__direct-label">instagram</span>
           <a href="https://instagram.com/shalagh" target="_blank" rel="noopener noreferrer">@shalagh</a>
         </li>
       </ul>
     </header>
 
     <form class="contact__form reveal" action={FORM_ENDPOINT} method="POST">
-      {/* FormSubmit configuration */}
       <input type="hidden" name="_subject" value="New inquiry from your website — shalaghquinn" />
       <input type="hidden" name="_template" value="table" />
       <input type="hidden" name="_captcha" value="false" />
@@ -39,53 +37,48 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
 
       <div class="contact__row">
         <label class="contact__field">
-          <span class="contact__label">Name</span>
+          <span class="contact__label">name</span>
           <input type="text" name="Name" required autocomplete="name" />
         </label>
         <label class="contact__field">
-          <span class="contact__label">Email</span>
+          <span class="contact__label">email</span>
           <input type="email" name="Email" required autocomplete="email" />
         </label>
       </div>
 
       <div class="contact__row">
         <label class="contact__field">
-          <span class="contact__label">Phone <span class="contact__optional">(optional)</span></span>
-          <input type="tel" name="Phone" autocomplete="tel" placeholder="+1 (555) 123-4567" />
+          <span class="contact__label">phone <span class="contact__optional">(optional)</span></span>
+          <input type="tel" name="Phone" autocomplete="tel" />
         </label>
         <label class="contact__field">
-          <span class="contact__label">What&rsquo;s this about?</span>
+          <span class="contact__label">what&rsquo;s this about?</span>
           <select name="Inquiry Type">
-            <option value="Mural commission">Mural commission</option>
-            <option value="Painting commission">Painting commission</option>
-            <option value="Portrait commission">Portrait commission</option>
-            <option value="Photography session">Photography session</option>
-            <option value="Press / press inquiry">Press / press inquiry</option>
-            <option value="Just saying hello">Just saying hello</option>
+            <option value="Mural commission">mural commission</option>
+            <option value="Print inquiry">print inquiry</option>
+            <option value="Portrait commission">portrait commission</option>
+            <option value="Press">press</option>
+            <option value="Just saying hello">just saying hello</option>
           </select>
         </label>
       </div>
 
       <label class="contact__field">
-        <span class="contact__label">Message</span>
+        <span class="contact__label">message</span>
         <textarea
           name="Message"
           rows="6"
           required
-          placeholder="Tell me about your space, your idea, or what you&rsquo;re hoping to make."
+          placeholder="tell me about your space, your idea, or what you&rsquo;re hoping to make."
         ></textarea>
       </label>
 
-      {/* Honeypot — bots fill this, humans don't see it */}
       <input type="text" name="_honey" tabindex="-1" autocomplete="off" class="contact__honey" aria-hidden="true" />
 
       <div class="contact__submit-row">
-        <p class="contact__small">By sending, you agree to be contacted at the email above.</p>
         <button type="submit" class="contact__submit">
-          <span>Send message</span>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <span>send</span>
+          <span class="contact__submit-arrow" aria-hidden="true">›</span>
         </button>
       </div>
     </form>
@@ -94,53 +87,39 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
 
 <style>
   .contact {
-    padding-block: var(--sp-16);
-    background: linear-gradient(180deg, var(--color-paper) 0%, var(--color-paper-warm) 100%);
+    padding-block: var(--sp-12);
     border-top: 1px solid var(--color-line-soft);
+    margin-top: var(--sp-8);
   }
 
   .contact__inner {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--sp-8);
+    gap: var(--sp-6);
   }
 
   .contact__head {
     max-width: 520px;
   }
 
-  .contact__eyebrow {
-    margin: 0 0 var(--sp-3);
-    color: var(--color-name);
-  }
-
   .contact__title {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: -0.01em;
     color: var(--color-ink);
-    font-size: clamp(2.5rem, 5.5vw, 4.5rem);
-    margin: 0 0 var(--sp-4);
-  }
-
-  .contact__title span {
-    color: var(--color-ink);
-    display: block;
-    font-size: 0.55em;
-    margin-top: 0.4em;
-    line-height: 1.25;
-    color: var(--color-ink-soft);
-    font-style: italic;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    margin: 0 0 var(--sp-3);
   }
 
   .contact__lede {
-    font-family: var(--font-body);
+    font-family: var(--font-serif);
+    font-style: italic;
     font-size: var(--fs-md);
-    line-height: 1.6;
+    line-height: 1.5;
     color: var(--color-ink-soft);
-    margin: 0 0 var(--sp-6);
+    margin: 0 0 var(--sp-5);
     max-width: 44ch;
   }
 
@@ -151,24 +130,21 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
-    border-top: 1px solid var(--color-line-soft);
-    padding-top: var(--sp-4);
   }
 
   .contact__direct li {
     display: grid;
-    grid-template-columns: 90px 1fr;
+    grid-template-columns: 100px 1fr;
     align-items: baseline;
     gap: var(--sp-2);
-    font-family: var(--font-body);
+    font-family: var(--font-serif);
     font-size: var(--fs-base);
   }
 
   .contact__direct-label {
-    font-family: var(--font-meta);
-    font-size: var(--fs-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--fs-sm);
     color: var(--color-ink-mute);
   }
 
@@ -187,9 +163,6 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    background: var(--color-paper);
-    padding: var(--sp-4);
-    border: 1px solid var(--color-line-soft);
   }
 
   .contact__row {
@@ -205,10 +178,9 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
   }
 
   .contact__label {
-    font-family: var(--font-meta);
-    font-size: var(--fs-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--fs-sm);
     color: var(--color-ink-mute);
     display: inline-flex;
     align-items: baseline;
@@ -216,12 +188,8 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
   }
 
   .contact__optional {
-    text-transform: none;
-    letter-spacing: 0;
-    font-size: var(--fs-xs);
-    color: var(--color-ink-mute);
-    opacity: 0.7;
     font-style: italic;
+    opacity: 0.7;
   }
 
   .contact__form input,
@@ -231,7 +199,7 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
     border-bottom: 1px solid var(--color-line);
     background: transparent;
     padding: 10px 0;
-    font-family: var(--font-body);
+    font-family: var(--font-serif);
     font-size: var(--fs-base);
     color: var(--color-ink);
     transition: border-color var(--duration-fast) var(--ease-out);
@@ -246,11 +214,11 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
     background-size: 6px 6px;
     background-repeat: no-repeat;
     padding-right: 24px;
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   .contact__form select option {
-    background-color: var(--color-paper-warm);
+    background-color: var(--color-paper);
     color: var(--color-ink);
     padding: 8px;
   }
@@ -279,56 +247,39 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
 
   .contact__submit-row {
     display: flex;
-    flex-direction: column-reverse;
-    gap: var(--sp-2);
-    align-items: stretch;
-    margin-top: var(--sp-2);
-  }
-
-  .contact__small {
-    margin: 0;
-    font-family: var(--font-meta);
-    font-size: var(--fs-xs);
-    color: var(--color-ink-mute);
-    line-height: 1.5;
+    justify-content: flex-start;
+    margin-top: var(--sp-3);
   }
 
   .contact__submit {
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 0.95rem 1.6rem;
-    background: var(--color-ink);
-    color: var(--color-paper);
-    font-family: var(--font-meta);
-    font-size: var(--fs-sm);
-    font-weight: 500;
-    border-radius: 999px;
-    transition: background-color var(--duration-fast) var(--ease-out);
+    align-items: baseline;
+    gap: 0.3em;
+    font-family: var(--font-serif);
+    font-size: var(--fs-xl);
+    color: var(--color-ink);
+    padding: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
   }
 
-  .contact__submit svg {
+  .contact__submit-arrow {
+    font-weight: 300;
+    font-size: 0.9em;
     transition: transform var(--duration-base) var(--ease-out);
+    display: inline-block;
   }
 
   .contact__submit:hover {
-    background: var(--color-name);
+    opacity: 0.7;
   }
 
-  .contact__submit:hover svg {
-    transform: translateX(3px);
+  .contact__submit:hover .contact__submit-arrow {
+    transform: translateX(6px);
   }
-
 
   @media (min-width: 700px) {
     .contact__row {
       grid-template-columns: 1fr 1fr;
-    }
-    .contact__submit-row {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
     }
   }
 
@@ -336,9 +287,6 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
     .contact__inner {
       grid-template-columns: 0.9fr 1.1fr;
       gap: var(--sp-12);
-    }
-    .contact__form {
-      padding: var(--sp-6);
     }
   }
 </style>

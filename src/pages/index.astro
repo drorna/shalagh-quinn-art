@@ -1,30 +1,515 @@
 ---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Hero from "../components/Hero.astro";
-import About from "../components/About.astro";
-import SectionPreview from "../components/SectionPreview.astro";
-import ContactSection from "../components/ContactSection.astro";
-import { sections } from "../utils/galleries";
+
+import trustTheProcess from "../assets/images/home/trust-the-process.png";
+import handAbout from "../assets/images/home/hand-about.png";
+import handMurals from "../assets/images/home/hand-murals.png";
+import handPortraits from "../assets/images/home/hand-portraits.png";
+import handPrints from "../assets/images/home/hand-prints.png";
+import coverAbout from "../assets/images/home/cover-about.jpg";
+import coverMurals from "../assets/images/home/cover-murals.jpg";
+
+// 3-up preview images for portraits and prints (sorted by filename, take first 3)
+const portraitImports = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/assets/images/portraits/portrait-*.{jpg,jpeg,png}",
+  { eager: true }
+);
+const printImports = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/assets/images/prints/print-*.{jpg,jpeg,png}",
+  { eager: true }
+);
+const portraitPreviews = Object.entries(portraitImports)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .slice(0, 3)
+  .map(([, mod]) => mod.default);
+const printPreviews = Object.entries(printImports)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .slice(0, 3)
+  .map(([, mod]) => mod.default);
+
+const navLinks = [
+  { label: "about", href: "/about/" },
+  { label: "murals", href: "/murals/" },
+  { label: "portraits", href: "/portraits/" },
+  { label: "prints", href: "/prints/" },
+  // "writing" stays hidden — Drorna will reactivate when there's content.
+];
+
+const handles = [
+  "@shalagh",
+  "@thetimeapttern",
+  "@iseeloveinyoureyes",
+  "@slowlyrememberingwhy",
+];
+
+const sections = [
+  {
+    id: "about",
+    hand: handAbout,
+    handAlt: "about",
+    subtitle: "a trust in process",
+    cover: coverAbout,
+    coverAlt: "Drawing of a rainbow-colored figure crouching",
+    previews: null,
+    href: "/about/",
+  },
+  {
+    id: "murals",
+    hand: handMurals,
+    handAlt: "Murals",
+    subtitle: "the journey",
+    cover: coverMurals,
+    coverAlt: "Mural with green, yellow and pink flowing forms",
+    previews: null,
+    href: "/murals/",
+  },
+  {
+    id: "portraits",
+    hand: handPortraits,
+    handAlt: "Portraits",
+    subtitle: "the people",
+    cover: null,
+    coverAlt: "",
+    previews: portraitPreviews,
+    href: "/portraits/",
+  },
+  {
+    id: "prints",
+    hand: handPrints,
+    handAlt: "Prints",
+    subtitle: "the sale",
+    cover: null,
+    coverAlt: "",
+    previews: printPreviews,
+    href: "/prints/",
+  },
+];
 ---
 
-<BaseLayout
-  title="Shalagh Quinn — Murals, Painting, Portraits, Photography"
-  description=""
->
-  <Hero />
-  <About />
+<BaseLayout title="shalagh quinn" bare>
+  <div class="home">
+    <!-- Hero: trust the process (stars are baked into the artwork image) -->
+    <section class="home-hero" aria-labelledby="hero-title">
+      <a href="/upload/" class="home-hero__upload" aria-label="upload">
+        <span>UPLOAD</span><span class="home-hero__upload-plus">+</span>
+      </a>
 
-  <div id="work" class="work">
-    {sections.map((section, i) => (
-      <SectionPreview sectionKey={section.key} index={i} />
-    ))}
+      <h1 id="hero-title" class="home-hero__title">
+        <Image
+          src={trustTheProcess}
+          alt="trust the process"
+          widths={[480, 720, 960, 1200]}
+          sizes="(min-width: 900px) 860px, 86vw"
+          quality={92}
+          loading="eager"
+          class="home-hero__title-img"
+        />
+      </h1>
+    </section>
+
+    <!-- Identity row + top nav -->
+    <header class="home-meta" aria-label="primary">
+      <nav class="home-nav" aria-label="primary navigation">
+        {navLinks.map((link) => (
+          <a href={link.href} class="home-nav__link">{link.label}</a>
+        ))}
+      </nav>
+
+      <div class="home-identity">
+        <div class="home-identity__left">
+          <p class="home-identity__name">shalagh</p>
+          <p class="home-identity__pron">pronounced shay - la</p>
+        </div>
+
+        <div class="home-identity__right">
+          <a
+            href="https://instagram.com/shalagh"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="home-identity__contact"
+          >
+            <span class="home-identity__contact-label">contact</span>
+            <span class="home-identity__ig" aria-hidden="true">
+              <!-- placeholder for the artist-drawn instagram icon -->
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6">
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
+              </svg>
+            </span>
+          </a>
+          <ul class="home-identity__handles">
+            {handles.map((h) => (
+              <li>{h}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sections -->
+    <div class="home-sections">
+      {sections.map((s) => (
+        <section class="home-section" id={s.id} aria-labelledby={`${s.id}-title`}>
+          <div class="home-section__head">
+            <div class="home-section__title-block">
+              <a href={s.href} class="home-section__title-link" aria-label={s.handAlt}>
+                <Image
+                  src={s.hand}
+                  alt={s.handAlt}
+                  widths={[400, 600, 800]}
+                  sizes="(min-width: 900px) 460px, 60vw"
+                  quality={92}
+                  loading="lazy"
+                  id={`${s.id}-title`}
+                  class:list={["home-section__hand", `home-section__hand--${s.id}`]}
+                />
+              </a>
+              <p class="home-section__subtitle">{s.subtitle}</p>
+            </div>
+            <a href={s.href} class="home-section__enter">
+              enter <span aria-hidden="true">&gt;</span>
+            </a>
+          </div>
+
+          {s.cover && (
+            <a href={s.href} class="home-section__cover-link" aria-label={s.handAlt}>
+              <Image
+                src={s.cover}
+                alt={s.coverAlt}
+                widths={[600, 900, 1200, 1600]}
+                sizes="(min-width: 900px) 720px, 90vw"
+                quality={86}
+                loading="lazy"
+                class="home-section__cover"
+              />
+            </a>
+          )}
+
+          {s.previews && s.previews.length > 0 && (
+            <a href={s.href} class="home-section__previews" aria-label={s.handAlt}>
+              {s.previews.map((p) => (
+                <Image
+                  src={p}
+                  alt=""
+                  widths={[300, 500, 700, 900]}
+                  sizes="(min-width: 900px) 30vw, 30vw"
+                  quality={84}
+                  loading="lazy"
+                  class="home-section__preview-img"
+                />
+              ))}
+            </a>
+          )}
+        </section>
+      ))}
+    </div>
   </div>
-
-  <ContactSection />
 </BaseLayout>
 
 <style>
-  .work {
-    padding-top: var(--sp-4);
+  /* =========================================================
+     Home — mint background, ink display
+     ========================================================= */
+
+  :global(body.is-bare) {
+    background: var(--color-mint);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  .home {
+    min-height: 100vh;
+    background: var(--color-mint);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Hero ---------- */
+
+  .home-hero {
+    position: relative;
+    min-height: min(100svh, 900px);
+    padding: clamp(var(--sp-4), 6vw, var(--sp-8)) var(--sp-4) var(--sp-6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .home-hero__upload {
+    position: absolute;
+    top: var(--sp-3);
+    right: var(--sp-4);
+    font-family: var(--font-sans);
+    font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--color-ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    text-transform: uppercase;
+  }
+
+  .home-hero__upload-plus {
+    font-weight: 400;
+    font-size: 1.1em;
+    line-height: 1;
+  }
+
+  .home-hero__title {
+    margin: 0;
+    width: min(86vw, 860px);
+    line-height: 0;
+  }
+
+  .home-hero__title-img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ---------- Top nav + identity ---------- */
+
+  .home-meta {
+    padding: var(--sp-3) var(--sp-4) var(--sp-6);
+    max-width: 1280px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .home-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    font-family: "Times New Roman", Times, serif;
+    font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+    font-weight: 400;
+    color: var(--color-ink);
+    margin-bottom: var(--sp-6);
+    padding-inline: clamp(0px, 2vw, var(--sp-3));
+  }
+
+  .home-nav__link {
+    position: relative;
+    padding-bottom: 2px;
+  }
+
+  .home-nav__link::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 1px;
+    background: var(--color-ink);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  .home-nav__link:hover::after {
+    transform: scaleX(1);
+  }
+
+  .home-identity {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: var(--sp-4);
+  }
+
+  .home-identity__left {
+    text-align: left;
+  }
+
+  .home-identity__name {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .home-identity__pron {
+    margin: 4px 0 0;
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(0.95rem, 1.3vw, 1.1rem);
+    color: var(--color-ink);
+  }
+
+  .home-identity__right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--sp-2);
+    text-align: right;
+  }
+
+  .home-identity__contact {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-weight: 600;
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+    color: var(--color-ink);
+  }
+
+  .home-identity__contact-label {
+    line-height: 1;
+  }
+
+  .home-identity__ig {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: #fff;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-ink);
+  }
+
+  .home-identity__ig svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .home-identity__handles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+    color: var(--color-ink);
+    line-height: 1.7;
+  }
+
+  /* ---------- Sections ---------- */
+
+  .home-sections {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 var(--sp-4) var(--sp-12);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+  }
+
+  .home-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+  }
+
+  .home-section__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+  }
+
+  .home-section__title-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    max-width: 75%;
+  }
+
+  .home-section__title-link {
+    display: inline-block;
+    line-height: 0;
+  }
+
+  .home-section__subtitle {
+    margin: 0;
+    font-family: "Times New Roman", Times, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+    color: var(--color-ink);
+  }
+
+  .home-section__hand {
+    display: block;
+    height: auto;
+    width: auto;
+    max-width: 100%;
+  }
+
+  .home-section__hand--about {
+    max-height: clamp(80px, 11vw, 140px);
+  }
+
+  .home-section__hand--murals,
+  .home-section__hand--portraits,
+  .home-section__hand--prints {
+    max-height: clamp(60px, 8vw, 110px);
+  }
+
+  .home-section__enter {
+    font-family: var(--font-sans);
+    font-size: clamp(1.3rem, 2vw, 1.75rem);
+    font-weight: 600;
+    color: var(--color-ink);
+    white-space: nowrap;
+  }
+
+  .home-section__cover-link {
+    display: block;
+    width: min(100%, 720px);
+    align-self: center;
+  }
+
+  .home-section__cover {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* 3-up preview strip for portraits/prints */
+  .home-section__previews {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
+    width: 100%;
+    align-self: stretch;
+  }
+
+  @media (min-width: 700px) {
+    .home-section__previews {
+      gap: var(--sp-3);
+    }
+  }
+
+  .home-section__preview-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    aspect-ratio: 3 / 4;
+  }
+
+  /* ---------- Responsive tweaks ---------- */
+
+  @media (min-width: 700px) {
+    .home-hero {
+      padding: var(--sp-5) var(--sp-8);
+    }
+    .home-meta {
+      padding: var(--sp-4) var(--sp-8) var(--sp-8);
+    }
+    .home-sections {
+      padding: 0 var(--sp-8) var(--sp-16);
+      gap: var(--sp-12);
+    }
   }
 </style>

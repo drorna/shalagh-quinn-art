@@ -1,0 +1,146 @@
+---
+import { Image } from "astro:assets";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { countries, getCountryView } from "../../../utils/murals";
+
+export async function getStaticPaths() {
+  return countries.map((c) => ({ params: { country: c.slug } }));
+}
+
+const { country: slug } = Astro.params;
+const view = getCountryView(slug as string);
+
+if (!view) {
+  throw new Error(`Unknown country slug: ${slug}`);
+}
+
+const { country, groups } = view;
+---
+
+<BaseLayout title={`${country.displayName} murals — shalagh quinn`} bare>
+  <div class="country-page">
+    <header class="country-page__header">
+      <a href="/murals/" class="country-page__back" aria-label="back to murals">
+        <span aria-hidden="true">&lt;</span>
+      </a>
+      <h1 class="country-page__title">{country.displayName}</h1>
+    </header>
+
+    {groups.map((g) => (
+      <section class="country-page__group">
+        {g.label && <h2 class="country-page__group-label">{g.label}</h2>}
+        <div class="country-page__grid">
+          {g.images.map((img) => (
+            <figure class="country-page__figure">
+              <Image
+                src={img.src}
+                alt={img.alt}
+                widths={[400, 700, 1000, 1400, 1800]}
+                sizes="(min-width: 1100px) 540px, (min-width: 700px) 45vw, 90vw"
+                quality={84}
+                loading="lazy"
+                class="country-page__img"
+              />
+            </figure>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</BaseLayout>
+
+<style>
+  :global(body.is-bare) {
+    background: #000;
+    color: #fff;
+    font-family: var(--font-sans);
+  }
+
+  .country-page {
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(var(--sp-4), 5vw, var(--sp-8)) clamp(var(--sp-3), 4vw, var(--sp-8)) var(--sp-16);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .country-page__header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-3);
+    margin: 0 0 var(--sp-8);
+  }
+
+  .country-page__back {
+    display: inline-block;
+    color: #fff;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1;
+    opacity: 0.85;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .country-page__back:hover { opacity: 1; }
+
+  .country-page__title {
+    margin: 0;
+    color: #fff;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .country-page__group {
+    margin-bottom: var(--sp-12);
+  }
+
+  .country-page__group-label {
+    margin: 0 0 var(--sp-4);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+    line-height: 1.3;
+  }
+
+  /* Masonry-style: each image keeps its natural ratio,
+     columns flow independently. No forced grid rows, no black fill. */
+  .country-page__grid {
+    column-count: 1;
+    column-gap: var(--sp-3);
+  }
+
+  @media (min-width: 700px) {
+    .country-page__grid {
+      column-count: 2;
+      column-gap: var(--sp-4);
+    }
+  }
+
+  .country-page__figure {
+    margin: 0 0 var(--sp-3);
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+    overflow: hidden;
+  }
+
+  @media (min-width: 700px) {
+    .country-page__figure { margin-bottom: var(--sp-4); }
+  }
+
+  .country-page__img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

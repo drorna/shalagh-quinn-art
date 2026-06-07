@@ -1,237 +1,183 @@
 ---
 import { Image } from "astro:assets";
-import { galleries, sections, type GalleryKey } from "../utils/galleries";
+import { galleries, slideshows, sections, type GalleryKey } from "../utils/galleries";
 
 interface Props {
   sectionKey: GalleryKey;
-  index: number;
-  previewCount?: number;
 }
 
-const { sectionKey, index, previewCount = 4 } = Astro.props;
+const { sectionKey } = Astro.props;
 const meta = sections.find((s) => s.key === sectionKey)!;
-const items = galleries[sectionKey].slice(0, previewCount);
-const isReversed = index % 2 === 1;
-const isEmpty = items.length === 0;
+
+const fallback = galleries[sectionKey].slice(0, 1);
+const slides = slideshows[sectionKey] ?? fallback;
+const isCycling = slides.length > 1;
 ---
 
-<section
-  class:list={["section-preview", { "section-preview--reversed": isReversed, "section-preview--empty": isEmpty }]}
-  data-section={sectionKey}
-  style={`--accent: ${meta.accentVar};`}
+<a
+  href={meta.href}
+  class="section-preview reveal"
   id={sectionKey}
+  aria-label={meta.title}
 >
-  <div class="container section-preview__inner">
-    <header class="section-preview__head reveal">
-      <h2 class="section-preview__title">{meta.title}</h2>
-      <p class="section-preview__desc">{meta.description}</p>
-
-      <a href={meta.href} class="section-preview__cta">
-        <span>Explore the {meta.title.toLowerCase()}</span>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </a>
-    </header>
-
-    {!isEmpty && (
-      <div class="section-preview__grid reveal">
-        {items.map((item, i) => (
-          <a href={meta.href} class={`section-preview__tile section-preview__tile--${i + 1}`}>
-            <Image
-              src={item.src}
-              alt={item.alt}
-              widths={[320, 480, 720, 960]}
-              sizes="(min-width: 1100px) 22vw, (min-width: 700px) 40vw, 90vw"
-              quality={80}
-              loading="lazy"
-              class="section-preview__img"
-            />
-          </a>
-        ))}
-      </div>
-    )}
-
-    {isEmpty && (
-      <div class="section-preview__placeholder reveal">
-        <span class="section-preview__placeholder-icon" aria-hidden="true">◷</span>
-        <p>New work for this section is being added soon.</p>
-        <a href={meta.href} class="section-preview__placeholder-link">
-          View the section page
-        </a>
-      </div>
-    )}
+  <div
+    class="section-preview__stage"
+    data-cycle={isCycling ? "true" : "false"}
+    data-count={slides.length}
+  >
+    {slides.map((item, i) => (
+      <Image
+        src={item.src}
+        alt={item.alt}
+        widths={[400, 600, 900, 1200]}
+        sizes="(min-width: 1100px) 33vw, (min-width: 700px) 50vw, 95vw"
+        quality={84}
+        loading={i === 0 ? "eager" : "lazy"}
+        class:list={[
+          "section-preview__image",
+          { "is-active": i === 0 },
+        ]}
+        data-slide-index={i}
+      />
+    ))}
   </div>
-</section>
+
+  <div class="section-preview__overlay">
+    <h2 class="section-preview__title">
+      {meta.title}
+      <span class="section-preview__arrow" aria-hidden="true">›</span>
+    </h2>
+  </div>
+</a>
 
 <style>
   .section-preview {
-    padding-block: var(--sp-12);
-    border-top: 1px solid var(--color-line-soft);
-  }
-
-  .section-preview:first-of-type {
-    border-top: 0;
-    padding-top: var(--sp-16);
-  }
-
-  .section-preview__inner {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--sp-8);
-    align-items: start;
-  }
-
-  .section-preview__head {
-    align-self: start;
-    max-width: 420px;
-  }
-
-  .section-preview__title {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    color: var(--accent);
-    font-size: clamp(2.75rem, 6vw, 5rem);
-    line-height: 0.95;
-    letter-spacing: -0.02em;
-    margin: 0 0 var(--sp-3);
-  }
-
-  .section-preview__desc {
-    font-family: var(--font-body);
-    font-size: var(--fs-md);
-    line-height: 1.6;
-    color: var(--color-ink-soft);
-    margin: 0 0 var(--sp-4);
-    max-width: 42ch;
-  }
-
-  .section-preview__cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--font-meta);
-    font-size: var(--fs-sm);
-    font-weight: 500;
-    color: var(--color-ink);
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--accent);
-    transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
-  }
-
-  .section-preview__cta svg {
-    transition: transform var(--duration-base) var(--ease-out);
-  }
-
-  .section-preview__cta:hover {
-    color: var(--accent);
-  }
-
-  .section-preview__cta:hover svg {
-    transform: translateX(4px);
-  }
-
-  .section-preview__grid {
-    display: grid;
-    gap: var(--sp-2);
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: minmax(140px, auto);
-  }
-
-  .section-preview__tile {
     position: relative;
+    display: block;
+    width: 100%;
     overflow: hidden;
-    background: var(--color-paper-warm);
-    aspect-ratio: 1 / 1;
+    background: var(--color-paper);
   }
 
-  .section-preview__tile--1 {
-    grid-column: span 2;
-    aspect-ratio: 4 / 3;
+  .section-preview__stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 5 / 4;
+    overflow: hidden;
+    background: var(--color-paper);
   }
 
-  .section-preview__img {
+  .section-preview__image {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.9s var(--ease-out), filter var(--duration-base) var(--ease-out);
-    will-change: transform;
+    object-position: center;
+    opacity: 0;
+    transition: opacity 900ms var(--ease-out), transform 1.2s var(--ease-out);
+    will-change: opacity;
   }
 
-  .section-preview__tile:hover .section-preview__img {
-    transform: scale(1.04);
+  .section-preview__image.is-active {
+    opacity: 1;
   }
 
-  .section-preview__placeholder {
-    border: 1px dashed var(--color-line);
-    padding: var(--sp-8) var(--sp-4);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--sp-2);
-    text-align: center;
-    background: var(--color-paper-warm);
-    min-height: 280px;
+  .section-preview:hover .section-preview__image.is-active {
+    transform: scale(1.03);
   }
 
-  .section-preview__placeholder-icon {
-    font-family: var(--font-display);
-    font-size: 2.5rem;
-    color: var(--accent);
-    opacity: 0.6;
-  }
-
-  .section-preview__placeholder p {
-    margin: 0;
-    font-family: var(--font-body);
-    font-style: italic;
-    color: var(--color-ink-soft);
-  }
-
-  .section-preview__placeholder-link {
-    font-family: var(--font-meta);
-    font-size: var(--fs-sm);
-    color: var(--accent);
-    border-bottom: 1px solid var(--accent);
-    padding-bottom: 2px;
+  .section-preview__overlay {
+    position: absolute;
+    inset: auto auto 0 0;
+    padding: var(--sp-3);
+    z-index: 2;
+    pointer-events: none;
   }
 
   @media (min-width: 900px) {
-    .section-preview__inner {
-      grid-template-columns: 0.9fr 1.4fr;
-      gap: var(--sp-8);
+    .section-preview__overlay {
+      padding: var(--sp-4);
     }
-
-    .section-preview__head {
-      position: sticky;
-      top: var(--sp-12);
-    }
-
-    .section-preview__grid {
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(2, minmax(180px, 1fr));
-      grid-template-areas:
-        "a a b"
-        "a a c"
-        "d d c";
-      gap: var(--sp-2);
-    }
-    .section-preview__tile { aspect-ratio: auto; }
-    .section-preview__tile--1 { grid-area: a; aspect-ratio: auto; }
-    .section-preview__tile--2 { grid-area: b; }
-    .section-preview__tile--3 { grid-area: c; }
-    .section-preview__tile--4 { grid-area: d; }
-
-    .section-preview--reversed .section-preview__inner {
-      grid-template-columns: 1.4fr 0.9fr;
-    }
-    .section-preview--reversed .section-preview__head { order: 2; }
-    .section-preview--reversed .section-preview__grid { order: 1; }
   }
 
-  @media (min-width: 1200px) {
-    .section-preview { padding-block: var(--sp-16); }
+  .section-preview__title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    color: var(--color-ink);
+    font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25em;
+    text-shadow:
+      0 0 12px rgba(244, 243, 237, 0.7),
+      0 0 28px rgba(244, 243, 237, 0.5);
+  }
+
+  .section-preview__arrow {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    font-size: 0.9em;
+    line-height: 1;
+    transition: transform var(--duration-base) var(--ease-out);
+    display: inline-block;
+  }
+
+  .section-preview:hover .section-preview__arrow {
+    transform: translateX(6px);
   }
 </style>
+
+<script>
+  const stages = document.querySelectorAll<HTMLElement>(
+    '.section-preview__stage[data-cycle="true"]'
+  );
+
+  const INTERVAL_MS = 2500;
+
+  stages.forEach((stage) => {
+    const slides = Array.from(
+      stage.querySelectorAll<HTMLElement>(".section-preview__image")
+    );
+    if (slides.length < 2) return;
+
+    let current = 0;
+    let timer: number | null = null;
+
+    const tick = () => {
+      slides[current]?.classList.remove("is-active");
+      current = (current + 1) % slides.length;
+      slides[current]?.classList.add("is-active");
+    };
+
+    const start = () => {
+      if (timer !== null) return;
+      timer = window.setInterval(tick, INTERVAL_MS);
+    };
+
+    const stop = () => {
+      if (timer === null) return;
+      window.clearInterval(timer);
+      timer = null;
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) start();
+          else stop();
+        });
+      },
+      { threshold: 0.15 }
+    );
+    io.observe(stage);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stop();
+      else if (stage.getBoundingClientRect().top < window.innerHeight) start();
+    });
+  });
+</script>

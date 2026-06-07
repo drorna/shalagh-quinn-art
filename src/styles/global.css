@@ -1,47 +1,47 @@
 /* =========================================================
-   Design System
+   Design System — warm white minimal serif
    ========================================================= */
 
 :root {
-  /* Dark theme */
-  --color-paper: #0c0a08;
-  --color-paper-warm: #15110d;
-  --color-ink: #f4eee2;
-  --color-ink-soft: #c5bcaf;
-  --color-ink-mute: #8a7f72;
+  /* Palette — paper white, near-black ink */
+  --color-paper: #f4f3ed;
+  --color-paper-soft: #ecebe4;
+  --color-paper-deep: #dedcd2;
+  --color-ink: #0d0d0d;
+  --color-ink-soft: #2a2622;
+  --color-ink-mute: #6a655d;
 
-  --color-name: #d8546b;           /* lifted burgundy/rose for dark bg */
-  --color-brand: #f1c543;          /* warm sunny yellow — header brand */
-  --color-murals: #9bbf6c;          /* brighter sage */
-  --color-painting: #d96a96;        /* brighter rose-magenta */
-  --color-portraits: #e8dcc8;       /* warm cream */
-  --color-photography: #df8253;     /* brighter sienna */
+  --color-line: rgba(13, 13, 13, 0.14);
+  --color-line-soft: rgba(13, 13, 13, 0.08);
 
-  --color-line: rgba(244, 238, 226, 0.14);
-  --color-line-soft: rgba(244, 238, 226, 0.06);
+  /* Home palette — mint background sampled from the design PDF */
+  --color-mint: #e0f2e1;
+  --color-mint-deep: #c9e3cc;
 
-  /* Typography */
-  --font-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-  --font-body: "Lora", "EB Garamond", Georgia, serif;
-  --font-meta: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Typography — Cormorant Garamond carries the whole system */
+  --font-serif: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+  --font-body: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+  --font-meta: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
 
   /* Type scale */
-  --fs-xs: 0.75rem;
-  --fs-sm: 0.875rem;
-  --fs-base: 1rem;
-  --fs-md: 1.125rem;
-  --fs-lg: 1.375rem;
-  --fs-xl: 1.875rem;
-  --fs-2xl: 2.5rem;
-  --fs-3xl: 3.5rem;
-  --fs-4xl: 5rem;
-  --fs-5xl: 7.5rem;
+  --fs-xs: 0.8rem;
+  --fs-sm: 0.95rem;
+  --fs-base: 1.05rem;
+  --fs-md: 1.2rem;
+  --fs-lg: 1.5rem;
+  --fs-xl: 2rem;
+  --fs-2xl: 3rem;
+  --fs-3xl: 4.5rem;
+  --fs-4xl: 6.5rem;
+  --fs-5xl: 9rem;
 
-  /* Spacing scale (8px base) */
+  /* Spacing scale */
   --sp-1: 0.5rem;
   --sp-2: 1rem;
   --sp-3: 1.5rem;
   --sp-4: 2rem;
+  --sp-5: 2.5rem;
   --sp-6: 3rem;
   --sp-8: 4rem;
   --sp-12: 6rem;
@@ -52,13 +52,14 @@
   /* Layout */
   --container: 1280px;
   --container-narrow: 880px;
+  --container-wide: 1480px;
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --duration-fast: 200ms;
   --duration-base: 400ms;
-  --duration-slow: 700ms;
+  --duration-slow: 800ms;
 }
 
 /* =========================================================
@@ -85,7 +86,7 @@ body {
   color: var(--color-ink);
   font-family: var(--font-body);
   font-size: var(--fs-base);
-  line-height: 1.6;
+  line-height: 1.5;
   font-weight: 400;
   overflow-x: hidden;
 }
@@ -118,25 +119,31 @@ select {
   font: inherit;
 }
 
+::selection {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
 /* =========================================================
-   Typographic helpers
+   Typography helpers
    ========================================================= */
 
-.display {
-  font-family: var(--font-display);
-  font-style: italic;
+.serif {
+  font-family: var(--font-serif);
   font-weight: 400;
-  letter-spacing: -0.01em;
-  line-height: 1.05;
+  letter-spacing: -0.005em;
+}
+
+.italic {
+  font-style: italic;
 }
 
 .eyebrow {
-  font-family: var(--font-meta);
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--color-ink-mute);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  color: var(--color-ink-soft);
 }
 
 /* =========================================================
@@ -145,17 +152,17 @@ select {
 
 .container {
   width: 100%;
-  max-width: var(--container);
+  max-width: 1600px;
   margin: 0 auto;
-  padding-inline: var(--sp-4);
+  padding-inline: var(--sp-3);
 }
 
 @media (min-width: 768px) {
-  .container { padding-inline: var(--sp-8); }
+  .container { padding-inline: var(--sp-6); }
 }
 
 @media (min-width: 1200px) {
-  .container { padding-inline: var(--sp-12); }
+  .container { padding-inline: var(--sp-8); }
 }
 
 /* =========================================================
@@ -164,7 +171,7 @@ select {
 
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
+  transform: translateY(20px);
   transition:
     opacity var(--duration-slow) var(--ease-out),
     transform var(--duration-slow) var(--ease-out);

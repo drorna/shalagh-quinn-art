@@ -1,107 +1,118 @@
-<section class="about" id="about" aria-labelledby="about-title">
-  <div class="container about__inner">
-    <p class="eyebrow about__eyebrow reveal">About</p>
+---
+import { Image } from "astro:assets";
+import aboutCover from "../assets/images/about-cover.png";
+---
 
-    <h2 id="about-title" class="about__heading reveal">a trust in time.</h2>
+<section class="about-preview" id="about" aria-labelledby="about-title">
+  <div class="container">
+    <a href="/about/" class="about-preview__link reveal" aria-label="about">
+      <div class="about-preview__stage">
+        <Image
+          src={aboutCover}
+          alt="An abstract painting of waves of yellow, green and pink"
+          widths={[720, 1100, 1440, 1920, 2400]}
+          sizes="(min-width: 1100px) min(1600px, 90vw), 100vw"
+          quality={86}
+          loading="eager"
+          class="about-preview__image"
+        />
+      </div>
 
-    <div class="about__body reveal">
-      <p>
-        my creation is fueled by a fascination with time. I am curious what
-        happens when we learn to trust in the creative process and see where
-        it takes us. Everything I create is an expression of the moment.
-      </p>
-      <p>
-        This is a space to share the journey of my creative work and my
-        offerings with the people I meet.
-      </p>
-    </div>
-
-    <p class="about__follow reveal">
-      follow my journey online to further explore the intertwining dance
-      between time and creation&hellip;
-      <a href="https://instagram.com/shalagh" target="_blank" rel="noopener noreferrer" class="about__handle">
-        @shalagh
-      </a>
-    </p>
+      <div class="about-preview__overlay">
+        <h2 id="about-title" class="about-preview__title">
+          about
+          <span class="about-preview__arrow" aria-hidden="true">›</span>
+        </h2>
+      </div>
+    </a>
   </div>
 </section>
 
 <style>
-  .about {
-    padding-block: var(--sp-12) var(--sp-12);
+  .about-preview {
+    padding-block: var(--sp-4) 0;
   }
 
-  .about__inner {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--sp-4);
-    max-width: 880px;
-    margin: 0 auto;
+  .about-preview__link {
+    position: relative;
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    background: var(--color-paper);
   }
 
-  .about__eyebrow {
-    margin: 0;
-    color: var(--color-name);
+  /* Mobile: square-ish; desktop: cinematic wide hero */
+  .about-preview__stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--color-paper);
   }
 
-  .about__heading {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    color: var(--color-name);
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    margin: 0 0 var(--sp-3);
-  }
-
-  .about__body {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--sp-3);
-    max-width: 60ch;
-  }
-
-  .about__body p {
-    margin: 0;
-    font-family: var(--font-body);
-    font-size: clamp(1.05rem, 1.4vw, 1.35rem);
-    line-height: 1.65;
-    color: var(--color-ink-soft);
-  }
-
-  .about__follow {
-    margin: var(--sp-6) 0 0;
-    font-family: var(--font-body);
-    font-style: italic;
-    font-size: clamp(1rem, 1.3vw, 1.2rem);
-    line-height: 1.6;
-    color: var(--color-ink-soft);
-    max-width: 60ch;
-  }
-
-  .about__handle {
-    display: inline-block;
-    margin-left: 6px;
-    color: var(--color-name);
-    font-style: italic;
-    font-weight: 500;
-    border-bottom: 1px solid currentColor;
-    padding-bottom: 1px;
-    transition:
-      color var(--duration-fast) var(--ease-out),
-      border-color var(--duration-fast) var(--ease-out);
-    text-decoration: none;
-  }
-
-  .about__handle:hover {
-    color: var(--color-brand);
-    border-bottom-color: var(--color-brand);
-  }
-
-  @media (min-width: 700px) {
-    .about__inner {
-      gap: var(--sp-5);
+  @media (min-width: 900px) {
+    .about-preview__stage {
+      aspect-ratio: 16 / 9;
     }
+  }
+
+  @media (min-width: 1400px) {
+    .about-preview__stage {
+      aspect-ratio: 21 / 9;
+    }
+  }
+
+  .about-preview__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 1.2s var(--ease-out);
+  }
+
+  .about-preview__link:hover .about-preview__image {
+    transform: scale(1.02);
+  }
+
+  .about-preview__overlay {
+    position: absolute;
+    inset: auto auto 0 0;
+    padding: var(--sp-3) var(--sp-4);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  @media (min-width: 900px) {
+    .about-preview__overlay {
+      padding: var(--sp-5) var(--sp-6);
+    }
+  }
+
+  .about-preview__title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    color: var(--color-ink);
+    font-size: clamp(2rem, 5vw, 4rem);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25em;
+    text-shadow:
+      0 0 14px rgba(244, 243, 237, 0.7),
+      0 0 32px rgba(244, 243, 237, 0.5);
+  }
+
+  .about-preview__arrow {
+    font-weight: 300;
+    font-size: 0.9em;
+    line-height: 1;
+    transition: transform var(--duration-base) var(--ease-out);
+    display: inline-block;
+  }
+
+  .about-preview__link:hover .about-preview__arrow {
+    transform: translateX(6px);
   }
 </style>

@@ -5,75 +5,53 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 <BaseLayout
   title="Thank you — Shalagh Quinn"
   description="Your message was sent successfully."
-  hideContactLink={true}
 >
   <section class="thanks">
     <div class="container thanks__inner">
-      <p class="eyebrow thanks__eyebrow">Message received</p>
-
-      <h1 class="thanks__title">
-        Thank you.<br />
-        <span>I&rsquo;ll be in touch soon.</span>
-      </h1>
-
-      <p class="thanks__lede">
-        Your message has been sent. I read everything personally and
-        usually reply within a few days.
+      <h1 class="thanks__title">thank you.</h1>
+      <p class="thanks__lede italic">
+        your message has been sent. I read everything personally and usually
+        reply within a few days.
       </p>
 
       <div class="thanks__actions">
-        <a href="/" class="thanks__btn thanks__btn--primary">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>Back to home</span>
+        <a href="/" class="thanks__link">
+          <span class="thanks__arrow" aria-hidden="true">‹</span>
+          <span>back to home</span>
         </a>
-        <a href="/#work" class="thanks__btn thanks__btn--ghost">Browse the work</a>
+        <a href="/#work" class="thanks__link">
+          <span>browse the work</span>
+          <span class="thanks__arrow" aria-hidden="true">›</span>
+        </a>
       </div>
-
     </div>
   </section>
 </BaseLayout>
 
 <style>
   .thanks {
-    min-height: calc(100vh - 200px);
-    padding-top: calc(var(--sp-20) + var(--sp-4));
-    padding-bottom: var(--sp-16);
+    min-height: 60vh;
+    padding-block: var(--sp-12) var(--sp-16);
     display: flex;
     align-items: center;
   }
 
   .thanks__inner {
-    max-width: 720px;
-    margin: 0 auto;
-    text-align: left;
-  }
-
-  .thanks__eyebrow {
-    margin: 0 0 var(--sp-3);
-    color: var(--color-name);
+    max-width: 640px;
   }
 
   .thanks__title {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
+    font-family: var(--font-serif);
+    font-weight: 400;
     color: var(--color-ink);
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    margin: 0 0 var(--sp-4);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    margin: 0 0 var(--sp-3);
     font-size: clamp(2.5rem, 7vw, 5rem);
   }
 
-  .thanks__title span {
-    color: var(--color-ink-soft);
-    display: block;
-    margin-top: 0.15em;
-  }
-
   .thanks__lede {
-    font-family: var(--font-body);
+    font-family: var(--font-serif);
     font-size: var(--fs-md);
     line-height: 1.6;
     color: var(--color-ink-soft);
@@ -84,49 +62,38 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .thanks__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sp-2);
+    gap: var(--sp-4);
   }
 
-  .thanks__btn {
+  .thanks__link {
     display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0.85rem 1.4rem;
-    font-family: var(--font-meta);
-    font-size: var(--fs-sm);
-    font-weight: 500;
-    border-radius: 999px;
-    transition:
-      background-color var(--duration-fast) var(--ease-out),
-      color var(--duration-fast) var(--ease-out),
-      border-color var(--duration-fast) var(--ease-out);
-  }
-
-  .thanks__btn--primary {
-    background: var(--color-ink);
-    color: var(--color-paper);
-  }
-
-  .thanks__btn--primary:hover {
-    background: var(--color-name);
-  }
-
-  .thanks__btn--ghost {
-    border: 1px solid var(--color-line);
-    color: var(--color-ink-soft);
-  }
-
-  .thanks__btn--ghost:hover {
-    border-color: var(--color-ink);
+    align-items: baseline;
+    gap: 0.3em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--fs-md);
     color: var(--color-ink);
+    border-bottom: 1px solid var(--color-line);
+    padding-bottom: 2px;
+    transition: border-color var(--duration-fast) var(--ease-out);
   }
 
-  .thanks__btn svg {
+  .thanks__link:hover {
+    border-bottom-color: var(--color-ink);
+  }
+
+  .thanks__arrow {
+    font-weight: 300;
+    font-style: normal;
     transition: transform var(--duration-base) var(--ease-out);
+    display: inline-block;
   }
 
-  .thanks__btn--primary:hover svg {
-    transform: translateX(-2px);
+  .thanks__link:hover .thanks__arrow {
+    transform: translateX(4px);
   }
 
+  .thanks__link:first-child:hover .thanks__arrow {
+    transform: translateX(-4px);
+  }
 </style>

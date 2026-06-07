@@ -29,40 +29,25 @@ const idx = sections.findIndex((s) => s.key === sectionKey);
 const next = sections[(idx + 1) % sections.length];
 ---
 
-<section
-  class="gallery-hero"
-  style={`--accent: ${meta.accentVar};`}
->
-  <div class="container gallery-hero__inner">
+<section class="gallery-hero">
+  <div class="container">
     <h1 class="gallery-hero__title reveal">{meta.title}</h1>
-    <p class="gallery-hero__desc reveal">{meta.description}</p>
-
-    <div class="gallery-hero__meta reveal">
-      <span>{items.length} {items.length === 1 ? "work" : "works"}</span>
-      <span aria-hidden="true">·</span>
-      <a href="/#contact">Commission a {meta.title.toLowerCase().replace(/s$/, "")}</a>
-    </div>
   </div>
 </section>
 
 {isEmpty ? (
   <section class="gallery-empty container">
     <div class="gallery-empty__inner reveal">
-      <span class="gallery-empty__icon" aria-hidden="true">◷</span>
-      <h2>This collection is being prepared.</h2>
-      <p>
-        New work for the {meta.title.toLowerCase()} section will be added here soon.
-        In the meantime, browse the other collections or get in touch.
-      </p>
+      <p>this collection is being prepared. new work will be added here soon.</p>
       <div class="gallery-empty__links">
-        <a href="/" class="gallery-empty__link">← Back to home</a>
-        <a href="/#contact" class="gallery-empty__link gallery-empty__link--accent">Get in touch</a>
+        <a href="/" class="gallery-empty__link">← back to home</a>
+        <a href="/#contact" class="gallery-empty__link">get in touch</a>
       </div>
     </div>
   </section>
 ) : (
-  <section class="gallery container">
-    <div class="gallery__grid" data-lightbox-grid style={`--accent: ${meta.accentVar};`}>
+  <section class="gallery">
+    <div class="gallery__grid" data-lightbox-grid>
       {items.map((item, i) => (
         <button
           class="gallery__item reveal"
@@ -78,7 +63,7 @@ const next = sections[(idx + 1) % sections.length];
             src={item.src}
             alt={item.alt}
             widths={[400, 640, 960, 1280]}
-            sizes="(min-width: 1100px) 30vw, (min-width: 700px) 45vw, 95vw"
+            sizes="(min-width: 1100px) 33vw, (min-width: 700px) 50vw, 100vw"
             quality={82}
             loading={i < 4 ? "eager" : "lazy"}
             class="gallery__img"
@@ -116,13 +101,10 @@ const next = sections[(idx + 1) % sections.length];
 )}
 
 <section class="gallery-next">
-  <div class="container gallery-next__inner">
-    <a href={next.href} class="gallery-next__link" style={`--accent: ${next.accentVar};`}>
-      <span class="eyebrow">Next collection</span>
+  <div class="container">
+    <a href={next.href} class="gallery-next__link">
       <span class="gallery-next__title">{next.title}</span>
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <span class="gallery-next__arrow" aria-hidden="true">›</span>
     </a>
   </div>
 </section>
@@ -130,71 +112,36 @@ const next = sections[(idx + 1) % sections.length];
 <style>
   /* Hero */
   .gallery-hero {
-    padding-top: calc(var(--sp-20) + var(--sp-2));
-    padding-bottom: var(--sp-8);
-    border-bottom: 1px solid var(--color-line-soft);
-  }
-
-  .gallery-hero__inner {
-    max-width: 760px;
+    padding-block: var(--sp-4) var(--sp-6);
   }
 
   .gallery-hero__title {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    color: var(--accent);
-    font-size: clamp(3rem, 8vw, 6rem);
-    line-height: 0.95;
-    letter-spacing: -0.02em;
-    margin: 0 0 var(--sp-3);
-  }
-
-  .gallery-hero__desc {
-    font-family: var(--font-body);
-    font-size: var(--fs-md);
-    line-height: 1.6;
-    color: var(--color-ink-soft);
-    margin: 0 0 var(--sp-4);
-    max-width: 56ch;
-  }
-
-  .gallery-hero__meta {
-    display: flex;
-    gap: var(--sp-2);
-    align-items: center;
-    flex-wrap: wrap;
-    font-family: var(--font-meta);
-    font-size: var(--fs-sm);
-    color: var(--color-ink-mute);
-  }
-
-  .gallery-hero__meta a {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-style: normal;
     color: var(--color-ink);
-    border-bottom: 1px solid var(--accent);
-    padding-bottom: 2px;
-    transition: color var(--duration-fast) var(--ease-out);
+    font-size: clamp(2.75rem, 7vw, 5rem);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    margin: 0;
   }
 
-  .gallery-hero__meta a:hover {
-    color: var(--accent);
-  }
-
-  /* Grid */
+  /* Grid — masonry by columns */
   .gallery {
-    padding-block: var(--sp-8);
+    padding-block: 0 var(--sp-8);
   }
 
   .gallery__grid {
     columns: 1;
     column-gap: var(--sp-2);
+    padding-inline: var(--sp-3);
   }
 
   .gallery__item {
     margin: 0 0 var(--sp-2);
     break-inside: avoid;
     overflow: hidden;
-    background: var(--color-paper-warm);
+    background: var(--color-paper-soft);
     cursor: zoom-in;
     padding: 0;
     border: 0;
@@ -203,22 +150,8 @@ const next = sections[(idx + 1) % sections.length];
     position: relative;
   }
 
-  .gallery__item::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(26, 22, 20, 0);
-    transition: background-color var(--duration-base) var(--ease-out);
-    pointer-events: none;
-  }
-
-  .gallery__item:hover::after,
-  .gallery__item:focus-visible::after {
-    background: rgba(26, 22, 20, 0.06);
-  }
-
   .gallery__item:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--color-ink);
     outline-offset: 4px;
   }
 
@@ -226,7 +159,7 @@ const next = sections[(idx + 1) % sections.length];
     width: 100%;
     height: auto;
     display: block;
-    transition: transform 0.9s var(--ease-out), filter var(--duration-base) var(--ease-out);
+    transition: transform 0.9s var(--ease-out);
   }
 
   .gallery__item:hover .gallery__img {
@@ -241,7 +174,7 @@ const next = sections[(idx + 1) % sections.length];
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(20, 17, 14, 0.96);
+    background: rgba(13, 13, 13, 0.92);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     opacity: 0;
@@ -287,16 +220,16 @@ const next = sections[(idx + 1) % sections.length];
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(250, 246, 239, 0.85);
+    color: rgba(244, 243, 237, 0.85);
     border-radius: 999px;
-    background: rgba(250, 246, 239, 0.08);
+    background: rgba(244, 243, 237, 0.08);
     transition:
       background-color var(--duration-fast) var(--ease-out),
       color var(--duration-fast) var(--ease-out);
   }
 
   .lightbox__close:hover {
-    background: rgba(250, 246, 239, 0.16);
+    background: rgba(244, 243, 237, 0.16);
     color: var(--color-paper);
   }
 
@@ -309,9 +242,9 @@ const next = sections[(idx + 1) % sections.length];
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(250, 246, 239, 0.85);
+    color: rgba(244, 243, 237, 0.85);
     border-radius: 999px;
-    background: rgba(250, 246, 239, 0.08);
+    background: rgba(244, 243, 237, 0.08);
     transition:
       background-color var(--duration-fast) var(--ease-out),
       color var(--duration-fast) var(--ease-out),
@@ -319,17 +252,12 @@ const next = sections[(idx + 1) % sections.length];
   }
 
   .lightbox__nav:hover {
-    background: rgba(250, 246, 239, 0.16);
+    background: rgba(244, 243, 237, 0.16);
     color: var(--color-paper);
   }
 
-  .lightbox__nav--prev {
-    left: var(--sp-2);
-  }
-
-  .lightbox__nav--next {
-    right: var(--sp-2);
-  }
+  .lightbox__nav--prev { left: var(--sp-2); }
+  .lightbox__nav--next { right: var(--sp-2); }
 
   .lightbox__nav--prev:hover { transform: translateY(-50%) translateX(-2px); }
   .lightbox__nav--next:hover { transform: translateY(-50%) translateX(2px); }
@@ -338,11 +266,10 @@ const next = sections[(idx + 1) % sections.length];
     position: absolute;
     inset: auto auto var(--sp-3) 50%;
     transform: translateX(-50%);
-    font-family: var(--font-meta);
-    font-size: var(--fs-xs);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(250, 246, 239, 0.7);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--fs-sm);
+    color: rgba(244, 243, 237, 0.7);
   }
 
   @media (min-width: 768px) {
@@ -353,7 +280,6 @@ const next = sections[(idx + 1) % sections.length];
     .lightbox__nav--next { right: var(--sp-3); }
   }
 
-  /* Body scroll lock when lightbox open (applied via JS to <html>) */
   :global(html.lightbox-open) {
     overflow: hidden;
   }
@@ -361,9 +287,9 @@ const next = sections[(idx + 1) % sections.length];
   @media (min-width: 700px) {
     .gallery__grid {
       columns: 2;
-      column-gap: var(--sp-3);
+      column-gap: var(--sp-2);
     }
-    .gallery__item { margin-bottom: var(--sp-3); }
+    .gallery__item { margin-bottom: var(--sp-2); }
   }
 
   @media (min-width: 1100px) {
@@ -371,6 +297,7 @@ const next = sections[(idx + 1) % sections.length];
       columns: 3;
       column-gap: var(--sp-3);
     }
+    .gallery__item { margin-bottom: var(--sp-3); }
   }
 
   /* Empty state */
@@ -383,30 +310,12 @@ const next = sections[(idx + 1) % sections.length];
     max-width: 520px;
     margin: 0 auto;
     padding: var(--sp-8) var(--sp-4);
-    border: 1px dashed var(--color-line);
-    background: var(--color-paper-warm);
-  }
-
-  .gallery-empty__icon {
-    font-family: var(--font-display);
-    font-size: 3rem;
-    color: var(--color-ink-mute);
-    display: block;
-    margin-bottom: var(--sp-2);
-  }
-
-  .gallery-empty__inner h2 {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    font-size: var(--fs-xl);
-    color: var(--color-ink);
-    margin: 0 0 var(--sp-2);
   }
 
   .gallery-empty__inner p {
-    font-family: var(--font-body);
-    font-size: var(--fs-base);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--fs-md);
     line-height: 1.6;
     color: var(--color-ink-soft);
     margin: 0 0 var(--sp-4);
@@ -420,8 +329,9 @@ const next = sections[(idx + 1) % sections.length];
   }
 
   .gallery-empty__link {
-    font-family: var(--font-meta);
-    font-size: var(--fs-sm);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--fs-base);
     color: var(--color-ink);
     border-bottom: 1px solid var(--color-line);
     padding-bottom: 2px;
@@ -432,47 +342,38 @@ const next = sections[(idx + 1) % sections.length];
     border-bottom-color: var(--color-ink);
   }
 
-  .gallery-empty__link--accent {
-    color: var(--color-name);
-    border-bottom-color: var(--color-name);
-  }
-
   /* Next */
   .gallery-next {
-    padding-block: var(--sp-12);
+    padding-block: var(--sp-8) var(--sp-12);
     border-top: 1px solid var(--color-line-soft);
+    margin-top: var(--sp-8);
   }
 
   .gallery-next__link {
     display: inline-flex;
-    align-items: center;
-    gap: var(--sp-3);
-    color: var(--accent);
-    transition: gap var(--duration-base) var(--ease-out);
+    align-items: baseline;
+    gap: 0.3em;
+    color: var(--color-ink);
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1;
+    transition: opacity var(--duration-fast) var(--ease-out);
   }
 
   .gallery-next__link:hover {
-    gap: var(--sp-4);
+    opacity: 0.65;
   }
 
-  .gallery-next__link .eyebrow {
-    color: var(--color-ink-mute);
-  }
-
-  .gallery-next__title {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1;
-  }
-
-  .gallery-next__link svg {
+  .gallery-next__arrow {
+    font-weight: 300;
+    font-size: 0.85em;
     transition: transform var(--duration-base) var(--ease-out);
+    display: inline-block;
   }
 
-  .gallery-next__link:hover svg {
-    transform: translateX(6px);
+  .gallery-next__link:hover .gallery-next__arrow {
+    transform: translateX(8px);
   }
 </style>
 

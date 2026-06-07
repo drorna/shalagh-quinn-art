@@ -1,11 +1,229 @@
 ---
+import { Image } from "astro:assets";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import GalleryView from "../../components/GalleryView.astro";
+import { allCountryViews } from "../../utils/murals";
+import handMurals from "../../assets/images/murals/_hand-murals.png";
+
+const countries = allCountryViews();
+
+// Flatten countries into individual tiles for the mosaic.
+// Each country contributes its cover (with label) + secondary (no label).
+// All tiles link to the country page.
+type Tile = {
+  src: any;
+  alt: string;
+  href: string;
+  labelText?: string;  // present only on the cover tile of each country
+};
+
+const tiles: Tile[] = countries.flatMap((c) => {
+  const list: Tile[] = [];
+  if (c.cover) {
+    list.push({
+      src: c.cover.src,
+      alt: c.cover.alt,
+      href: `/murals/${c.country.slug}/`,
+      labelText: c.country.displayName,
+    });
+  }
+  if (c.secondary) {
+    list.push({
+      src: c.secondary.src,
+      alt: c.secondary.alt,
+      href: `/murals/${c.country.slug}/`,
+    });
+  }
+  return list;
+});
 ---
 
-<BaseLayout
-  title="Murals — Shalagh Quinn"
-  description="Large-scale murals by Shalagh Quinn for homes, businesses and public spaces."
->
-  <GalleryView sectionKey="murals" />
+<BaseLayout title="murals — shalagh quinn" bare>
+  <div class="murals-page">
+    <a href="/" class="murals-page__back" aria-label="back home">
+      <span aria-hidden="true">&lt;</span>
+    </a>
+
+    <!-- Intro: handwritten title + journey + paragraph -->
+    <section class="murals-intro">
+      <h1 class="murals-intro__title">
+        <Image
+          src={handMurals}
+          alt="Murals"
+          widths={[400, 600, 800]}
+          sizes="(min-width: 900px) 320px, 55vw"
+          quality={92}
+          loading="eager"
+          class="murals-intro__title-img"
+        />
+      </h1>
+
+      <p class="murals-intro__journey">the jounrey</p>
+
+      <div class="murals-intro__copy">
+        <p>since 2020 I have been travelling and painitng walls through exchanges.</p>
+        <p>I have let the art be my guide moving me through many wordls painting cafes, restuaurants, hostels, and guesthouses.</p>
+        <p class="murals-intro__copy-end">enjoy the journey</p>
+      </div>
+    </section>
+
+    <!-- 3-col (desktop) / 2-col (mobile) masonry. Each country contributes 2 tiles;
+         only the cover tile shows its country label. -->
+    <section class="murals-grid" aria-label="countries">
+      {tiles.map((t) => (
+        <a
+          href={t.href}
+          class:list={["murals-tile", { "murals-tile--has-label": !!t.labelText }]}
+          aria-label={t.labelText || t.alt}
+        >
+          <Image
+            src={t.src}
+            alt={t.alt}
+            widths={[400, 600, 900, 1200]}
+            sizes="(min-width: 1000px) 32vw, (min-width: 600px) 47vw, 90vw"
+            quality={82}
+            loading="lazy"
+            class="murals-tile__img"
+          />
+          {t.labelText && (
+            <span class="murals-tile__label">
+              {t.labelText}
+              <span class="murals-tile__arrow" aria-hidden="true">&gt;</span>
+            </span>
+          )}
+        </a>
+      ))}
+    </section>
+  </div>
 </BaseLayout>
+
+<style>
+  :global(body.is-bare) {
+    background: #000;
+    color: #fff;
+    font-family: var(--font-sans);
+  }
+
+  .murals-page {
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(var(--sp-4), 5vw, var(--sp-8)) clamp(var(--sp-3), 4vw, var(--sp-8)) var(--sp-16);
+    position: relative;
+  }
+
+  .murals-page__back {
+    position: absolute;
+    top: clamp(var(--sp-3), 4vw, var(--sp-6));
+    left: clamp(var(--sp-3), 4vw, var(--sp-6));
+    color: #fff;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    line-height: 1;
+    opacity: 0.85;
+    transition: opacity var(--duration-fast) var(--ease-out);
+    z-index: 5;
+  }
+
+  .murals-page__back:hover { opacity: 1; }
+
+  /* ---------- Intro typography (Times New Roman) ---------- */
+  .murals-intro {
+    max-width: 720px;
+    margin: 0 auto var(--sp-8);
+  }
+
+  .murals-intro__title {
+    margin: 0 0 var(--sp-4);
+    line-height: 0;
+  }
+
+  .murals-intro__title-img {
+    width: clamp(220px, 32vw, 360px);
+    height: auto;
+    filter: invert(1);
+  }
+
+  .murals-intro__journey {
+    margin: 0 0 var(--sp-5);
+    font-family: "Times New Roman", Times, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+    color: #fff;
+  }
+
+  .murals-intro__copy {
+    font-family: "Times New Roman", Times, serif;
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+    font-weight: 400;
+    line-height: 1.6;
+    color: #fff;
+    max-width: 40ch;
+  }
+
+  .murals-intro__copy p { margin: 0 0 var(--sp-3); }
+  .murals-intro__copy-end { margin-top: var(--sp-4) !important; }
+
+  /* ---------- 3-col masonry (same engine as portraits) ---------- */
+  .murals-grid {
+    column-count: 2;
+    column-gap: clamp(var(--sp-2), 1vw, var(--sp-3));
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 1000px) {
+    .murals-grid {
+      column-count: 3;
+      column-gap: clamp(var(--sp-3), 1.4vw, var(--sp-4));
+    }
+  }
+
+  .murals-tile {
+    position: relative;
+    display: block;
+    margin: 0 0 clamp(var(--sp-2), 1vw, var(--sp-3));
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+    overflow: hidden;
+    line-height: 0;
+    color: #fff;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  @media (min-width: 1000px) {
+    .murals-tile { margin-bottom: clamp(var(--sp-3), 1.4vw, var(--sp-4)); }
+  }
+
+  .murals-tile__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: opacity var(--duration-base) var(--ease-out);
+  }
+
+  .murals-tile:hover .murals-tile__img { opacity: 0.9; }
+
+  .murals-tile__label {
+    position: absolute;
+    inset: auto var(--sp-3) var(--sp-3) auto;
+    color: #fff;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 2.6vw, 2.4rem);
+    line-height: 1;
+    text-align: right;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+  }
+
+  .murals-tile__arrow {
+    display: block;
+    margin-top: 6px;
+    font-weight: 700;
+  }
+</style>

@@ -1,11 +1,152 @@
 ---
+import { Image } from "astro:assets";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import GalleryView from "../../components/GalleryView.astro";
+import type { ImageMetadata } from "astro";
+import handPortraits from "../../assets/images/portraits/_hand-portraits.png";
+
+const imports = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/assets/images/portraits/*.{jpg,jpeg,JPG,JPEG,png,PNG,webp}",
+  { eager: true }
+);
+
+const portraits = Object.entries(imports)
+  .filter(([path]) => !path.includes("/_")) // skip underscored utility assets (handwriting, etc.)
+  .map(([path, mod]) => ({
+    src: mod.default,
+    filename: (path.split("/").pop() || "image").trim(),
+  }))
+  .sort((a, b) => a.filename.localeCompare(b.filename));
 ---
 
-<BaseLayout
-  title="Portraits — Shalagh Quinn"
-  description="Painted portraiture by Shalagh Quinn — likenesses from life and from photographs."
->
-  <GalleryView sectionKey="portraits" />
+<BaseLayout title="portraits — shalagh quinn" bare>
+  <div class="portraits-page">
+    <a href="/" class="portraits-page__back" aria-label="back home">
+      <span aria-hidden="true">&lt;</span>
+    </a>
+
+    <header class="portraits-page__header">
+      <h1 class="portraits-page__title">
+        <Image
+          src={handPortraits}
+          alt="Portraits"
+          widths={[400, 600, 800]}
+          sizes="(min-width: 900px) 460px, 60vw"
+          quality={92}
+          loading="eager"
+          class="portraits-page__title-img"
+        />
+      </h1>
+    </header>
+
+    <section class="portraits-grid" aria-label="portraits gallery">
+      {portraits.map((p) => (
+        <figure class="portraits-grid__figure">
+          <Image
+            src={p.src}
+            alt={p.filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ")}
+            widths={[400, 600, 900, 1200]}
+            sizes="(min-width: 1000px) 32vw, (min-width: 600px) 47vw, 90vw"
+            quality={82}
+            loading="lazy"
+            class="portraits-grid__img"
+          />
+        </figure>
+      ))}
+    </section>
+  </div>
 </BaseLayout>
+
+<style>
+  :global(body.is-bare) {
+    background: #000;
+    color: #fff;
+    font-family: var(--font-sans);
+  }
+
+  .portraits-page {
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(var(--sp-4), 5vw, var(--sp-8)) clamp(var(--sp-3), 4vw, var(--sp-8)) var(--sp-16);
+    position: relative;
+  }
+
+  .portraits-page__back {
+    position: absolute;
+    top: clamp(var(--sp-3), 4vw, var(--sp-6));
+    left: clamp(var(--sp-3), 4vw, var(--sp-6));
+    color: #fff;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    line-height: 1;
+    opacity: 0.85;
+    transition: opacity var(--duration-fast) var(--ease-out);
+    z-index: 5;
+  }
+
+  .portraits-page__back:hover { opacity: 1; }
+
+  .portraits-page__header {
+    max-width: 1280px;
+    margin: 0 auto var(--sp-8);
+    padding-top: var(--sp-4);
+  }
+
+  .portraits-page__title {
+    margin: 0;
+    line-height: 0;
+    text-align: left;
+  }
+
+  .portraits-page__title-img {
+    width: clamp(220px, 38vw, 420px);
+    height: auto;
+    /* Black ink handwriting becomes white on the black background */
+    filter: invert(1);
+  }
+
+  /* ---------- Mosaic grid (CSS columns masonry) ----------
+     2 columns on mobile, 3 on desktop. Each image keeps its natural
+     aspect ratio so the columns flow like a photo wall. */
+  .portraits-grid {
+    column-count: 2;
+    column-gap: clamp(var(--sp-2), 1vw, var(--sp-3));
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 1000px) {
+    .portraits-grid {
+      column-count: 3;
+      column-gap: clamp(var(--sp-3), 1.4vw, var(--sp-4));
+    }
+  }
+
+  .portraits-grid__figure {
+    margin: 0 0 clamp(var(--sp-2), 1vw, var(--sp-3));
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+    overflow: hidden;
+  }
+
+  @media (min-width: 1000px) {
+    .portraits-grid__figure {
+      margin-bottom: clamp(var(--sp-3), 1.4vw, var(--sp-4));
+    }
+  }
+
+  .portraits-grid__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: opacity var(--duration-base) var(--ease-out);
+  }
+
+  .portraits-grid__figure:hover .portraits-grid__img {
+    opacity: 0.88;
+  }
+</style>

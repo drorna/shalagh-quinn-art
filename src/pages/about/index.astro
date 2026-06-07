@@ -1,0 +1,209 @@
+---
+import { Image } from "astro:assets";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+// Drawing of the yoga figure — Drorna's Layer 5 PNG with transparent background.
+import yogaImg from "../../assets/images/about/yoga-figure.png";
+// Handwritten title "its about TIME" — cropped from Drorna's design screenshot.
+import titleImg from "../../assets/images/about/hand-its-about-time.png";
+---
+
+<BaseLayout title="about — shalagh quinn" bare>
+  <div class="about-page">
+    <a href="/" class="about-page__back" aria-label="back home">
+      <span aria-hidden="true">&lt;</span>
+    </a>
+
+    <article class="about-page__inner">
+      <!-- Figure floats to the right at the top of the article; the story
+           wraps around it on the left and continues full-width below. -->
+      <figure class="about-page__figure">
+        <Image
+          src={yogaImg}
+          alt="figure in a yoga pose with colourful raised hands"
+          widths={[400, 600, 800, 1000]}
+          sizes="(min-width: 800px) 36vw, 70vw"
+          quality={92}
+          loading="eager"
+          format="png"
+          class="about-page__figure-img"
+        />
+      </figure>
+
+      <h1 class="about-page__title">
+        <Image
+          src={titleImg}
+          alt="its about TIME"
+          widths={[300, 500, 700]}
+          sizes="(min-width: 800px) 280px, 55vw"
+          quality={92}
+          loading="eager"
+          format="png"
+          class="about-page__title-img"
+        />
+      </h1>
+
+      <p class="about-page__subtitle">a trust in process</p>
+
+      <div class="about-page__story">
+        <p class="about-page__story-stanza">
+          when I was 23<br />
+          I had a vision
+        </p>
+
+        <p class="about-page__story-quote">
+          enjoy the process of learning about<br />
+          yourself in everything you do
+        </p>
+
+        <p>
+          it came at a time in my life when I need to let go of controlling my time.
+          I was dealing with an addiction to an adhd medication that left me obessed
+          with perfecting my world, planning my time, and making the most of it all -
+          but disconnected  from my body.
+        </p>
+
+        <p>
+          Yoga helped connected me back to my body and returned the memory
+          that life was a an unknown unfolding process meant to follow
+        </p>
+
+        <p>
+          for the rest of my twenties,<br />
+          each day I have followed this unknown unfolding process<br />
+          as it has taken me around the world.
+        </p>
+
+        <p class="about-page__story-tail">
+          follow the jounrey...<br />
+          <a href="/murals/" class="about-page__forward">mural</a>
+        </p>
+      </div>
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  :global(body.is-bare) {
+    background: #000;
+    color: #fff;
+    font-family: var(--font-sans);
+  }
+
+  .about-page {
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(var(--sp-4), 5vw, var(--sp-8)) clamp(var(--sp-3), 4vw, var(--sp-8)) var(--sp-16);
+    position: relative;
+  }
+
+  .about-page__back {
+    position: absolute;
+    top: clamp(var(--sp-3), 4vw, var(--sp-6));
+    left: clamp(var(--sp-3), 4vw, var(--sp-6));
+    color: #fff;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    line-height: 1;
+    opacity: 0.85;
+    transition: opacity var(--duration-fast) var(--ease-out);
+    z-index: 5;
+  }
+
+  .about-page__back:hover { opacity: 1; }
+
+  .about-page__inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-top: clamp(var(--sp-4), 4vw, var(--sp-6));
+  }
+
+  /* Clearfix so the article wraps around the floated figure cleanly */
+  .about-page__inner::after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+
+  /* ---------- Figure (floats right; text wraps around it) ---------- */
+  .about-page__figure {
+    margin: 0 0 var(--sp-3) var(--sp-4);
+    float: right;
+    width: clamp(220px, 38vw, 360px);
+  }
+
+  @media (max-width: 600px) {
+    .about-page__figure {
+      float: none;
+      margin: 0 auto var(--sp-4);
+      width: min(70vw, 280px);
+    }
+  }
+
+  .about-page__figure-img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* ---------- Title (handwritten image) ---------- */
+  .about-page__title {
+    margin: 0;
+    line-height: 0;
+  }
+
+  .about-page__title-img {
+    width: clamp(180px, 26vw, 280px);
+    height: auto;
+    display: block;
+  }
+
+  .about-page__subtitle {
+    margin: var(--sp-3) 0 var(--sp-4);
+    font-family: "Times New Roman", Times, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+    color: #fff;
+  }
+
+  /* ---------- Story text ---------- */
+  .about-page__story {
+    font-family: "Times New Roman", Times, serif;
+    font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+    line-height: 1.55;
+    color: #fff;
+    /* No flex column — paragraphs need to flow naturally so they wrap
+       around the floated figure and then continue full-width below. */
+  }
+
+  .about-page__story p { margin: 0 0 var(--sp-3); }
+
+  .about-page__story-stanza {
+    line-height: 1.4;
+  }
+
+  .about-page__story-quote {
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .about-page__story-tail {
+    margin-top: var(--sp-3);
+    line-height: 1.55;
+  }
+
+  .about-page__forward {
+    color: #fff;
+    font-family: "Times New Roman", Times, serif;
+    font-style: italic;
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .about-page__forward:hover { border-bottom-color: #fff; }
+</style>

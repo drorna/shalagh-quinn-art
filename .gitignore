@@ -21,6 +21,7 @@ pnpm-debug.log*
 # IDE
 .vscode/
 .idea/
+.claude/
 
 # Source images (working files, not for deployment)
 source-images/
