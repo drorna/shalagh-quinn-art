@@ -182,18 +182,53 @@ function applyTileStyle(el: HTMLElement, t: MuralTile) {
 
 function resizeCanvasHeight() {
   if (!canvas) return;
-  // canvas width is known (responsive). We want the canvas tall enough
-  // so the bottom-most tile is visible. Tiles are in %, so the bottom
-  // edge in % is max(y + h). Convert to pixels: bottomPct% × canvasHeight.
-  // But canvasHeight is what we're computing!
-  // Trick: choose a base canvas aspect ratio (canvasW * RATIO) and ensure
-  // it fits all tiles. We use 16:10 as base.
+  // Canvas grows to fit the bottom-most tile plus headroom, but never shrinks
+  // below the editor's working height. Headroom is one viewport so the user
+  // always has empty space to drop new tiles into below the existing wall.
   const baseW = canvas.getBoundingClientRect().width;
+  const baseFloor = Math.max(CANVAS_MIN_HEIGHT_PX, window.innerHeight * 1.5);
   const bottomPct = tiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
-  // baseline height = width * 0.7. If content is taller, grow.
-  const ratio = Math.max(0.7, bottomPct / 100 + 0.05);
-  const px = Math.max(CANVAS_MIN_HEIGHT_PX, Math.round(baseW * ratio));
-  canvas.style.height = `${px}px`;
+  // Current canvas height in px (may be 0 on first call)
+  const currentH = canvas.getBoundingClientRect().height || baseFloor;
+  // Pixel position of the bottom-most tile inside the current canvas
+  const bottomPx = (bottomPct / 100) * currentH;
+  // We want at least (one viewport) of room below the bottom tile
+  const desired = Math.max(baseFloor, bottomPx + window.innerHeight);
+  canvas.style.height = `${Math.round(desired)}px`;
+}
+
+/**
+ * Auto-scroll the page when the cursor approaches the top/bottom edge of the
+ * viewport during a drag or resize. Kept running on a rAF loop while the
+ * caller is actively dragging.
+ */
+let autoScrollY = 0;
+let autoScrollRaf: number | null = null;
+function setAutoScroll(clientY: number) {
+  const edge = 80;     // px from edge to start scrolling
+  const maxSpeed = 24; // px per frame at the very edge
+  if (clientY < edge) {
+    autoScrollY = -Math.round(((edge - clientY) / edge) * maxSpeed);
+  } else if (clientY > window.innerHeight - edge) {
+    autoScrollY = Math.round(((clientY - (window.innerHeight - edge)) / edge) * maxSpeed);
+  } else {
+    autoScrollY = 0;
+  }
+  if (autoScrollY !== 0 && autoScrollRaf === null) {
+    const tick = () => {
+      if (autoScrollY === 0) { autoScrollRaf = null; return; }
+      window.scrollBy(0, autoScrollY);
+      autoScrollRaf = requestAnimationFrame(tick);
+    };
+    autoScrollRaf = requestAnimationFrame(tick);
+  }
+}
+function stopAutoScroll() {
+  autoScrollY = 0;
+  if (autoScrollRaf !== null) {
+    cancelAnimationFrame(autoScrollRaf);
+    autoScrollRaf = null;
+  }
 }
 
 /* ============================================================
@@ -290,17 +325,24 @@ function attachEditHandlers(el: HTMLElement, t: MuralTile) {
         selectTile(t.id);
       }
       if (dragging) {
-        const dxPct = (dx / canvasRect.width) * 100;
-        const dyPct = (dy / canvasRect.height) * 100;
+        // Re-read the canvas rect every move — its height may have grown
+        const cr = canvas!.getBoundingClientRect();
+        const dxPct = (dx / cr.width) * 100;
+        const dyPct = (dy / cr.height) * 100;
         t.x = clamp(startLeft + dxPct, 0, 100 - t.w);
         t.y = Math.max(0, startTop + dyPct);
         el.style.left = `${t.x}%`;
         el.style.top = `${t.y}%`;
+        // Grow the canvas live so dragging downward extends the page
+        resizeCanvasHeight();
+        // Auto-scroll the viewport when near top/bottom
+        setAutoScroll(ev.clientY);
       }
     };
     const onUp = async () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
+      stopAutoScroll();
       if (!dragging) {
         // Plain click → select
         selectTile(t.id);
@@ -369,10 +411,14 @@ function bindResize(
       tileEl.style.height = `${t.h}%`;
       // Sync side-panel sliders if open
       syncPanelSliders(t);
+      // Grow canvas + auto-scroll near edges (matches drag behaviour)
+      resizeCanvasHeight();
+      setAutoScroll(ev.clientY);
     };
     const onUp = async () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
+      stopAutoScroll();
       await upsertTile(t);
       resizeCanvasHeight();
     };
