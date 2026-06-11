@@ -31,8 +31,10 @@ let tiles: MuralTile[] = [];
 let editMode = false;
 let selectedId: string | null = null;
 let topZ = 1;
+let pageSlug: string = "home";
 
-export function initMuralsBoard(): void {
+export function initMuralsBoard(slug: string = "home"): void {
+  pageSlug = slug;
   if (typeof window === "undefined") return;
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
@@ -117,7 +119,7 @@ async function boot() {
 }
 
 async function loadAndRender() {
-  tiles = await fetchTiles();
+  tiles = await fetchTiles(pageSlug);
   // Initialise topZ from existing tiles' order_idx (used as z-index)
   topZ = tiles.reduce((m, t) => Math.max(m, t.order_idx || 0), 0) + 1;
   render();
@@ -141,11 +143,25 @@ function render() {
   refreshSelection();
 }
 
+/** Derive an automatic href when a label is set but no href is. */
+function autoHrefFor(t: MuralTile): string | null {
+  if (t.href) return t.href;
+  if (!t.label) return null;
+  const slug = t.label
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return slug ? `/murals/${slug}/` : null;
+}
+
 function buildTileEl(t: MuralTile): HTMLElement {
-  const el = document.createElement(t.href && !editMode ? "a" : "div") as HTMLElement;
+  const effectiveHref = autoHrefFor(t);
+  const el = document.createElement(effectiveHref && !editMode ? "a" : "div") as HTMLElement;
   el.className = "mural-tile";
   el.dataset.id = t.id;
-  if (t.href && !editMode) (el as HTMLAnchorElement).href = t.href;
+  if (effectiveHref && !editMode) (el as HTMLAnchorElement).href = effectiveHref;
   // In edit mode the outer tile must allow overflow (handles live outside).
   // The image is clipped by an inner wrapper.
   if (editMode) el.style.overflow = "visible";
@@ -230,20 +246,33 @@ function resizeCanvasHeight() {
  */
 let autoScrollY = 0;
 let autoScrollRaf: number | null = null;
-function setAutoScroll(clientY: number) {
-  const edge = 80;     // px from edge to start scrolling
-  const maxSpeed = 24; // px per frame at the very edge
+let lastDragClientX = 0;
+let lastDragClientY = 0;
+let onAutoScrollTick: (() => void) | null = null;
+function setAutoScroll(clientY: number, onTick?: () => void) {
+  // Wider trigger zone + much higher peak speed.
+  // Curve is quadratic so the edge ramps up aggressively but it's gentle
+  // in the middle of the trigger band.
+  const edge = 160;      // px from edge to start
+  const maxSpeed = 60;   // px per frame at the very edge
+  let speed = 0;
   if (clientY < edge) {
-    autoScrollY = -Math.round(((edge - clientY) / edge) * maxSpeed);
+    const t = (edge - clientY) / edge;          // 0..1
+    speed = -Math.round(t * t * maxSpeed);
   } else if (clientY > window.innerHeight - edge) {
-    autoScrollY = Math.round(((clientY - (window.innerHeight - edge)) / edge) * maxSpeed);
-  } else {
-    autoScrollY = 0;
+    const t = (clientY - (window.innerHeight - edge)) / edge;
+    speed = Math.round(t * t * maxSpeed);
   }
+  autoScrollY = speed;
+  if (onTick) onAutoScrollTick = onTick;
+  lastDragClientY = clientY;
   if (autoScrollY !== 0 && autoScrollRaf === null) {
     const tick = () => {
       if (autoScrollY === 0) { autoScrollRaf = null; return; }
       window.scrollBy(0, autoScrollY);
+      // Run the caller's callback so the dragged tile follows the scroll
+      // without needing more mouse movement.
+      if (onAutoScrollTick) onAutoScrollTick();
       autoScrollRaf = requestAnimationFrame(tick);
     };
     autoScrollRaf = requestAnimationFrame(tick);
@@ -251,6 +280,7 @@ function setAutoScroll(clientY: number) {
 }
 function stopAutoScroll() {
   autoScrollY = 0;
+  onAutoScrollTick = null;
   if (autoScrollRaf !== null) {
     cancelAnimationFrame(autoScrollRaf);
     autoScrollRaf = null;
@@ -338,9 +368,9 @@ function attachEditHandlers(el: HTMLElement, t: MuralTile) {
     // Begin a tentative drag. If movement < 3px → treat as click.
     const startX = e.clientX;
     const startY = e.clientY;
+    const scrollAtStart = window.scrollY;
     const startLeft = t.x;
     const startTop = t.y;
-    const canvasRect = canvas!.getBoundingClientRect();
     let dragging = false;
 
     const onMove = (ev: MouseEvent) => {
@@ -351,18 +381,27 @@ function attachEditHandlers(el: HTMLElement, t: MuralTile) {
         selectTile(t.id);
       }
       if (dragging) {
-        const cr = canvas!.getBoundingClientRect();
-        // Both axes are now percentages of canvas WIDTH so movement is
-        // computed against width for both directions.
-        const dxPct = (dx / cr.width) * 100;
-        const dyPct = (dy / cr.width) * 100;
-        t.x = clamp(startLeft + dxPct, 0, 100 - t.w);
-        t.y = Math.max(0, startTop + dyPct);
-        el.style.left = `${t.x}%`;
-        el.style.top = `${(t.y / 100) * cr.width}px`;
-        resizeCanvasHeight();
-        setAutoScroll(ev.clientY);
+        moveTile(ev.clientX, ev.clientY);
       }
+    };
+    // Recompute position using a given mouse client coordinate. Called both
+    // by mousemove and by the auto-scroll loop (when the cursor is parked
+    // near an edge and the page is scrolling under it).
+    const moveTile = (clientX: number, clientY: number) => {
+      lastDragClientX = clientX;
+      lastDragClientY = clientY;
+      const cr = canvas!.getBoundingClientRect();
+      // dx/dy in pixels: account for page scroll that happened during the drag
+      const dx = clientX - startX;
+      const dy = (clientY + window.scrollY) - (startY + scrollAtStart);
+      const dxPct = (dx / cr.width) * 100;
+      const dyPct = (dy / cr.width) * 100;
+      t.x = clamp(startLeft + dxPct, 0, 100 - t.w);
+      t.y = Math.max(0, startTop + dyPct);
+      el.style.left = `${t.x}%`;
+      el.style.top = `${(t.y / 100) * cr.width}px`;
+      resizeCanvasHeight();
+      setAutoScroll(clientY, () => moveTile(lastDragClientX, lastDragClientY));
     };
     const onUp = async () => {
       window.removeEventListener("mousemove", onMove);
@@ -392,17 +431,23 @@ function bindResize(
     e.stopPropagation();
     const startX = e.clientX;
     const startY = e.clientY;
+    const scrollAtStart = window.scrollY;
     const startLeft = t.x;
     const startTop = t.y;
     const startW = t.w;
     const startH = t.h;
-    const canvasRect = canvas!.getBoundingClientRect();
     const aspect = startW / startH;
 
     const onMove = (ev: MouseEvent) => {
-      // Both axes are % of canvas WIDTH (decoupled from canvas height).
-      const dxPct = ((ev.clientX - startX) / canvasRect.width) * 100;
-      const dyPct = ((ev.clientY - startY) / canvasRect.width) * 100;
+      runResize(ev.clientX, ev.clientY, ev.shiftKey);
+    };
+    const runResize = (clientX: number, clientY: number, shiftKey: boolean) => {
+      const canvasRect = canvas!.getBoundingClientRect();
+      // dy includes page-scroll that happened mid-resize
+      const dx = clientX - startX;
+      const dy = (clientY + window.scrollY) - (startY + scrollAtStart);
+      const dxPct = (dx / canvasRect.width) * 100;
+      const dyPct = (dy / canvasRect.width) * 100;
       let newL = startLeft, newT = startTop, newW = startW, newH = startH;
 
       if (dir.includes("e")) newW = Math.max(MIN_TILE_PCT, startW + dxPct);
@@ -411,7 +456,7 @@ function bindResize(
       if (dir.includes("n")) { newH = Math.max(MIN_TILE_PCT, startH - dyPct); newT = startTop + (startH - newH); }
 
       // Shift = keep aspect ratio (corner only)
-      if (ev.shiftKey && (dir === "nw" || dir === "ne" || dir === "se" || dir === "sw")) {
+      if (shiftKey && (dir === "nw" || dir === "ne" || dir === "se" || dir === "sw")) {
         // Match the dominant axis change
         if (Math.abs(newW - startW) > Math.abs(newH - startH)) {
           const desiredH = newW / aspect;
@@ -440,7 +485,9 @@ function bindResize(
       syncPanelSliders(t);
       // Grow canvas + auto-scroll near edges (matches drag behaviour)
       resizeCanvasHeight();
-      setAutoScroll(ev.clientY);
+      setAutoScroll(clientY, () => runResize(lastDragClientX, lastDragClientY, shiftKey));
+      lastDragClientX = clientX;
+      lastDragClientY = clientY;
     };
     const onUp = async () => {
       window.removeEventListener("mousemove", onMove);
@@ -531,20 +578,27 @@ async function addImage(file: File) {
   const up = await uploadImageFile(file);
   if (!up) { alert("Upload failed. See console."); return; }
 
-  // Read the natural size so the tile matches the image's aspect ratio.
-  // Since both w and h are % of canvas WIDTH, the conversion is trivial:
-  // h_percent_of_width = w_percent_of_width * (naturalH / naturalW).
   const { naturalW, naturalH } = await readImageSize(up.src);
   const w = DEFAULT_TILE_PCT;
-  let h = Math.max(MIN_TILE_PCT, w * (naturalH / naturalW));
+  const h = Math.max(MIN_TILE_PCT, w * (naturalH / naturalW));
+
+  // Place the new tile at the user's current viewport, not at the top.
+  // Convert "viewport center" → tile y in % of canvas width.
+  const canvasRect = canvas!.getBoundingClientRect();
+  const viewportCenterAbs = window.scrollY + window.innerHeight / 2;
+  const canvasTopAbs = window.scrollY + canvasRect.top;
+  const offsetIntoCanvasPx = viewportCenterAbs - canvasTopAbs - (h / 100) * canvasRect.width / 2;
+  const yPct = Math.max(0, (offsetIntoCanvasPx / canvasRect.width) * 100);
+  // Centre horizontally
+  const xPct = Math.max(0, (100 - w) / 2);
 
   topZ += 1;
   const t: MuralTile = {
     id: crypto.randomUUID(),
     src: up.src,
     alt: file.name.replace(/\.[^.]+$/, ""),
-    x: 8,
-    y: 8,
+    x: xPct,
+    y: yPct,
     w,
     h,
     rotation: 0,
@@ -552,6 +606,7 @@ async function addImage(file: File) {
     label: null,
     href: null,
     order_idx: topZ,
+    page: pageSlug,
   };
   await upsertTile(t);
   tiles.push(t);
@@ -705,19 +760,25 @@ function injectGlobalTileStyles() {
     .mural-tile:hover .mural-tile__img { opacity: 0.94; }
     .mural-tile__label {
       position: absolute;
-      right: 12px;
-      bottom: 12px;
+      right: 14px;
+      bottom: 14px;
       color: #fff;
-      font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+      font-family: "Caveat", "Patrick Hand", cursive;
       font-weight: 700;
-      font-size: clamp(1.4rem, 2.4vw, 2.2rem);
-      line-height: 1;
+      font-size: clamp(2.2rem, 3.6vw, 3.6rem);
+      line-height: 0.95;
       text-align: right;
-      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.6);
       pointer-events: none;
       z-index: 2;
+      letter-spacing: 0.01em;
     }
-    .mural-tile__label-arrow { display: block; margin-top: 4px; font-weight: 700; }
+    .mural-tile__label-arrow {
+      display: block;
+      margin-top: 2px;
+      font-weight: 700;
+      font-size: 0.85em;
+    }
   `;
   document.head.appendChild(s);
 }

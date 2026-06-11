@@ -16,13 +16,10 @@ export type MuralTile = {
   /** Full public URL of the image (Supabase Storage) */
   src: string;
   alt: string;
-  /** Grid column the tile starts in (0-indexed). Updated as the user drags. */
+  /** % of canvas WIDTH (not height) — see murals-board for rationale. */
   x: number;
-  /** Grid row the tile starts in. */
   y: number;
-  /** Column span. */
   w: number;
-  /** Row span. */
   h: number;
   rotation: number;
   object_position: string;
@@ -32,14 +29,17 @@ export type MuralTile = {
   href: string | null;
   /** Insertion order — used as the secondary sort key. */
   order_idx: number;
+  /** Board slug — 'home' for the /murals/ index, 'nepal' for /murals/nepal/, ... */
+  page: string;
   created_at?: string;
   updated_at?: string;
 };
 
-export async function fetchTiles(): Promise<MuralTile[]> {
+export async function fetchTiles(page: string = "home"): Promise<MuralTile[]> {
   const { data, error } = await supabase
     .from("mural_tiles")
     .select("*")
+    .eq("page", page)
     .order("y", { ascending: true })
     .order("x", { ascending: true })
     .order("order_idx", { ascending: true });
