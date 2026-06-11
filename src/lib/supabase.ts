@@ -54,7 +54,12 @@ export async function upsertTile(tile: MuralTile) {
   const { error } = await supabase
     .from("mural_tiles")
     .upsert({ ...tile, updated_at: new Date().toISOString() });
-  if (error) console.error("[supabase] upsertTile failed", error);
+  if (error) {
+    console.error("[supabase] upsertTile failed", error);
+    window.dispatchEvent(new CustomEvent("mural:save", { detail: { ok: false } }));
+  } else {
+    window.dispatchEvent(new CustomEvent("mural:save", { detail: { ok: true } }));
+  }
 }
 
 export async function deleteTile(id: string) {

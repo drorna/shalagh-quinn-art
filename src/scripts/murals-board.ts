@@ -427,6 +427,7 @@ function mountToolbar() {
       <input type="file" accept="image/*" multiple hidden data-add-files />
     </label>
     <span class="mural-edit-toolbar__hint">drag = move · corners = resize · Shift = keep ratio · Esc / Delete</span>
+    <span class="mural-edit-toolbar__save" data-save-indicator></span>
     <a class="mural-edit-toolbar__exit" href="?">exit edit</a>
   `;
   document.body.appendChild(bar);
@@ -436,6 +437,20 @@ function mountToolbar() {
     if (!input.files) return;
     for (const f of Array.from(input.files)) await addImage(f);
     input.value = "";
+  });
+
+  // Wire up save indicator
+  const indicator = bar.querySelector<HTMLElement>("[data-save-indicator]");
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  window.addEventListener("mural:save", (e) => {
+    if (!indicator) return;
+    const detail = (e as CustomEvent).detail;
+    const ok = detail?.ok !== false;
+    indicator.textContent = ok ? "saved ✓" : "save failed!";
+    indicator.classList.remove("is-ok", "is-err", "is-visible");
+    indicator.classList.add(ok ? "is-ok" : "is-err", "is-visible");
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => indicator.classList.remove("is-visible"), 1800);
   });
 }
 
@@ -684,11 +699,25 @@ function injectEditorStyles() {
     }
     .mural-edit-toolbar__hint { color: #888; font-size: 12px; }
     .mural-edit-toolbar__exit {
-      margin-left: auto;
       color: #aaa;
       padding: 6px 10px;
       text-decoration: underline;
     }
+    .mural-edit-toolbar__save {
+      margin-left: auto;
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-weight: bold;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .mural-edit-toolbar__save.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .mural-edit-toolbar__save.is-ok { background: #2a4; color: #fff; }
+    .mural-edit-toolbar__save.is-err { background: #c33; color: #fff; }
 
     .mural-mini-panel {
       position: absolute;
