@@ -75,3 +75,23 @@
 ## הערות
 - כל פעם שדרור משנה דעת או מוסיף — אעדכן את הקובץ הזה.
 - אסור לסמן בוצע בלי אישור של דרור.
+
+---
+
+## דיפלוי
+- `d3e02f8` Complete redesign — נדחף ל-`origin/main` (אתר חי, GitHub Pages/Cloudflare/וכו' אמור לבנות אוטומטית).
+
+## עורך ויזואלי / Supabase
+- עורך לייב ל-`/murals/`: גש ל-`/murals/?edit=1`
+- **תמונות וסידור נשמרים ב-Supabase (פרויקט shalagh-admin)**:
+  - Storage bucket: `murals` (public)
+  - טבלה: `mural_tiles` (id, src, w, h, rotation, object_position, label, href, ...)
+- 2 מחשבים עובדים על אותו state מיידית (subscribe ל-realtime changes)
+- אין צורך ב-git push לעדכון תמונות; שינוי במחשב אחד = השני רואה אחרי רענון
+- **גישה מוגבלת לעורך**: ה-URL מכיל token סודי (`?edit=<token>`). הקוד מאמת ע"י השוואת SHA-256 ל-hash שב-bundle (לא ה-token עצמו). אחרי אימות ראשון, נשמר ב-localStorage ולא צריך שוב.
+  - **ה-token הסודי שלך**: `80nl4NHCW-cUk-3GL1P8zg` — שמור במקום בטוח
+  - **URL מלא לעורך**: `https://shalagh.com/murals/?edit=80nl4NHCW-cUk-3GL1P8zg`
+  - להחלפת token: `node -e "const c=require('crypto');const t=c.randomBytes(16).toString('base64url');console.log('TOKEN:',t,'HASH:',c.createHash('sha256').update(t).digest('hex'))"` → להחליף את `EDIT_TOKEN_HASH` ב-`src/scripts/murals-board.ts`
+- TODO עתידי: צמצום ה-RLS לאחר השקה ("Public write" פתוח לכל אחד באינטרנט עכשיו)
+- TODO עתידי: עורך גם לדפי המדינה (`/murals/[country]/`)
+- TODO עתידי: dark masonry packing אמיתי (Muuri.js) אם CSS Grid dense לא מספיק טוב
