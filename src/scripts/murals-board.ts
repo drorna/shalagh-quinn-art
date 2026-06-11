@@ -94,6 +94,17 @@ async function boot() {
 
   await loadAndRender();
 
+  // Re-compute tile positions/sizes when the window resizes (they live in
+  // % of canvas WIDTH, but top/height are pre-computed to px).
+  let resizeRaf: number | null = null;
+  window.addEventListener("resize", () => {
+    if (resizeRaf !== null) return;
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = null;
+      reapplyAllTileStyles();
+    });
+  });
+
   // Realtime sync
   supabase
     .channel("mural_tiles_changes")
@@ -171,28 +182,43 @@ function buildTileEl(t: MuralTile): HTMLElement {
   return el;
 }
 
+/**
+ * Apply position/size to a tile element.
+ *
+ * Important: all of t.x, t.y, t.w, t.h are percentages of the canvas WIDTH.
+ * The canvas height changes as you scroll/drag, but tile dimensions never
+ * track it — that decoupling is what stops the runaway-grow loop where
+ * larger canvas → larger tiles → still-larger canvas.
+ */
 function applyTileStyle(el: HTMLElement, t: MuralTile) {
-  el.style.left = `${t.x}%`;
-  el.style.top = `${t.y}%`;
-  el.style.width = `${t.w}%`;
-  el.style.height = `${t.h}%`;
+  const cw = canvas ? canvas.getBoundingClientRect().width : 0;
+  el.style.left = `${t.x}%`;          // % of width — natural CSS behaviour
+  el.style.width = `${t.w}%`;          // % of width
+  el.style.top = `${(t.y / 100) * cw}px`;   // % of width, computed to px
+  el.style.height = `${(t.h / 100) * cw}px`;
   el.style.zIndex = String(t.order_idx || 0);
   el.style.transform = t.rotation ? `rotate(${t.rotation}deg)` : "";
 }
 
+/** Re-apply styles to every tile (called on window resize). */
+function reapplyAllTileStyles() {
+  if (!canvas) return;
+  for (const t of tiles) {
+    const el = canvas.querySelector<HTMLElement>(`.mural-tile[data-id="${t.id}"]`);
+    if (el) applyTileStyle(el, t);
+  }
+  resizeCanvasHeight();
+}
+
 function resizeCanvasHeight() {
   if (!canvas) return;
-  // Canvas grows to fit the bottom-most tile plus headroom, but never shrinks
-  // below the editor's working height. Headroom is one viewport so the user
-  // always has empty space to drop new tiles into below the existing wall.
+  // All tile dimensions are % of canvas WIDTH, so the bottom-most tile's
+  // pixel position is (max(y + h) / 100) * canvasWidth — independent of
+  // the canvas's current height. This is what avoids the feedback loop.
   const baseW = canvas.getBoundingClientRect().width;
   const baseFloor = Math.max(CANVAS_MIN_HEIGHT_PX, window.innerHeight * 1.5);
   const bottomPct = tiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
-  // Current canvas height in px (may be 0 on first call)
-  const currentH = canvas.getBoundingClientRect().height || baseFloor;
-  // Pixel position of the bottom-most tile inside the current canvas
-  const bottomPx = (bottomPct / 100) * currentH;
-  // We want at least (one viewport) of room below the bottom tile
+  const bottomPx = (bottomPct / 100) * baseW;
   const desired = Math.max(baseFloor, bottomPx + window.innerHeight);
   canvas.style.height = `${Math.round(desired)}px`;
 }
@@ -325,17 +351,16 @@ function attachEditHandlers(el: HTMLElement, t: MuralTile) {
         selectTile(t.id);
       }
       if (dragging) {
-        // Re-read the canvas rect every move — its height may have grown
         const cr = canvas!.getBoundingClientRect();
+        // Both axes are now percentages of canvas WIDTH so movement is
+        // computed against width for both directions.
         const dxPct = (dx / cr.width) * 100;
-        const dyPct = (dy / cr.height) * 100;
+        const dyPct = (dy / cr.width) * 100;
         t.x = clamp(startLeft + dxPct, 0, 100 - t.w);
         t.y = Math.max(0, startTop + dyPct);
         el.style.left = `${t.x}%`;
-        el.style.top = `${t.y}%`;
-        // Grow the canvas live so dragging downward extends the page
+        el.style.top = `${(t.y / 100) * cr.width}px`;
         resizeCanvasHeight();
-        // Auto-scroll the viewport when near top/bottom
         setAutoScroll(ev.clientY);
       }
     };
@@ -375,8 +400,9 @@ function bindResize(
     const aspect = startW / startH;
 
     const onMove = (ev: MouseEvent) => {
+      // Both axes are % of canvas WIDTH (decoupled from canvas height).
       const dxPct = ((ev.clientX - startX) / canvasRect.width) * 100;
-      const dyPct = ((ev.clientY - startY) / canvasRect.height) * 100;
+      const dyPct = ((ev.clientY - startY) / canvasRect.width) * 100;
       let newL = startLeft, newT = startTop, newW = startW, newH = startH;
 
       if (dir.includes("e")) newW = Math.max(MIN_TILE_PCT, startW + dxPct);
@@ -405,10 +431,11 @@ function bindResize(
       newH = Math.max(MIN_TILE_PCT, newH);
 
       t.x = newL; t.y = newT; t.w = newW; t.h = newH;
+      const cw = canvasRect.width;
       tileEl.style.left = `${t.x}%`;
-      tileEl.style.top = `${t.y}%`;
       tileEl.style.width = `${t.w}%`;
-      tileEl.style.height = `${t.h}%`;
+      tileEl.style.top = `${(t.y / 100) * cw}px`;
+      tileEl.style.height = `${(t.h / 100) * cw}px`;
       // Sync side-panel sliders if open
       syncPanelSliders(t);
       // Grow canvas + auto-scroll near edges (matches drag behaviour)
@@ -504,20 +531,12 @@ async function addImage(file: File) {
   const up = await uploadImageFile(file);
   if (!up) { alert("Upload failed. See console."); return; }
 
-  // Read the natural size so the tile matches the image's aspect ratio
-  // and no part of the photo gets cropped on insert.
+  // Read the natural size so the tile matches the image's aspect ratio.
+  // Since both w and h are % of canvas WIDTH, the conversion is trivial:
+  // h_percent_of_width = w_percent_of_width * (naturalH / naturalW).
   const { naturalW, naturalH } = await readImageSize(up.src);
-  const canvasRect = canvas!.getBoundingClientRect();
-  const w = DEFAULT_TILE_PCT;                                  // % of canvas width
-  // Convert image aspect to %-height that matches the same pixel aspect.
-  // tile pixel width  = canvasRect.width * w/100
-  // tile pixel height = tilePixelWidth * (naturalH / naturalW)
-  // h%               = tilePixelHeight / canvasRect.height * 100
-  const tilePxW = canvasRect.width * (w / 100);
-  const tilePxH = tilePxW * (naturalH / naturalW);
-  let h = (tilePxH / canvasRect.height) * 100;
-  // Clamp so an extreme portrait doesn't push the canvas absurdly tall.
-  h = Math.min(80, Math.max(MIN_TILE_PCT, h));
+  const w = DEFAULT_TILE_PCT;
+  let h = Math.max(MIN_TILE_PCT, w * (naturalH / naturalW));
 
   topZ += 1;
   const t: MuralTile = {
