@@ -107,8 +107,8 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
   .murals-intro__copy-end { margin-top: var(--sp-4) !important; }
 
   /* ---------- Free-positioning canvas ----------
-     Tiles are absolutely placed in % coordinates.
-     Canvas grows in height as content pushes down. */
+     Tile + handle styles live in murals-board.ts (JS-injected, global)
+     because Astro's scoped CSS doesn't reach DOM created dynamically. */
   .murals-canvas {
     position: relative;
     max-width: 1280px;
@@ -126,39 +126,4 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
     color: #555;
     font-family: monospace;
   }
-
-  /* Tile — JS sets left/top/width/height in %, plus transform for rotation */
-  .mural-tile {
-    position: absolute;
-    overflow: hidden;
-    display: block;
-    line-height: 0;
-    color: #fff;
-    background: #111;
-    transform-origin: center center;
-    transition: opacity var(--duration-fast) var(--ease-out);
-  }
-  .mural-tile__img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    pointer-events: none; /* clicks go to the tile, not the image */
-    user-select: none;
-    -webkit-user-drag: none;
-  }
-  .mural-tile:hover .mural-tile__img { opacity: 0.94; }
-  .mural-tile__label {
-    position: absolute;
-    inset: auto 12px 12px auto;
-    color: #fff;
-    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
-    font-weight: 700;
-    font-size: clamp(1.4rem, 2.4vw, 2.2rem);
-    line-height: 1;
-    text-align: right;
-    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
-    pointer-events: none;
-  }
-  .mural-tile__label-arrow { display: block; margin-top: 4px; font-weight: 700; }
 </style>

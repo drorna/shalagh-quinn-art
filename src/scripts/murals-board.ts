@@ -76,6 +76,9 @@ async function boot() {
   canvas = document.querySelector<HTMLElement>("[data-mural-canvas]");
   if (!canvas) return;
 
+  // Tile styles are global — JS-created DOM doesn't pick up Astro's scoped CSS.
+  injectGlobalTileStyles();
+
   editMode = await checkEditAccess();
   if (editMode) {
     document.body.classList.add("is-mural-edit");
@@ -132,7 +135,15 @@ function buildTileEl(t: MuralTile): HTMLElement {
   el.className = "mural-tile";
   el.dataset.id = t.id;
   if (t.href && !editMode) (el as HTMLAnchorElement).href = t.href;
+  // In edit mode the outer tile must allow overflow (handles live outside).
+  // The image is clipped by an inner wrapper.
+  if (editMode) el.style.overflow = "visible";
   applyTileStyle(el, t);
+
+  // Inner wrapper clips the image to the tile bounds
+  const inner = document.createElement("div");
+  inner.className = "mural-tile__inner";
+  el.appendChild(inner);
 
   const img = document.createElement("img");
   img.className = "mural-tile__img";
@@ -141,7 +152,7 @@ function buildTileEl(t: MuralTile): HTMLElement {
   img.loading = "lazy";
   img.style.objectPosition = t.object_position || "center";
   img.draggable = false;
-  el.appendChild(img);
+  inner.appendChild(img);
 
   if (t.label) {
     const label = document.createElement("span");
@@ -468,13 +479,12 @@ function renderPanel() {
     panel.style.display = "none";
     return;
   }
-  // Position the panel just below-right of the selected tile
-  const el = canvas?.querySelector<HTMLElement>(`.mural-tile[data-id="${t.id}"]`);
-  if (!el) return;
-  const r = el.getBoundingClientRect();
+  // Pin the panel to the top-right of the viewport so it never covers a tile
   panel.style.display = "block";
-  panel.style.left = `${Math.min(window.innerWidth - 280, r.right + 12) + window.scrollX}px`;
-  panel.style.top = `${r.top + window.scrollY}px`;
+  panel.style.position = "fixed";
+  panel.style.right = "16px";
+  panel.style.top = "80px";
+  panel.style.left = "auto";
 
   panel.innerHTML = `
     <div class="mural-mini-panel__head">
@@ -557,6 +567,55 @@ function syncPanelSliders(_t: MuralTile) {
 /* ============================================================
    STYLES
    ============================================================ */
+
+function injectGlobalTileStyles() {
+  if (document.getElementById("mural-tile-styles")) return;
+  const s = document.createElement("style");
+  s.id = "mural-tile-styles";
+  s.textContent = `
+    .mural-tile {
+      position: absolute;
+      display: block;
+      line-height: 0;
+      color: #fff;
+      background: #111;
+      transform-origin: center center;
+      transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+      box-sizing: border-box;
+    }
+    .mural-tile__inner {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    .mural-tile__img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .mural-tile:hover .mural-tile__img { opacity: 0.94; }
+    .mural-tile__label {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      color: #fff;
+      font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.4rem, 2.4vw, 2.2rem);
+      line-height: 1;
+      text-align: right;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .mural-tile__label-arrow { display: block; margin-top: 4px; font-weight: 700; }
+  `;
+  document.head.appendChild(s);
+}
 
 function injectEditorStyles() {
   if (document.getElementById("mural-edit-styles")) return;
