@@ -457,6 +457,22 @@ function mountToolbar() {
 async function addImage(file: File) {
   const up = await uploadImageFile(file);
   if (!up) { alert("Upload failed. See console."); return; }
+
+  // Read the natural size so the tile matches the image's aspect ratio
+  // and no part of the photo gets cropped on insert.
+  const { naturalW, naturalH } = await readImageSize(up.src);
+  const canvasRect = canvas!.getBoundingClientRect();
+  const w = DEFAULT_TILE_PCT;                                  // % of canvas width
+  // Convert image aspect to %-height that matches the same pixel aspect.
+  // tile pixel width  = canvasRect.width * w/100
+  // tile pixel height = tilePixelWidth * (naturalH / naturalW)
+  // h%               = tilePixelHeight / canvasRect.height * 100
+  const tilePxW = canvasRect.width * (w / 100);
+  const tilePxH = tilePxW * (naturalH / naturalW);
+  let h = (tilePxH / canvasRect.height) * 100;
+  // Clamp so an extreme portrait doesn't push the canvas absurdly tall.
+  h = Math.min(80, Math.max(MIN_TILE_PCT, h));
+
   topZ += 1;
   const t: MuralTile = {
     id: crypto.randomUUID(),
@@ -464,8 +480,8 @@ async function addImage(file: File) {
     alt: file.name.replace(/\.[^.]+$/, ""),
     x: 8,
     y: 8,
-    w: DEFAULT_TILE_PCT,
-    h: DEFAULT_TILE_PCT,
+    w,
+    h,
     rotation: 0,
     object_position: "center",
     label: null,
@@ -476,6 +492,15 @@ async function addImage(file: File) {
   tiles.push(t);
   render();
   selectTile(t.id);
+}
+
+function readImageSize(src: string): Promise<{ naturalW: number; naturalH: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ naturalW: img.naturalWidth, naturalH: img.naturalHeight });
+    img.onerror = () => resolve({ naturalW: 1, naturalH: 1 });
+    img.src = src;
+  });
 }
 
 function mountPanel() {
