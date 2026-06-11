@@ -31,9 +31,9 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
       </div>
     </section>
 
-    <!-- Tiles render here (built by JS from Supabase) -->
-    <section class="murals-grid" data-mural-grid aria-label="murals">
-      <div class="murals-grid__loading" data-loading>loading…</div>
+    <!-- Free-positioning canvas: tiles are absolutely positioned in % -->
+    <section class="murals-canvas" data-mural-canvas aria-label="murals">
+      <div class="murals-canvas__loading" data-loading>loading…</div>
     </section>
   </div>
 
@@ -106,30 +106,30 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
   .murals-intro__copy p { margin: 0 0 var(--sp-3); }
   .murals-intro__copy-end { margin-top: var(--sp-4) !important; }
 
-  /* ---------- Tile board (24-col masonry grid) ---------- */
-  .murals-grid {
-    display: grid;
-    grid-template-columns: repeat(24, 1fr);
-    grid-auto-rows: 20px;        /* small rows; tiles span many of them */
-    grid-auto-flow: dense;        /* fills holes left by smaller tiles */
-    gap: 12px;
+  /* ---------- Free-positioning canvas ----------
+     Tiles are absolutely placed in % coordinates.
+     Canvas grows in height as content pushes down. */
+  .murals-canvas {
+    position: relative;
     max-width: 1280px;
     margin: 0 auto;
-    min-height: 100px;
-    position: relative;
+    /* Height is set by JS to fit the bottom-most tile. Initial floor: */
+    min-height: 80vh;
   }
 
-  .murals-grid__loading {
-    grid-column: 1 / -1;
-    text-align: center;
+  .murals-canvas__loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #555;
     font-family: monospace;
-    padding: var(--sp-6) 0;
   }
 
-  /* Tile shell — set by JS via grid-column/grid-row/transform */
+  /* Tile — JS sets left/top/width/height in %, plus transform for rotation */
   .mural-tile {
-    position: relative;
+    position: absolute;
     overflow: hidden;
     display: block;
     line-height: 0;
@@ -143,8 +143,11 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
     width: 100%;
     height: 100%;
     object-fit: cover;
+    pointer-events: none; /* clicks go to the tile, not the image */
+    user-select: none;
+    -webkit-user-drag: none;
   }
-  .mural-tile:hover .mural-tile__img { opacity: 0.92; }
+  .mural-tile:hover .mural-tile__img { opacity: 0.94; }
   .mural-tile__label {
     position: absolute;
     inset: auto 12px 12px auto;
