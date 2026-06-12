@@ -733,6 +733,11 @@ function injectGlobalTileStyles() {
   const s = document.createElement("style");
   s.id = "mural-tile-styles";
   s.textContent = `
+    /* Each tile is its own container, so the label font-size and inset
+       scale with the TILE width — not the viewport. That way the same
+       label that looks proportional on desktop stays proportional on
+       mobile (a 200px-wide tile on a phone scales the label down the
+       same way it would on a 200px-wide tile on a desktop). */
     .mural-tile {
       position: absolute;
       display: block;
@@ -742,6 +747,7 @@ function injectGlobalTileStyles() {
       transform-origin: center center;
       transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
       box-sizing: border-box;
+      container-type: inline-size;
     }
     .mural-tile__inner {
       position: absolute;
@@ -760,24 +766,33 @@ function injectGlobalTileStyles() {
     .mural-tile:hover .mural-tile__img { opacity: 0.94; }
     .mural-tile__label {
       position: absolute;
-      right: 14px;
-      bottom: 14px;
+      /* Inset scales with tile width — 4% of tile from the corner */
+      right: 4cqi;
+      bottom: 4cqi;
       color: #fff;
       font-family: "Caveat", "Patrick Hand", cursive;
       font-weight: 700;
-      font-size: clamp(2.2rem, 3.6vw, 3.6rem);
+      /* Label is ~14% of the tile's inline size, capped so it never goes
+         smaller than something legible nor larger than the desktop look. */
+      font-size: clamp(0.9rem, 14cqi, 3.6rem);
       line-height: 0.95;
       text-align: right;
       text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.6);
       pointer-events: none;
       z-index: 2;
       letter-spacing: 0.01em;
+      max-width: 80%;
+      word-break: break-word;
     }
     .mural-tile__label-arrow {
       display: block;
       margin-top: 2px;
       font-weight: 700;
       font-size: 0.85em;
+    }
+    /* Very small tiles: hide the label entirely — illegible anyway. */
+    @container (max-width: 80px) {
+      .mural-tile__label { display: none; }
     }
   `;
   document.head.appendChild(s);
