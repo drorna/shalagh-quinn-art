@@ -279,9 +279,10 @@ function onMouseDown(e: PointerEvent) {
     if (dragging) {
       let useDx = dx;
       let useDy = dy;
+      // Save as vw — scale-friendly across device widths.
       updateRow(el, {
-        offset_x: `${Math.round(x0 + useDx)}px`,
-        offset_y: `${Math.round(y0 + useDy)}px`,
+        offset_x: pxToVw(x0 + useDx),
+        offset_y: pxToVw(y0 + useDy),
       });
       applyOverride(el);
       // Clamp the image's bounding box into the visible viewport so it
@@ -298,8 +299,8 @@ function onMouseDown(e: PointerEvent) {
       if (adjX !== 0 || adjY !== 0) {
         useDx += adjX; useDy += adjY;
         updateRow(el, {
-          offset_x: `${Math.round(x0 + useDx)}px`,
-          offset_y: `${Math.round(y0 + useDy)}px`,
+          offset_x: pxToVw(x0 + useDx),
+          offset_y: pxToVw(y0 + useDy),
         });
         applyOverride(el);
       }
@@ -307,8 +308,8 @@ function onMouseDown(e: PointerEvent) {
       const snap = computeAlignSnap(el.getBoundingClientRect());
       if (snap.dx !== 0 || snap.dy !== 0) {
         updateRow(el, {
-          offset_x: `${Math.round(x0 + useDx + snap.dx)}px`,
-          offset_y: `${Math.round(y0 + useDy + snap.dy)}px`,
+          offset_x: pxToVw(x0 + useDx + snap.dx),
+          offset_y: pxToVw(y0 + useDy + snap.dy),
         });
         applyOverride(el);
       }
@@ -418,6 +419,26 @@ function updateRow(el: HTMLElement, patch: Partial<SiteImage>): SiteImage {
   const next = { ...current, id: variantId, ...patch } as SiteImage;
   cache.set(variantId, next);
   return next;
+}
+
+/** Convert "12px" / "3.5vw" / "10%" → pixels at the current viewport. */
+function offsetToPx(v: string | null | undefined): number {
+  if (!v) return 0;
+  const m = String(v).match(/(-?[\d.]+)\s*(vw|px|em|rem|%)?/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  const unit = m[2] || "px";
+  if (unit === "px") return n;
+  if (unit === "vw" || unit === "%") return (n / 100) * window.innerWidth;
+  if (unit === "rem" || unit === "em") return n * 16;
+  return n;
+}
+
+/** Express a pixel offset as a viewport-width %, so saved positions
+ *  scale with the device the visitor is on. */
+function pxToVw(px: number): string {
+  if (!window.innerWidth) return `${px}px`;
+  return `${((px / window.innerWidth) * 100).toFixed(2)}vw`;
 }
 
 function parsePx(v: string | null | undefined): number {

@@ -346,9 +346,11 @@ function onPointerDown(e: PointerEvent) {
     if (moved) {
       let useDx = dx;
       let useDy = dy;
+      // Save as vw so a position dragged on one phone width stays at
+      // the same RELATIVE place on every other phone width.
       patchVariantRow(el, {
-        offset_x: `${Math.round(x0 + useDx)}px`,
-        offset_y: `${Math.round(y0 + useDy)}px`,
+        offset_x: pxToVw(x0 + useDx),
+        offset_y: pxToVw(y0 + useDy),
       });
       applyOverride(el);
       // Keep the box inside the visible viewport — push back in if any
@@ -366,8 +368,8 @@ function onPointerDown(e: PointerEvent) {
       if (adjX !== 0 || adjY !== 0) {
         useDx += adjX; useDy += adjY;
         patchVariantRow(el, {
-          offset_x: `${Math.round(x0 + useDx)}px`,
-          offset_y: `${Math.round(y0 + useDy)}px`,
+          offset_x: pxToVw(x0 + useDx),
+          offset_y: pxToVw(y0 + useDy),
         });
         applyOverride(el);
       }
@@ -375,8 +377,8 @@ function onPointerDown(e: PointerEvent) {
       const snap = computeAlignSnap(el.getBoundingClientRect());
       if (snap.dx !== 0 || snap.dy !== 0) {
         patchVariantRow(el, {
-          offset_x: `${Math.round(x0 + useDx + snap.dx)}px`,
-          offset_y: `${Math.round(y0 + useDy + snap.dy)}px`,
+          offset_x: pxToVw(x0 + useDx + snap.dx),
+          offset_y: pxToVw(y0 + useDy + snap.dy),
         });
         applyOverride(el);
       }
@@ -613,10 +615,34 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
   });
 }
 
-function parsePx(v: string | null | undefined): number {
+/**
+ * Convert a stored offset (e.g. "12px", "3.5vw", "10%") into pixels at
+ * the current viewport width. Allows old px-stored data to keep
+ * working while new edits save as vw so positions stay proportional
+ * across device widths.
+ */
+function offsetToPx(v: string | null | undefined): number {
   if (!v) return 0;
-  const m = v.match(/(-?[\d.]+)/);
-  return m ? parseFloat(m[1]) : 0;
+  const m = String(v).match(/(-?[\d.]+)\s*(vw|px|em|rem|%)?/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  const unit = m[2] || "px";
+  if (unit === "px") return n;
+  if (unit === "vw" || unit === "%") return (n / 100) * window.innerWidth;
+  if (unit === "rem" || unit === "em") return n * 16;
+  return n;
+}
+
+/** Express a pixel offset as a viewport-width percentage. Saving in vw
+ *  makes the stored position scale to any phone size automatically. */
+function pxToVw(px: number): string {
+  if (!window.innerWidth) return `${px}px`;
+  return `${((px / window.innerWidth) * 100).toFixed(2)}vw`;
+}
+
+/** Back-compat shim — call sites that historically used parsePx still work. */
+function parsePx(v: string | null | undefined): number {
+  return offsetToPx(v);
 }
 
 async function persist(el: HTMLElement) {
