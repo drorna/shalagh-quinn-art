@@ -72,6 +72,7 @@ function render(): HTMLElement {
   const here = location.pathname;
   const bar = document.createElement("nav");
   bar.className = "edit-nav";
+  bar.dataset.noEdit = "";
   bar.setAttribute("aria-label", "edit navigation");
   bar.innerHTML = `
     <button class="en-btn" data-nav="back" title="back (Alt+←)">←</button>

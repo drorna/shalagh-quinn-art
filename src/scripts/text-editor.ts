@@ -120,29 +120,59 @@ function getEditableEls(): HTMLElement[] {
 }
 
 /**
- * Walk the document and tag every plain text element (p, h1-h6, li, blockquote)
- * with a stable auto-id so brand-new pages get editing for free. The id is
- * derived from pathname + tag + nth-of-type within its parent, so it stays
- * stable as long as the surrounding structure doesn't change.
+ * Walk the document and tag every meaningful text-bearing element so it
+ * becomes editable. The id is derived from pathname + tag + nth-of-type
+ * within its parent so it stays stable as long as the surrounding
+ * structure doesn't change.
  *
- * Elements that already have data-editable-text are left alone — explicit
- * wrappers in the source code always win.
+ * Covered tags: p, h1-h6, li, blockquote, a, button, span, label.
+ * For interactive ones (a, button), text-editor's click handler only
+ * enters edit mode when Alt is held — a plain click still navigates /
+ * fires normally, so nav arrows and "enter >" buttons keep working.
  *
  * Skipped:
- *   - elements inside the editor toolbars (.mural-edit-toolbar, etc.)
+ *   - elements that already carry data-editable-text
+ *   - any subtree under [data-no-edit] (editor toolbars, the edit-nav,
+ *     the murals canvas, tile labels)
  *   - empty elements
- *   - tile labels (they belong to the murals DB, not site_text)
+ *   - elements that contain other elements which would themselves get
+ *     tagged (we tag the deepest text node instead, so nested wrappers
+ *     don't double-bind)
  */
 function autoTagPlainText() {
   const path = location.pathname.replace(/\/+$/, "") || "/";
-  const tags = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote"];
-  const skipInside = ".mural-edit-toolbar, .mural-edit-panel, .mural-mini-panel, .text-edit-toolbar, .murals-canvas, .mural-tile";
+  const tags = [
+    "p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote",
+    "a", "button", "span", "label",
+  ];
+  const skipInside =
+    "[data-no-edit], .mural-edit-toolbar, .mural-edit-panel, .mural-mini-panel, " +
+    ".text-edit-toolbar, .image-edit-toolbar, .edit-nav, .murals-canvas, .mural-tile";
   const seen = new Map<string, number>();
+
   for (const el of Array.from(document.querySelectorAll<HTMLElement>(tags.join(",")))) {
     if (el.hasAttribute("data-editable-text")) continue;
     if (el.closest(skipInside)) continue;
+
+    // Must have actual text content
     const text = (el.textContent || "").trim();
     if (!text) continue;
+
+    // For span / label, avoid double-tagging when an ancestor is also a
+    // candidate. Heading > span text → tag the heading. Use the deepest
+    // element that's a *direct* text container.
+    if (el.tagName === "SPAN" || el.tagName === "LABEL") {
+      // Skip if a tagged candidate is nested inside us
+      if (el.querySelector("[data-editable-text]")) continue;
+      // Skip if an ancestor in our tag set is itself a leaf text holder
+      // (e.g. p > span → tag the p, skip the span)
+      const ancestor = el.parentElement?.closest("p, h1, h2, h3, h4, h5, h6, li, blockquote, a, button");
+      if (ancestor && !ancestor.closest(skipInside)) {
+        const ancestorOnlyText = ancestor.querySelectorAll(tags.join(",")).length <= 1;
+        if (ancestorOnlyText) continue;
+      }
+    }
+
     // Stable key: page + tag + element-local index
     const parent = el.parentElement;
     let nth = 1;
@@ -152,7 +182,6 @@ function autoTagPlainText() {
       );
       nth = sameKindSiblings.indexOf(el) + 1;
     }
-    // De-duplicate: page-level counter for the (tag, nth) combo
     const base = `auto:${path}:${el.tagName.toLowerCase()}:${nth}`;
     const count = (seen.get(base) || 0) + 1;
     seen.set(base, count);
@@ -260,16 +289,22 @@ function patchInternalLinks() {
 function bindEditClicks() {
   for (const el of getEditableEls()) {
     el.classList.add("is-editable");
+    const isInteractive = el.tagName === "A" || el.tagName === "BUTTON";
+    if (isInteractive) el.classList.add("is-interactive-edit");
+
     el.addEventListener("mousedown", (e) => {
-      // Alt+drag = move the element (don't enter contenteditable).
+      // Alt+drag = move the element. Works on any editable, including links.
       if (e.altKey) {
         e.preventDefault();
         e.stopPropagation();
         beginAltDrag(el, e);
-        return;
       }
     });
+
     el.addEventListener("click", (e) => {
+      // Links and buttons: plain click navigates / fires normally.
+      // Hold Alt to enter edit mode instead.
+      if (isInteractive && !e.altKey) return;
       e.preventDefault();
       e.stopPropagation();
       select(el);
@@ -398,6 +433,7 @@ function patchVariantRow(el: HTMLElement, patch: Partial<SiteText>): SiteText {
 function mountToolbar() {
   toolbar = document.createElement("div");
   toolbar.className = "text-edit-toolbar";
+  toolbar.dataset.noEdit = "";
   toolbar.style.display = "none";
   document.body.appendChild(toolbar);
 }
@@ -522,6 +558,11 @@ function injectStyles() {
     body.is-text-edit [data-editable-text].is-editable:hover {
       outline: 1px dashed rgba(76, 194, 255, 0.55);
       outline-offset: 4px;
+    }
+    /* Interactive elements (links, buttons): green ring as a hint that
+       a plain click still navigates and Alt+click enters edit. */
+    body.is-text-edit [data-editable-text].is-interactive-edit:hover {
+      outline-color: rgba(120, 220, 120, 0.65);
     }
     body.is-text-edit [data-editable-text].is-selected {
       outline: 2px solid #4cc2ff;

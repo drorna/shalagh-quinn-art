@@ -331,6 +331,7 @@ function parsePx(v: string | null | undefined): number {
 function mountToolbar() {
   toolbar = document.createElement("div");
   toolbar.className = "image-edit-toolbar";
+  toolbar.dataset.noEdit = "";
   toolbar.style.display = "none";
   document.body.appendChild(toolbar);
 }
