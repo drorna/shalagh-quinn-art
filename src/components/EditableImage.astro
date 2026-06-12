@@ -1,0 +1,43 @@
+---
+/**
+ * EditableImage
+ *
+ * Wraps an Astro <Image> in a span tagged with data-editable-image="<id>".
+ * In edit mode (?edit=<token>), scripts/image-editor.ts attaches handles
+ * to it and lets you resize / move / rotate / replace the underlying image,
+ * persisting to public.site_image.
+ *
+ * Props mirror astro:assets Image plus an `id` and an optional `wrapperClass`
+ * for the span. Everything else is forwarded to <Image>.
+ */
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+interface Props {
+  id: string;
+  src: ImageMetadata;
+  alt: string;
+  widths?: number[];
+  sizes?: string;
+  quality?: number | string;
+  loading?: "eager" | "lazy";
+  format?: "webp" | "png" | "jpg" | "jpeg" | "avif" | "gif" | "svg";
+  /** Class for the inner <img>. */
+  class?: string;
+  /** Class for the wrapper <span>. */
+  wrapperClass?: string;
+}
+
+const { id, class: imgClass, wrapperClass, ...rest } = Astro.props;
+---
+
+<span data-editable-image={id} class={wrapperClass}>
+  <Image {...rest} class={imgClass} />
+</span>
+
+<style>
+  span[data-editable-image] {
+    display: inline-block;
+    line-height: 0;
+  }
+</style>

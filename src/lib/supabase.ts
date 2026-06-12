@@ -144,6 +144,84 @@ export function subscribeSiteText(onChange: () => void): () => void {
   return () => { supabase.removeChannel(channel); };
 }
 
+/* ===================================================================
+   site_image  — per-element image overrides (src, size, transform)
+   =================================================================== */
+
+export type SiteImage = {
+  id: string;
+  src: string | null;
+  width: string | null;
+  height: string | null;
+  offset_x: string | null;
+  offset_y: string | null;
+  rotation: number;
+  scale: number;
+  filter: string | null;
+  object_position: string | null;
+  updated_at?: string;
+};
+
+let siteImageCache: Map<string, SiteImage> | null = null;
+
+export async function fetchAllSiteImages(): Promise<Map<string, SiteImage>> {
+  if (siteImageCache) return siteImageCache;
+  const { data, error } = await supabase.from("site_image").select("*");
+  const m = new Map<string, SiteImage>();
+  if (error) {
+    console.warn("[supabase] fetchAllSiteImages", error);
+  } else {
+    for (const row of (data || []) as SiteImage[]) m.set(row.id, row);
+  }
+  siteImageCache = m;
+  return m;
+}
+
+export async function upsertSiteImage(row: Partial<SiteImage> & { id: string }) {
+  const payload = { ...row, updated_at: new Date().toISOString() };
+  const { error } = await supabase.from("site_image").upsert(payload);
+  if (error) {
+    console.error("[supabase] upsertSiteImage", error);
+    window.dispatchEvent(new CustomEvent("mural:save", { detail: { ok: false } }));
+    return;
+  }
+  if (siteImageCache) {
+    siteImageCache.set(row.id, { ...(siteImageCache.get(row.id) || ({} as SiteImage)), ...payload } as SiteImage);
+  }
+  window.dispatchEvent(new CustomEvent("mural:save", { detail: { ok: true } }));
+}
+
+export function subscribeSiteImages(onChange: () => void): () => void {
+  const channel = supabase
+    .channel("site_image_changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "site_image" },
+      () => {
+        siteImageCache = null;
+        onChange();
+      }
+    )
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
+
+/** Upload an arbitrary image file (for the image editor's "Replace" action). */
+export async function uploadSiteImageFile(file: File): Promise<string | null> {
+  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+  const path = `site/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, {
+    cacheControl: "31536000",
+    upsert: false,
+  });
+  if (error) {
+    console.error("[supabase] uploadSiteImageFile", error);
+    return null;
+  }
+  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function deleteImageFile(src: string): Promise<void> {
   // Extract storage path from public URL
   const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
