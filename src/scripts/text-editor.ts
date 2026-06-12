@@ -301,9 +301,15 @@ const FRAME_PX_MOBILE = 18;
 
 function isOnFrame(el: HTMLElement, clientX: number, clientY: number): boolean {
   const r = el.getBoundingClientRect();
-  const frame = window.matchMedia("(max-width: 767px)").matches ? FRAME_PX_MOBILE : FRAME_PX_DESKTOP;
   // Only count the inside band — outside the box belongs to other things
   if (clientX < r.left || clientX > r.right || clientY < r.top || clientY > r.bottom) return false;
+
+  // Cap the frame band at one third of the smaller side so a small element
+  // (e.g. the "enter >" button) still has a usable centre for text edit.
+  const baseFrame = window.matchMedia("(max-width: 767px)").matches ? FRAME_PX_MOBILE : FRAME_PX_DESKTOP;
+  const smallerSide = Math.min(r.width, r.height);
+  const frame = Math.max(4, Math.min(baseFrame, Math.floor(smallerSide / 3)));
+
   return (
     clientX - r.left < frame ||
     r.right - clientX < frame ||
@@ -336,6 +342,14 @@ function bindEditClicks() {
           e.preventDefault();
           e.stopPropagation();
           select(el);
+          return;
+        }
+
+        // If the click landed on the frame, the pointerdown handler already
+        // took it as a drag — don't queue an edit-select.
+        if (isOnFrame(el, e.clientX, e.clientY)) {
+          e.preventDefault();
+          e.stopPropagation();
           return;
         }
 
@@ -393,6 +407,7 @@ function beginDragMove(el: HTMLElement, e: PointerEvent) {
   const initial = rowFor(el.dataset.editableText!) || ({} as SiteText);
   const x0 = parsePx(initial.offset_x);
   const y0 = parsePx(initial.offset_y);
+  let moved = false;
 
   // Capture so we keep getting events even if the cursor leaves the element
   try { el.setPointerCapture(e.pointerId); } catch {}
@@ -400,6 +415,7 @@ function beginDragMove(el: HTMLElement, e: PointerEvent) {
   const move = (ev: PointerEvent) => {
     const dx = ev.clientX - startX;
     const dy = ev.clientY - startY;
+    if (!moved && Math.hypot(dx, dy) > 3) moved = true;
     patchVariantRow(el, {
       offset_x: `${Math.round(x0 + dx)}px`,
       offset_y: `${Math.round(y0 + dy)}px`,
@@ -411,6 +427,18 @@ function beginDragMove(el: HTMLElement, e: PointerEvent) {
     el.removeEventListener("pointerup", up);
     el.removeEventListener("pointercancel", up);
     el.classList.remove("is-alt-dragging");
+    if (moved) {
+      // Block the click event the browser will fire after pointerup, so
+      // a drag doesn't accidentally enter edit mode on release.
+      const blockClick = (ev: MouseEvent) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        el.removeEventListener("click", blockClick, true);
+      };
+      el.addEventListener("click", blockClick, { capture: true });
+      // Safety: drop the blocker after one tick if no click arrives
+      setTimeout(() => el.removeEventListener("click", blockClick, true), 50);
+    }
     const variantId = effectiveVariantId(el.dataset.editableText!);
     const row = textCache.get(variantId);
     if (row) await upsertSiteText(row);
