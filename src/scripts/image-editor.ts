@@ -143,9 +143,25 @@ function autoTagImages() {
     const id = count > 1 ? `${base}#${count}` : base;
 
     // Wrap the img in a span so handles + transforms apply cleanly.
+    // The wrapper has to match the original img's layout role — if the
+    // img was block-level (CSS `display: block`) we need a block-level
+    // wrapper, otherwise an inline-block wrapper sizes to its content
+    // and the img inside (with `width: 100%`) collapses to its
+    // intrinsic width or smaller. That's the bug behind hero images
+    // looking smaller in the editor than they do on the live site.
     const wrapper = document.createElement("span");
     wrapper.dataset.editableImage = id;
-    wrapper.style.display = img.style.display === "block" ? "inline-block" : "inline-block";
+    const imgCs = getComputedStyle(img);
+    const isBlock = imgCs.display === "block";
+    wrapper.style.display = isBlock ? "block" : "inline-block";
+    // Mirror the img's box geometry so the wrapper occupies the same
+    // slot in flow that the bare img used to. We must compute this AT
+    // INSERT TIME — once the img is inside the (sizes-to-content)
+    // wrapper, getComputedStyle on it would reflect the broken inner
+    // size, not the page's intent.
+    if (isBlock && imgCs.width && imgCs.width !== "auto") {
+      wrapper.style.width = imgCs.width;
+    }
     img.parentElement?.insertBefore(wrapper, img);
     wrapper.appendChild(img);
   }

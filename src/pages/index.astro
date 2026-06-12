@@ -265,6 +265,11 @@ const sections = [
   .home-hero__title {
     margin: 0;
     width: min(86vw, 860px);
+    /* flex-shrink: 0 stops flexbox from squishing the title below its
+       declared width when the editor's image wrapper or any other child
+       reports a larger intrinsic basis — without this the hero image
+       renders ~10% narrower in the editor than on the live phone. */
+    flex-shrink: 0;
     line-height: 0;
   }
 
