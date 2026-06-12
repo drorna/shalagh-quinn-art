@@ -631,6 +631,7 @@ function renderToolbar(el: HTMLElement) {
         .map((w) => `<option value="${w}" ${typo.font_weight === w ? "selected" : ""}>${w || "weight"}</option>`)
         .join("")}
     </select>
+    <button class="te-bold ${(typo.font_weight === "700" || typo.font_weight === "600") ? "is-on" : ""}" type="button" title="bold">B</button>
     <button class="te-italic ${typo.font_style === "italic" ? "is-on" : ""}" type="button" title="italic">I</button>
     <input class="te-color" type="color" title="colour" value="${typo.color || rgbToHex(getComputedStyle(el).color) || "#ffffff"}" />
     <label class="te-rotation" title="rotation (deg)">
@@ -643,6 +644,7 @@ function renderToolbar(el: HTMLElement) {
 
   const fontSel = toolbar.querySelector<HTMLSelectElement>(".te-font")!;
   const weightSel = toolbar.querySelector<HTMLSelectElement>(".te-weight")!;
+  const boldBtn = toolbar.querySelector<HTMLButtonElement>(".te-bold")!;
   const italicBtn = toolbar.querySelector<HTMLButtonElement>(".te-italic")!;
   const colorIn = toolbar.querySelector<HTMLInputElement>(".te-color")!;
   const resetBtn = toolbar.querySelector<HTMLButtonElement>(".te-reset")!;
@@ -668,6 +670,13 @@ function renderToolbar(el: HTMLElement) {
 
   fontSel.addEventListener("change", () => updateTypo("font_family", fontSel.value || null));
   weightSel.addEventListener("change", () => updateTypo("font_weight", weightSel.value || null));
+  boldBtn.addEventListener("click", () => {
+    const isOn = boldBtn.classList.toggle("is-on");
+    updateTypo("font_weight", isOn ? "700" : null);
+    // Sync the weight dropdown so it reflects the change
+    const sel = toolbar?.querySelector<HTMLSelectElement>(".te-weight");
+    if (sel) sel.value = isOn ? "700" : "";
+  });
   italicBtn.addEventListener("click", () => {
     const isOn = italicBtn.classList.toggle("is-on");
     updateTypo("font_style", isOn ? "italic" : null);
@@ -916,11 +925,15 @@ function injectStyles() {
     }
     .text-edit-toolbar .te-font { min-width: 160px; }
     .text-edit-toolbar .te-weight { min-width: 90px; }
+    .text-edit-toolbar .te-bold,
     .text-edit-toolbar .te-italic,
     .text-edit-toolbar .te-reset {
       background: #222; color: #fff; border: 1px solid #555;
       border-radius: 3px; cursor: pointer; padding: 4px 9px; font: inherit;
     }
+    .text-edit-toolbar .te-bold { font-weight: bold; }
+    .text-edit-toolbar .te-italic { font-style: italic; }
+    .text-edit-toolbar .te-bold.is-on,
     .text-edit-toolbar .te-italic.is-on { background: #4cc2ff; color: #000; border-color: #4cc2ff; }
     .text-edit-toolbar input[type="color"] {
       background: transparent; border: 1px solid #555; padding: 0; width: 36px; height: 28px;

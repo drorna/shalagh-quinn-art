@@ -211,6 +211,26 @@ function bindHover() {
   for (const el of getEditableImages()) {
     el.classList.add("is-editable-image");
     el.addEventListener("pointerdown", onMouseDown as any);
+
+    // If the wrapped image sits inside an <a>, the browser would still
+    // fire a navigation click on the parent anchor whenever the user
+    // taps the image. In edit mode we want a tap to only select/move
+    // the image — never navigate. Swallow the click on the way up.
+    const parentLink = el.closest("a") as HTMLAnchorElement | null;
+    if (parentLink && !parentLink.dataset.imgEditSwallow) {
+      parentLink.dataset.imgEditSwallow = "1";
+      parentLink.addEventListener(
+        "click",
+        (e) => {
+          const t = e.target as HTMLElement | null;
+          if (t && t.closest("[data-editable-image]")) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        },
+        true,
+      );
+    }
   }
 }
 
@@ -394,12 +414,15 @@ function renderToolbar(el: HTMLElement) {
   const baseId = el.dataset.editableImage!;
   const id = effectiveVariantId(baseId);
   const row = rowFor(baseId) || ({} as SiteImage);
+  const parentLink = el.closest("a") as HTMLAnchorElement | null;
+  const linkHref = parentLink?.getAttribute("href") || "";
 
   toolbar.innerHTML = `
     <label class="ie-btn">
       replace
       <input type="file" accept="image/*" hidden data-replace />
     </label>
+    ${parentLink ? `<button class="ie-btn ie-open-link" type="button" title="open the linked page">↗ open link</button>` : ""}
     <label class="ie-field" title="rotation">
       rot
       <input type="range" min="-180" max="180" step="1" value="${row.rotation ?? 0}" data-field="rotation" />
@@ -412,6 +435,14 @@ function renderToolbar(el: HTMLElement) {
     </label>
     <button class="ie-btn ie-reset" type="button" title="reset to defaults">⟲ reset</button>
   `;
+
+  const openLink = toolbar.querySelector<HTMLButtonElement>(".ie-open-link");
+  if (openLink && linkHref) {
+    openLink.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      window.location.href = linkHref;
+    });
+  }
 
   toolbar.querySelector<HTMLInputElement>("[data-replace]")!.addEventListener("change", async (e) => {
     const input = e.target as HTMLInputElement;
