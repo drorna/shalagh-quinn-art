@@ -239,8 +239,9 @@ const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
 
   .murals-canvas-wrap {
     position: relative;
-    max-width: 1280px;
-    margin: 0 auto;
+    /* Full-bleed: tiles span edge-to-edge of the viewport. */
+    margin-left: calc(-1 * clamp(var(--sp-3), 4vw, var(--sp-8)));
+    margin-right: calc(-1 * clamp(var(--sp-3), 4vw, var(--sp-8)));
   }
   .murals-canvas {
     position: relative;

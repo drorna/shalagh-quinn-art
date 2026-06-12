@@ -210,8 +210,11 @@ const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
      horizontal scroll. */
   .murals-canvas-wrap {
     position: relative;
-    max-width: 1280px;
-    margin: 0 auto;
+    /* Full-bleed breakout: pull the wrap outside the .murals-page
+       horizontal padding so tiles render edge-to-edge of the viewport.
+       Same proportional layout, just bigger. */
+    margin-left: calc(-1 * clamp(var(--sp-3), 4vw, var(--sp-8)));
+    margin-right: calc(-1 * clamp(var(--sp-3), 4vw, var(--sp-8)));
   }
   .murals-canvas {
     position: relative;
