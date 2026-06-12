@@ -234,8 +234,12 @@ const sections = [
 
   .home-hero {
     position: relative;
-    min-height: min(100svh, 900px);
-    padding: clamp(var(--sp-4), 6vw, var(--sp-8)) var(--sp-4) var(--sp-6);
+    /* Height is driven by content, not by the viewport — a fixed
+       proportional padding above and below the trust-the-process image
+       gives the same hero shape on every phone, regardless of how tall
+       the visitor's browser window is. */
+    padding: clamp(var(--sp-6), 12vw, var(--sp-12)) var(--sp-4)
+             clamp(var(--sp-5), 10vw, var(--sp-10));
     display: flex;
     align-items: center;
     justify-content: center;

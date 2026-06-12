@@ -416,12 +416,9 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
          the dock so each can be tuned independently). */
       .me-phone {
         position: relative;
-        /* Fixed phone dimensions so the editor looks identical on every
-           host monitor / laptop / browser-window size. 390 × 758 maps to
-           the common Android (Pixel 7-ish) viewport at typical browser
-           chrome height. Visitors on real phones will of course see
-           their own device's true dimensions; this is just the preview
-           canvas. */
+        /* Fixed phone dimensions so the editor canvas is the same on
+           every host monitor / browser window. The live site adapts
+           responsively to whatever device the visitor is on. */
         width: 390px;
         height: 758px;
         background: #000;
