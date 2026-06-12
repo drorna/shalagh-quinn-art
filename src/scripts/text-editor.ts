@@ -102,7 +102,7 @@ async function boot() {
     mountToolbar();
     bindEditClicks();
     patchInternalLinks();
-    document.addEventListener("pointerdown", (e) => {
+    const outside = (e: Event) => {
       const t = e.target as HTMLElement;
       if (
         t.closest("[data-editable-text]") ||
@@ -117,7 +117,15 @@ async function boot() {
       // Outside click: exit editing + deselect
       if (editingEl) void exitEditing();
       unselect();
-    });
+    };
+    document.addEventListener("pointerdown", outside);
+    // Outside clicks in the parent shell (when the toolbar is docked
+    // out there) should also dismiss the selection.
+    try {
+      if (window.parent !== window) {
+        window.parent.document.addEventListener("pointerdown", outside);
+      }
+    } catch {}
   }
 
   subscribeSiteText(async () => {
@@ -411,7 +419,13 @@ function unselect() {
     selectedEl.style.position = "";
     delete selectedEl.dataset.tePosOrig;
   }
-  if (toolbar) toolbar.style.display = "none";
+  if (toolbar) {
+    toolbar.style.display = "none";
+    // Restore the dock's empty state when we leave docked mode.
+    if (toolbar.classList.contains("is-docked")) {
+      try { toolbar.parentElement?.classList.remove("is-active"); } catch {}
+    }
+  }
   selectedEl = null;
 }
 
@@ -566,17 +580,61 @@ function patchVariantRow(el: HTMLElement, patch: Partial<SiteText>): SiteText {
 
 /* ===================== Floating toolbar ===================== */
 
+/**
+ * If we're inside a same-origin iframe whose parent has reserved a
+ * "[data-toolbar-dock]" container (the /edit/mobile/ shell does), we
+ * mount the toolbar OUT THERE — beside the phone preview, not on top
+ * of it. Cleaner for the eye, never blocks the page being edited, and
+ * survives zooming the editor without going off-screen.
+ */
+function getDockedHost(): { doc: Document; container: HTMLElement } | null {
+  try {
+    if (window.parent === window) return null;
+    const pdoc = window.parent.document;
+    const dock = pdoc.querySelector<HTMLElement>("[data-toolbar-dock]");
+    if (!dock) return null;
+    return { doc: pdoc, container: dock };
+  } catch {
+    return null;
+  }
+}
+
 function mountToolbar() {
-  toolbar = document.createElement("div");
-  toolbar.className = "text-edit-toolbar";
-  toolbar.dataset.noEdit = "";
-  toolbar.style.display = "none";
-  document.body.appendChild(toolbar);
+  const docked = getDockedHost();
+  if (docked) {
+    injectStyles(docked.doc);
+    toolbar = docked.doc.createElement("div");
+    toolbar.className = "text-edit-toolbar is-docked";
+    toolbar.dataset.noEdit = "";
+    toolbar.style.display = "none";
+    docked.container.appendChild(toolbar);
+    // Clean up if the iframe navigates away.
+    window.addEventListener("pagehide", () => {
+      try { toolbar?.remove(); } catch {}
+    });
+  } else {
+    toolbar = document.createElement("div");
+    toolbar.className = "text-edit-toolbar";
+    toolbar.dataset.noEdit = "";
+    toolbar.style.display = "none";
+    document.body.appendChild(toolbar);
+  }
 }
 
 function positionToolbar(el: HTMLElement) {
   if (!toolbar) return;
   toolbar.style.display = "flex";
+  // Docked toolbars live in the parent shell — CSS handles positioning;
+  // we just mark the dock as active so the empty-state hides.
+  if (toolbar.classList.contains("is-docked")) {
+    toolbar.style.position = "";
+    toolbar.style.left = toolbar.style.right = toolbar.style.top = toolbar.style.bottom = "";
+    try {
+      const dock = toolbar.parentElement;
+      if (dock) dock.classList.add("is-active");
+    } catch {}
+    return;
+  }
   if (window.matchMedia("(max-width: 767px)").matches) {
     toolbar.style.position = "fixed";
     toolbar.style.left = "0";
@@ -821,11 +879,50 @@ function rgbToHex(rgb: string): string | null {
 }
 
 /* ===================== Styles ===================== */
-function injectStyles() {
-  if (document.getElementById("text-edit-styles")) return;
-  const s = document.createElement("style");
+function injectStyles(targetDoc: Document = document) {
+  if (targetDoc.getElementById("text-edit-styles")) return;
+  const s = targetDoc.createElement("style");
   s.id = "text-edit-styles";
   s.textContent = `
+    /* Toolbar mounted into the parent shell's dock: vertical panel
+       layout, sits to the right of the phone preview. */
+    .text-edit-toolbar.is-docked {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(22, 22, 22, 0.95), rgba(16, 16, 16, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: "Inter", "SF Pro Text", system-ui, sans-serif;
+      font-size: 13px;
+      color: #fff;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+      overflow: visible;
+      max-width: none;
+    }
+    .text-edit-toolbar.is-docked .te-variant { align-self: flex-start; }
+    .text-edit-toolbar.is-docked select,
+    .text-edit-toolbar.is-docked input[type="text"] { width: 100%; }
+    .text-edit-toolbar.is-docked .te-size-stepper { align-self: stretch; }
+    .text-edit-toolbar.is-docked .te-size-stepper button {
+      width: 36px; height: 36px; font-size: 18px;
+    }
+    .text-edit-toolbar.is-docked .te-size-value {
+      flex: 1; min-width: 0; width: auto; font-size: 16px;
+    }
+    .text-edit-toolbar.is-docked .te-rotation { display: flex; align-items: center; gap: 8px; }
+    .text-edit-toolbar.is-docked .te-rotation input[type="range"] { flex: 1; }
+    .text-edit-toolbar.is-docked .te-edit-text,
+    .text-edit-toolbar.is-docked .te-open-link {
+      width: 100%; justify-content: center; padding: 10px;
+    }
+    .text-edit-toolbar.is-docked .te-italic,
+    .text-edit-toolbar.is-docked .te-bold,
+    .text-edit-toolbar.is-docked .te-reset { padding: 8px 12px; }
+
     /* Editable elements in edit mode. touch-action: none so a finger drag
        never gets stolen by the browser as a scroll. */
     body.is-text-edit [data-editable-text].is-editable {

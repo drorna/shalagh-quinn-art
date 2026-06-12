@@ -139,15 +139,57 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
       }
       .me-bar .me-btn-view:hover { filter: brightness(1.06); }
 
-      /* ---------- Phone frame ---------- */
+      /* ---------- Main split: phone on the left, dock on the right ---------- */
 
-      .me-stage {
+      .me-main {
         display: flex;
+        gap: 28px;
         align-items: flex-start;
         justify-content: center;
         overflow: auto;
         padding: 30px 18px 40px;
       }
+
+      .me-stage { flex: 0 0 auto; }
+
+      .me-dock {
+        flex: 0 1 380px;
+        min-width: 280px;
+        max-width: 420px;
+        align-self: stretch;
+        position: sticky;
+        top: 30px;
+      }
+      .me-dock-empty {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px dashed rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        padding: 36px 24px;
+        color: rgba(255, 255, 255, 0.55);
+        text-align: center;
+      }
+      .me-dock-empty-icon {
+        font-size: 26px;
+        margin-bottom: 8px;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .me-dock-empty-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.85);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+      }
+      .me-dock-empty-text {
+        font-size: 13px;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .me-dock.is-active .me-dock-empty { display: none; }
+
+      /* Phone wrapper styles (kept as a deliberately distinct block from
+         the dock so each can be tuned independently). */
       .me-phone {
         position: relative;
         width: 390px;
@@ -239,13 +281,25 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
         <a class="me-btn me-btn-view" id="me-view" href="#" target="_blank" rel="noopener" title="open public version">↗ view</a>
       </div>
 
-      <div class="me-stage">
-        <div class="me-phone">
-          <div class="me-phone__notch"></div>
-          <div class="me-phone__screen">
-            <iframe id="me-iframe" src={iframeSrc} title="mobile editor"></iframe>
+      <div class="me-main">
+        <div class="me-stage">
+          <div class="me-phone">
+            <div class="me-phone__notch"></div>
+            <div class="me-phone__screen">
+              <iframe id="me-iframe" src={iframeSrc} title="mobile editor"></iframe>
+            </div>
           </div>
         </div>
+        <aside class="me-dock" data-toolbar-dock>
+          <div class="me-dock-empty" data-dock-empty>
+            <div class="me-dock-empty-icon">↖</div>
+            <div class="me-dock-empty-title">nothing selected</div>
+            <div class="me-dock-empty-text">
+              tap a text box or image inside the phone to edit it. its
+              controls will appear here, away from the preview.
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
 

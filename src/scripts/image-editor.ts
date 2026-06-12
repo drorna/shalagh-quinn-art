@@ -76,16 +76,26 @@ async function boot() {
     document.body.classList.add("is-image-edit");
     mountToolbar();
     bindHover();
-    document.addEventListener("mousedown", (e) => {
+    const outside = (e: Event) => {
       const t = e.target as HTMLElement;
       if (
         !t.closest("[data-editable-image]") &&
         !t.closest(".image-edit-toolbar") &&
-        !t.closest(".img-handle")
+        !t.closest(".img-handle") &&
+        !t.closest("[data-editable-text]") &&
+        !t.closest(".text-edit-toolbar") &&
+        !t.closest(".te-handle") &&
+        !t.closest("[data-no-edit]")
       ) {
         unselect();
       }
-    });
+    };
+    document.addEventListener("mousedown", outside);
+    try {
+      if (window.parent !== window) {
+        window.parent.document.addEventListener("mousedown", outside);
+      }
+    } catch {}
   }
 
   subscribeSiteImages(async () => {
@@ -316,7 +326,12 @@ function unselect() {
   if (!selected) return;
   selected.classList.remove("is-image-selected");
   selected.querySelectorAll(".img-handle").forEach((h) => h.remove());
-  if (toolbar) toolbar.style.display = "none";
+  if (toolbar) {
+    toolbar.style.display = "none";
+    if (toolbar.classList.contains("is-docked")) {
+      try { toolbar.parentElement?.classList.remove("is-active"); } catch {}
+    }
+  }
   selected = null;
 }
 
@@ -392,17 +407,54 @@ function parsePx(v: string | null | undefined): number {
 
 /* ===================== Toolbar ===================== */
 
+/**
+ * Same dock pattern as text-editor: if we're inside the /edit/mobile/
+ * shell (a same-origin iframe with a [data-toolbar-dock] container in
+ * its parent), mount the image toolbar over there instead of over the
+ * preview itself. Less obstructive and zoom-safe.
+ */
+function getDockedHost(): { doc: Document; container: HTMLElement } | null {
+  try {
+    if (window.parent === window) return null;
+    const pdoc = window.parent.document;
+    const dock = pdoc.querySelector<HTMLElement>("[data-toolbar-dock]");
+    if (!dock) return null;
+    return { doc: pdoc, container: dock };
+  } catch {
+    return null;
+  }
+}
+
 function mountToolbar() {
-  toolbar = document.createElement("div");
-  toolbar.className = "image-edit-toolbar";
-  toolbar.dataset.noEdit = "";
-  toolbar.style.display = "none";
-  document.body.appendChild(toolbar);
+  const docked = getDockedHost();
+  if (docked) {
+    injectStyles(docked.doc);
+    toolbar = docked.doc.createElement("div");
+    toolbar.className = "image-edit-toolbar is-docked";
+    toolbar.dataset.noEdit = "";
+    toolbar.style.display = "none";
+    docked.container.appendChild(toolbar);
+    window.addEventListener("pagehide", () => {
+      try { toolbar?.remove(); } catch {}
+    });
+  } else {
+    toolbar = document.createElement("div");
+    toolbar.className = "image-edit-toolbar";
+    toolbar.dataset.noEdit = "";
+    toolbar.style.display = "none";
+    document.body.appendChild(toolbar);
+  }
 }
 
 function positionToolbar(el: HTMLElement) {
   if (!toolbar) return;
   toolbar.style.display = "flex";
+  if (toolbar.classList.contains("is-docked")) {
+    toolbar.style.position = "";
+    toolbar.style.left = toolbar.style.right = toolbar.style.top = toolbar.style.bottom = "";
+    try { toolbar.parentElement?.classList.add("is-active"); } catch {}
+    return;
+  }
   if (window.matchMedia("(max-width: 767px)").matches) {
     toolbar.style.position = "fixed";
     toolbar.style.left = "0";
@@ -499,11 +551,39 @@ function renderToolbar(el: HTMLElement) {
 
 /* ===================== Styles ===================== */
 
-function injectStyles() {
-  if (document.getElementById("image-edit-styles")) return;
-  const s = document.createElement("style");
+function injectStyles(targetDoc: Document = document) {
+  if (targetDoc.getElementById("image-edit-styles")) return;
+  const s = targetDoc.createElement("style");
   s.id = "image-edit-styles";
   s.textContent = `
+    /* Toolbar mounted into the parent shell's dock (mobile editor). */
+    .image-edit-toolbar.is-docked {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(22, 22, 22, 0.95), rgba(16, 16, 16, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: "Inter", "SF Pro Text", system-ui, sans-serif;
+      font-size: 13px;
+      color: #fff;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+      overflow: visible;
+      max-width: none;
+    }
+    .image-edit-toolbar.is-docked .ie-btn {
+      width: 100%; justify-content: center; padding: 10px;
+    }
+    .image-edit-toolbar.is-docked .ie-field {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .image-edit-toolbar.is-docked .ie-field input[type="range"] {
+      flex: 1;
+    }
+
     [data-editable-image] {
       display: inline-block;
       transform-origin: center center;
