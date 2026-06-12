@@ -83,6 +83,67 @@ export async function uploadImageFile(file: File): Promise<{ src: string; path: 
   return { src: data.publicUrl, path };
 }
 
+/* ===================================================================
+   site_text  — editable text + per-element font/size/weight/colour
+   =================================================================== */
+
+export type SiteText = {
+  id: string;
+  value: string | null;
+  font_family: string | null;
+  font_size: string | null;
+  font_weight: string | null;
+  font_style: string | null;
+  color: string | null;
+  letter_spacing: string | null;
+  line_height: string | null;
+  text_align: string | null;
+  updated_at?: string;
+};
+
+let siteTextCache: Map<string, SiteText> | null = null;
+
+export async function fetchAllSiteText(): Promise<Map<string, SiteText>> {
+  if (siteTextCache) return siteTextCache;
+  const { data, error } = await supabase.from("site_text").select("*");
+  const m = new Map<string, SiteText>();
+  if (error) {
+    console.warn("[supabase] fetchAllSiteText", error);
+  } else {
+    for (const row of (data || []) as SiteText[]) m.set(row.id, row);
+  }
+  siteTextCache = m;
+  return m;
+}
+
+export async function upsertSiteText(row: Partial<SiteText> & { id: string }) {
+  const payload = { ...row, updated_at: new Date().toISOString() };
+  const { error } = await supabase.from("site_text").upsert(payload);
+  if (error) {
+    console.error("[supabase] upsertSiteText", error);
+    window.dispatchEvent(new CustomEvent("mural:save", { detail: { ok: false } }));
+    return;
+  }
+  // Update cache so subsequent reads reflect the new value immediately
+  if (siteTextCache) siteTextCache.set(row.id, { ...(siteTextCache.get(row.id) || {} as SiteText), ...payload } as SiteText);
+  window.dispatchEvent(new CustomEvent("mural:save", { detail: { ok: true } }));
+}
+
+export function subscribeSiteText(onChange: () => void): () => void {
+  const channel = supabase
+    .channel("site_text_changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "site_text" },
+      () => {
+        siteTextCache = null; // invalidate
+        onChange();
+      }
+    )
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
+
 export async function deleteImageFile(src: string): Promise<void> {
   // Extract storage path from public URL
   const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;

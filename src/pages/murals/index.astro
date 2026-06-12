@@ -1,6 +1,7 @@
 ---
 import { Image } from "astro:assets";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import EditableText from "../../components/EditableText.astro";
 import handMurals from "../../assets/images/murals/_hand-murals.png";
 ---
 
@@ -23,11 +24,11 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
           class="murals-intro__title-img"
         />
       </h1>
-      <p class="murals-intro__journey">the jounrey</p>
+      <EditableText id="murals.intro.journey" tag="p" class="murals-intro__journey">the jounrey</EditableText>
       <div class="murals-intro__copy">
-        <p>since 2020 I have been travelling and painitng walls through exchanges.</p>
-        <p>I have let the art be my guide moving me through many wordls painting cafes, restuaurants, hostels, and guesthouses.</p>
-        <p class="murals-intro__copy-end">enjoy the journey</p>
+        <EditableText id="murals.intro.p1" tag="p">since 2020 I have been travelling and painitng walls through exchanges.</EditableText>
+        <EditableText id="murals.intro.p2" tag="p">I have let the art be my guide moving me through many wordls painting cafes, restuaurants, hostels, and guesthouses.</EditableText>
+        <EditableText id="murals.intro.end" tag="p" class="murals-intro__copy-end">enjoy the journey</EditableText>
       </div>
     </section>
 
@@ -39,7 +40,9 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
 
   <script>
     import { initMuralsBoard } from "../../scripts/murals-board";
+    import { initTextEditor } from "../../scripts/text-editor";
     initMuralsBoard("home");
+    initTextEditor();
   </script>
 </BaseLayout>
 

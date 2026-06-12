@@ -1,6 +1,7 @@
 ---
 import { Image } from "astro:assets";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import EditableText from "../../components/EditableText.astro";
 
 // Drawing of the yoga figure — Drorna's Layer 5 PNG with transparent background.
 import yogaImg from "../../assets/images/about/yoga-figure.png";
@@ -43,44 +44,35 @@ import titleImg from "../../assets/images/about/hand-its-about-time.png";
         />
       </h1>
 
-      <p class="about-page__subtitle">a trust in process</p>
+      <EditableText id="about.subtitle" tag="p" class="about-page__subtitle">a trust in process</EditableText>
 
       <div class="about-page__story">
-        <p class="about-page__story-stanza">
-          when I was 23<br />
-          I had a vision
-        </p>
+        <EditableText id="about.story.stanza" tag="p" class="about-page__story-stanza">when I was 23
+I had a vision</EditableText>
 
-        <p class="about-page__story-quote">
-          enjoy the process of learning about<br />
-          yourself in everything you do
-        </p>
+        <EditableText id="about.story.quote" tag="p" class="about-page__story-quote">enjoy the process of learning about
+yourself in everything you do</EditableText>
 
-        <p>
-          it came at a time in my life when I need to let go of controlling my time.
-          I was dealing with an addiction to an adhd medication that left me obessed
-          with perfecting my world, planning my time, and making the most of it all -
-          but disconnected  from my body.
-        </p>
+        <EditableText id="about.story.p1" tag="p">it came at a time in my life when I need to let go of controlling my time. I was dealing with an addiction to an adhd medication that left me obessed with perfecting my world, planning my time, and making the most of it all - but disconnected  from my body.</EditableText>
 
-        <p>
-          Yoga helped connected me back to my body and returned the memory
-          that life was a an unknown unfolding process meant to follow
-        </p>
+        <EditableText id="about.story.p2" tag="p">Yoga helped connected me back to my body and returned the memory that life was a an unknown unfolding process meant to follow</EditableText>
 
-        <p>
-          for the rest of my twenties,<br />
-          each day I have followed this unknown unfolding process<br />
-          as it has taken me around the world.
-        </p>
+        <EditableText id="about.story.p3" tag="p">for the rest of my twenties,
+each day I have followed this unknown unfolding process
+as it has taken me around the world.</EditableText>
 
         <p class="about-page__story-tail">
-          follow the jounrey...<br />
-          <a href="/murals/" class="about-page__forward">mural</a>
+          <EditableText id="about.story.tail" tag="span">follow the jounrey...</EditableText><br />
+          <a href="/murals/" class="about-page__forward"><EditableText id="about.story.cta" tag="span">mural</EditableText></a>
         </p>
       </div>
     </article>
   </div>
+
+  <script>
+    import { initTextEditor } from "../../scripts/text-editor";
+    initTextEditor();
+  </script>
 </BaseLayout>
 
 <style>

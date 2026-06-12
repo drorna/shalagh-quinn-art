@@ -1,0 +1,31 @@
+---
+/**
+ * EditableText
+ *
+ * Wraps a text element so it can be edited live (and its font / size /
+ * weight / colour changed) via the site editor when ?edit=<token> is on.
+ *
+ * The default text and styles come from the slot/attrs. At runtime,
+ * scripts/text-editor.ts looks up an override in the `site_text` table
+ * keyed by `id` and swaps it in if present.
+ *
+ * Example:
+ *   <EditableText id="murals.intro.journey" tag="p" class="murals-intro__journey">
+ *     the jounrey
+ *   </EditableText>
+ */
+interface Props {
+  /** Unique key for this text fragment, e.g. "murals.intro.journey". */
+  id: string;
+  /** HTML element to render (default: span). */
+  tag?: string;
+  /** Optional class string passed through to the rendered element. */
+  class?: string;
+}
+const { id, tag = "span", class: className } = Astro.props;
+const Tag = tag as any;
+---
+
+<Tag class={className} data-editable-text={id}>
+  <slot />
+</Tag>

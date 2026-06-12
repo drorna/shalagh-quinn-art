@@ -2,6 +2,7 @@
 import { Image } from "astro:assets";
 import type { ImageMetadata } from "astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import EditableText from "../components/EditableText.astro";
 
 import trustTheProcess from "../assets/images/home/trust-the-process.png";
 import handAbout from "../assets/images/home/hand-about.png";
@@ -119,8 +120,8 @@ const sections = [
 
       <div class="home-identity">
         <div class="home-identity__left">
-          <p class="home-identity__name">shalagh</p>
-          <p class="home-identity__pron">pronounced shay - la</p>
+          <EditableText id="home.identity.name" tag="p" class="home-identity__name">shalagh</EditableText>
+          <EditableText id="home.identity.pron" tag="p" class="home-identity__pron">pronounced shay - la</EditableText>
         </div>
 
         <div class="home-identity__right">
@@ -167,7 +168,7 @@ const sections = [
                   class:list={["home-section__hand", `home-section__hand--${s.id}`]}
                 />
               </a>
-              <p class="home-section__subtitle">{s.subtitle}</p>
+              <EditableText id={`home.section.${s.id}.subtitle`} tag="p" class="home-section__subtitle">{s.subtitle}</EditableText>
             </div>
             <a href={s.href} class="home-section__enter">
               enter <span aria-hidden="true">&gt;</span>
@@ -207,6 +208,11 @@ const sections = [
       ))}
     </div>
   </div>
+
+  <script>
+    import { initTextEditor } from "../scripts/text-editor";
+    initTextEditor();
+  </script>
 </BaseLayout>
 
 <style>

@@ -51,7 +51,7 @@ const displayTitle = (slug || "").replace(/[-_]+/g, " ");
     </a>
 
     <header class="murals-sub-header">
-      <h1 class="murals-sub-title">{displayTitle}</h1>
+      <h1 class="murals-sub-title" data-editable-text={`murals.${slug}.title`}>{displayTitle}</h1>
     </header>
 
     <section class="murals-canvas" data-mural-canvas aria-label={displayTitle}>
@@ -64,7 +64,9 @@ const displayTitle = (slug || "").replace(/[-_]+/g, " ");
   </script>
   <script>
     import { initMuralsBoard } from "../../../scripts/murals-board";
+    import { initTextEditor } from "../../../scripts/text-editor";
     initMuralsBoard((window as any).__muralSlug || "home");
+    initTextEditor();
   </script>
 </BaseLayout>
 
