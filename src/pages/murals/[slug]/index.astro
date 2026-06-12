@@ -107,17 +107,18 @@ function autoHref(t: SsrTile): string | null {
 function transformedSrc(src: string | null | undefined): string {
   return src || "";
 }
+const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 100) + 8;
+
 function tileStyle(t: SsrTile): string {
   return [
-    `left:${t.x}cqw`,
-    `top:${t.y}cqw`,
-    `width:${t.w}cqw`,
-    `height:${t.h}cqw`,
+    `left:${t.x}%`,
+    `top:${(t.y / maxBottom) * 100}%`,
+    `width:${t.w}%`,
+    `height:${(t.h / maxBottom) * 100}%`,
     `z-index:${t.order_idx || 0}`,
     t.rotation ? `transform:rotate(${t.rotation}deg)` : "",
   ].filter(Boolean).join(";");
 }
-const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
 ---
 
 <BaseLayout title={`${displayTitle} — murals — shalagh quinn`} bare>
@@ -135,7 +136,7 @@ const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
         class="murals-canvas"
         data-mural-canvas
         aria-label={displayTitle}
-        style={`height: ${maxBottom > 0 ? `${maxBottom + 8}cqw` : "800px"};`}
+        style={`aspect-ratio: 100 / ${maxBottom};`}
       >
         {ssrTiles.map((t) => {
           const href = autoHref(t);
@@ -246,7 +247,6 @@ const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
   .murals-canvas {
     position: relative;
     width: 100%;
-    container-type: inline-size;
     min-height: 80vh;
   }
   .murals-canvas__loading {

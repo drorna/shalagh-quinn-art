@@ -234,22 +234,33 @@ function buildTileEl(t: MuralTile): HTMLElement {
 /**
  * Apply position/size to a tile element.
  *
- * All of t.x, t.y, t.w, t.h are percentages of the canvas WIDTH. We use
- * `cqw` (container query "width") units so the browser handles the math
- * natively: 1cqw = 1% of the canvas inline-size. No JS resize handler
- * needed; CSS reflows when the canvas width changes.
+ * t.x, t.y, t.w, t.h are stored as percentages of the canvas WIDTH.
+ * For x/w that maps to CSS % directly. For y/h we project through the
+ * canvas's aspect ratio (its height = canvas-width × maxBottom/100,
+ * set via the canvas's `aspect-ratio`) so that `top: N%` and
+ * `height: N%` — which CSS resolves against the canvas HEIGHT —
+ * still correspond to the intended fraction of canvas WIDTH.
+ *
+ * This formulation works in every browser that supports
+ * `aspect-ratio` (≥2021), unlike `cqw` units which require Container
+ * Queries support (≥2022) — and on older browsers tiles collapsed on
+ * top of each other.
  */
+function getMaxBottom(): number {
+  const bottom = tiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
+  return bottom > 0 ? bottom + 8 : 100;
+}
+
 function applyTileStyle(el: HTMLElement, t: MuralTile) {
-  el.style.left = `${t.x}cqw`;
-  el.style.width = `${t.w}cqw`;
-  el.style.top = `${t.y}cqw`;
-  el.style.height = `${t.h}cqw`;
+  const total = getMaxBottom();
+  el.style.left = `${t.x}%`;
+  el.style.width = `${t.w}%`;
+  el.style.top = `${(t.y / total) * 100}%`;
+  el.style.height = `${(t.h / total) * 100}%`;
   el.style.zIndex = String(t.order_idx || 0);
   el.style.transform = t.rotation ? `rotate(${t.rotation}deg)` : "";
 }
 
-/** Re-apply styles to every tile (no longer needs to run on resize — cqw
- *  units handle that — but useful after data updates). */
 function reapplyAllTileStyles() {
   if (!canvas) return;
   for (const t of tiles) {
@@ -261,14 +272,13 @@ function reapplyAllTileStyles() {
 
 function resizeCanvasHeight() {
   if (!canvas) return;
-  // Canvas height tracks the bottom-most tile, also in cqw, so the whole
-  // layout zooms uniformly with the canvas width. Falls back to a min
-  // floor so empty pages don't collapse.
-  const bottomPct = tiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
-  if (bottomPct > 0) {
-    canvas.style.height = `${bottomPct + 8}cqw`;
+  const total = getMaxBottom();
+  if (tiles.length > 0) {
+    canvas.style.aspectRatio = `100 / ${total}`;
     canvas.style.minHeight = "80vh";
+    canvas.style.height = "";
   } else {
+    canvas.style.aspectRatio = "";
     canvas.style.height = `${CANVAS_MIN_HEIGHT_PX}px`;
     canvas.style.minHeight = "";
   }
@@ -822,11 +832,12 @@ function injectGlobalTileStyles() {
   const s = document.createElement("style");
   s.id = "mural-tile-styles";
   s.textContent = `
-    /* Each tile is its own container, so the label font-size and inset
-       scale with the TILE width — not the viewport. That way the same
-       label that looks proportional on desktop stays proportional on
-       mobile (a 200px-wide tile on a phone scales the label down the
-       same way it would on a 200px-wide tile on a desktop). */
+    /* Each tile is positioned absolutely inside the canvas. Labels
+       below scale via vw (universal browser support) — close enough
+       in feel to "scale with tile" since on phones tiles ARE vw-sized,
+       and on desktop the larger viewport means bigger tiles + bigger
+       labels in step. Avoids container query units which don't work
+       on older browsers and used to make the entire layout collapse. */
     .mural-tile {
       position: absolute;
       display: block;
@@ -836,7 +847,6 @@ function injectGlobalTileStyles() {
       transform-origin: center center;
       transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
       box-sizing: border-box;
-      container-type: inline-size;
     }
     .mural-tile__inner {
       position: absolute;
@@ -855,15 +865,14 @@ function injectGlobalTileStyles() {
     .mural-tile:hover .mural-tile__img { opacity: 0.94; }
     .mural-tile__label {
       position: absolute;
-      /* Inset scales with tile width — 4% of tile from the corner */
-      right: 4cqi;
-      bottom: 4cqi;
+      right: 6px;
+      bottom: 6px;
       color: #fff;
       font-family: "Caveat", "Patrick Hand", cursive;
       font-weight: 700;
-      /* Label is ~14% of the tile's inline size, capped so it never goes
-         smaller than something legible nor larger than the desktop look. */
-      font-size: clamp(0.9rem, 14cqi, 3.6rem);
+      /* Label scales with viewport width so smaller phones get smaller
+         labels and desktop gets the original size. */
+      font-size: clamp(0.9rem, 3.5vw, 3.6rem);
       line-height: 0.95;
       text-align: right;
       text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.6);
@@ -878,10 +887,6 @@ function injectGlobalTileStyles() {
       margin-top: 2px;
       font-weight: 700;
       font-size: 0.85em;
-    }
-    /* Very small tiles: hide the label entirely — illegible anyway. */
-    @container (max-width: 80px) {
-      .mural-tile__label { display: none; }
     }
   `;
   document.head.appendChild(s);
