@@ -110,13 +110,13 @@ export type SiteText = {
  * Phone edits stay on mobile, desktop edits stay on desktop, and
  * visitors get the version that matches their screen.
  *
- * When the editor's "mobile preview" toggle is on (window.__forceMobileEdit),
- * every read and write goes to the @mobile variant even on a wide screen —
- * so drorna can edit the mobile layout from her laptop.
+ * Mobile editing from a desktop happens at /edit/mobile/ which renders
+ * the site inside a phone-sized iframe — that iframe gets its own
+ * viewport, so matchMedia here naturally returns mobile, with no need
+ * for a forced flag.
  */
 export function effectiveVariantId(baseId: string): string {
   if (typeof window === "undefined") return `${baseId}@desktop`;
-  if ((window as any).__forceMobileEdit) return `${baseId}@mobile`;
   const isMobile = window.matchMedia("(max-width: 767px)").matches;
   return `${baseId}@${isMobile ? "mobile" : "desktop"}`;
 }
@@ -124,7 +124,6 @@ export function effectiveVariantId(baseId: string): string {
 /** Currently-displayed variant (mobile or desktop). */
 export function currentVariant(): "mobile" | "desktop" {
   if (typeof window === "undefined") return "desktop";
-  if ((window as any).__forceMobileEdit) return "mobile";
   return window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop";
 }
 

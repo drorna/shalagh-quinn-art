@@ -93,19 +93,6 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
       document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
     </script>
 
-    <!-- Editor preview: when "mobile preview" is on, force every variant
-         lookup to @mobile + visually constrain the page to 414px wide.
-         Runs BEFORE the editor modules import so they see the flag. -->
-    <script is:inline>
-      try {
-        const inEdit = new URL(location.href).searchParams.get("edit");
-        if (inEdit && localStorage.getItem("shalagh.editEmulateMobile") === "1") {
-          window.__forceMobileEdit = true;
-          document.documentElement.classList.add("emulate-mobile");
-        }
-      } catch (e) {}
-    </script>
-
     <!-- Site-wide editors: every page using BaseLayout becomes editable.
          No per-page wiring needed for new pages. -->
     <script>

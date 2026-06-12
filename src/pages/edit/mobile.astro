@@ -1,0 +1,184 @@
+---
+/**
+ * Mobile-edit shell.
+ *
+ * Why a separate route: the only reliable way to edit the @mobile
+ * layout from a desktop is to give the page a true mobile viewport.
+ * CSS `vw` units and `@media (max-width: 767px)` both depend on the
+ * actual window dimensions, so a `max-width: 414px` on body would
+ * still compute desktop values inside. An iframe gets its own
+ * viewport, so the editor scripts inside see the page exactly as a
+ * phone visitor would — `matchMedia("(max-width: 767px)")` matches,
+ * `effectiveVariantId()` returns @mobile naturally, and every saved
+ * geometry value lines up with what's live on a real device.
+ *
+ * URL: `/edit/mobile/?path=/about/&edit=<token>`
+ *   `path`  — which page to load inside the iframe (defaults to `/`)
+ *   `edit`  — passed through to the iframe so the token unlocks edit mode
+ */
+
+const rawPath = (Astro.url.searchParams.get("path") || "/").replace(/[?#].*$/, "");
+const safePath = rawPath.startsWith("/") ? rawPath : "/" + rawPath;
+const editParam = Astro.url.searchParams.get("edit") || "1";
+const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encodeURIComponent(editParam)}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mobile edit — shalagh</title>
+    <style>
+      html, body {
+        margin: 0; padding: 0; height: 100%;
+        background: #1a1a1a;
+        color: #fff;
+        font-family: monospace;
+        overflow: hidden;
+      }
+      .me-shell {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 100vh;
+      }
+      .me-bar {
+        display: flex; align-items: center; gap: 6px;
+        padding: 8px 12px;
+        background: #161616;
+        border-bottom: 1px solid #444;
+        font-size: 13px;
+        flex-wrap: wrap;
+        z-index: 10;
+      }
+      .me-bar .me-btn {
+        background: #222; color: #fff; border: 1px solid #555;
+        border-radius: 4px; padding: 5px 10px; font: inherit;
+        cursor: pointer; text-decoration: none; line-height: 1;
+        display: inline-flex; align-items: center; min-height: 30px;
+      }
+      .me-bar .me-btn:hover { background: #333; }
+      .me-bar .me-btn-primary { background: #4cc2ff; color: #000; border-color: #4cc2ff; font-weight: bold; }
+      .me-bar .me-btn-desktop { background: #ffcc00; color: #000; border-color: #ffcc00; font-weight: bold; }
+      .me-bar .me-here {
+        color: #888; padding: 0 6px; font-size: 12px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        max-width: 220px;
+      }
+      .me-bar select {
+        background: #222; color: #fff; border: 1px solid #555;
+        padding: 5px 8px; border-radius: 3px; font: inherit;
+        min-height: 30px;
+      }
+      .me-frame {
+        display: flex; align-items: flex-start; justify-content: center;
+        overflow: auto;
+        padding: 16px;
+      }
+      .me-phone {
+        width: 390px;
+        height: 100%;
+        max-height: calc(100vh - 80px);
+        border: 1px solid #444;
+        border-radius: 18px;
+        background: #000;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+      .me-phone iframe {
+        width: 100%; height: 100%; border: 0; display: block;
+        background: #fff;
+      }
+      .me-empty {
+        color: #888; padding: 32px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="me-shell">
+      <div class="me-bar">
+        <button class="me-btn" id="me-back" title="iframe back">←</button>
+        <button class="me-btn" id="me-fwd" title="iframe forward">→</button>
+        <button class="me-btn" id="me-reload" title="reload iframe">⟳</button>
+        <select id="me-pages" title="page">
+          <option value="">— page —</option>
+          <option value="/">home</option>
+          <option value="/about/">about</option>
+          <option value="/murals/">murals</option>
+          <option value="/portraits/">portraits</option>
+          <option value="/prints/">prints</option>
+          <option value="/upload/">upload</option>
+        </select>
+        <span class="me-here" id="me-here"></span>
+        <span style="flex: 1"></span>
+        <a class="me-btn me-btn-desktop" id="me-desktop" href="#" title="switch to desktop edit">🖥 desktop edit</a>
+        <a class="me-btn me-btn-primary" id="me-view" href="#" target="_blank" rel="noopener" title="open public version">view</a>
+      </div>
+      <div class="me-frame">
+        <div class="me-phone">
+          <iframe id="me-iframe" src={iframeSrc} title="mobile editor"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <script is:inline define:vars={{ initialPath: safePath }}>
+      const iframe = document.getElementById("me-iframe");
+      const here = document.getElementById("me-here");
+      const pagesSel = document.getElementById("me-pages");
+      const desktopLink = document.getElementById("me-desktop");
+      const viewLink = document.getElementById("me-view");
+
+      function withEdit(p) {
+        try {
+          const u = new URL(p, location.origin);
+          u.searchParams.set("edit", "1");
+          return u.pathname + u.search;
+        } catch { return p; }
+      }
+      function stripEdit(p) {
+        try {
+          const u = new URL(p, location.origin);
+          u.searchParams.delete("edit");
+          return u.pathname + (u.search || "");
+        } catch { return p; }
+      }
+      function updateChrome() {
+        try {
+          const inner = iframe.contentWindow.location.pathname + iframe.contentWindow.location.search;
+          const publicPath = stripEdit(inner);
+          here.textContent = publicPath;
+          desktopLink.href = withEdit(publicPath);
+          viewLink.href = publicPath;
+          // Persist the iframe location in the outer URL so refresh resumes here
+          const url = new URL(location.href);
+          url.searchParams.set("path", publicPath);
+          // Drop the token from the visible URL once the iframe has it.
+          if (url.searchParams.get("edit") && url.searchParams.get("edit") !== "1") {
+            url.searchParams.set("edit", "1");
+          }
+          history.replaceState({}, "", url.toString());
+          // Sync the pages dropdown selection where possible
+          pagesSel.value = publicPath in {"/":1,"/about/":1,"/murals/":1,"/portraits/":1,"/prints/":1,"/upload/":1} ? publicPath : "";
+        } catch (e) {
+          // Cross-origin failure shouldn't happen (same origin) but be safe
+        }
+      }
+      iframe.addEventListener("load", updateChrome);
+      setTimeout(updateChrome, 250);
+
+      document.getElementById("me-back").addEventListener("click", () => {
+        try { iframe.contentWindow.history.back(); } catch {}
+      });
+      document.getElementById("me-fwd").addEventListener("click", () => {
+        try { iframe.contentWindow.history.forward(); } catch {}
+      });
+      document.getElementById("me-reload").addEventListener("click", () => {
+        try { iframe.contentWindow.location.reload(); } catch {}
+      });
+      pagesSel.addEventListener("change", () => {
+        if (pagesSel.value) iframe.src = withEdit(pagesSel.value);
+      });
+    </script>
+  </body>
+</html>

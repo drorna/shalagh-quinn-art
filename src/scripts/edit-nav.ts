@@ -70,7 +70,7 @@ function withEdit(href: string): string {
 
 function render(): HTMLElement {
   const here = location.pathname;
-  const emulating = (window as any).__forceMobileEdit === true;
+  const mobileEditUrl = `/edit/mobile/?path=${encodeURIComponent(here + location.search.replace(/[?&]edit=[^&]*/g, ""))}&edit=1`;
   const bar = document.createElement("nav");
   bar.className = "edit-nav";
   bar.dataset.noEdit = "";
@@ -84,22 +84,12 @@ function render(): HTMLElement {
       <summary>pages ▾</summary>
       <ul class="en-list" data-pages-list><li class="en-loading">loading…</li></ul>
     </details>
-    <button class="en-btn en-emulate ${emulating ? "is-on" : ""}" data-emulate title="edit the mobile variant from desktop">${emulating ? "📱 mobile on" : "📱 mobile"}</button>
+    <a class="en-btn en-mobile" href="${mobileEditUrl}" title="open the mobile editor (phone-sized iframe — edits the @mobile variant with the real mobile viewport)">📱 mobile edit</a>
     <a class="en-btn en-view" href="${stripEdit(location.pathname + location.search)}" target="_blank" rel="noopener" title="view public">view</a>
     <span class="en-here">${here}</span>
   `;
   bar.querySelector<HTMLButtonElement>("[data-nav='back']")!.addEventListener("click", () => history.back());
   bar.querySelector<HTMLButtonElement>("[data-nav='fwd']")!.addEventListener("click", () => history.forward());
-  bar.querySelector<HTMLButtonElement>("[data-emulate]")!.addEventListener("click", () => {
-    try {
-      if (localStorage.getItem("shalagh.editEmulateMobile") === "1") {
-        localStorage.removeItem("shalagh.editEmulateMobile");
-      } else {
-        localStorage.setItem("shalagh.editEmulateMobile", "1");
-      }
-    } catch {}
-    location.reload();
-  });
   return bar;
 }
 
@@ -264,38 +254,9 @@ function injectStyles() {
       white-space: nowrap;
     }
     .edit-nav .en-view { background: #4cc2ff; color: #000; border-color: #4cc2ff; font-weight: bold; }
-    .edit-nav .en-emulate { white-space: nowrap; }
-    .edit-nav .en-emulate.is-on {
-      background: #ffcc00; color: #000; border-color: #ffcc00; font-weight: bold;
-    }
-
-    /* Mobile emulation: constrain the page to a phone-shaped column so
-       drorna can see and edit @mobile rows from her desktop. The actual
-       variant routing happens via window.__forceMobileEdit which is set
-       by an early inline script in BaseLayout. */
-    html.emulate-mobile {
-      background: #1a1a1a;
-    }
-    html.emulate-mobile body {
-      max-width: 414px;
-      margin: 0 auto;
-      box-shadow: 0 0 0 1px #444, 0 10px 40px rgba(0,0,0,0.6);
-      min-height: 100vh;
-      position: relative;
-    }
-    html.emulate-mobile body::before {
-      content: "📱 mobile preview — edits save to @mobile";
-      position: fixed;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ffcc00;
-      color: #000;
-      font: 11px/1 monospace;
-      padding: 4px 12px;
-      border-radius: 0 0 6px 6px;
-      z-index: 2100;
-      white-space: nowrap;
+    .edit-nav .en-mobile {
+      background: #ffcc00; color: #000; border-color: #ffcc00;
+      font-weight: bold; white-space: nowrap;
     }
   `;
   document.head.appendChild(s);
