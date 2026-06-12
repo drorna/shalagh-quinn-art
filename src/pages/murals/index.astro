@@ -3,6 +3,57 @@ import { Image } from "astro:assets";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EditableText from "../../components/EditableText.astro";
 import handMurals from "../../assets/images/murals/_hand-murals.png";
+import { supabase, type MuralTile } from "../../lib/supabase";
+
+// Build-time tile fetch so the page paints with content on first byte —
+// no "loading…" flicker, no client-side round trip to Supabase before
+// anything appears. The JS still runs and updates if data changed since
+// the last build (realtime sync), but the visitor sees the murals
+// immediately.
+let ssrTiles: MuralTile[] = [];
+try {
+  const { data, error } = await supabase
+    .from("mural_tiles")
+    .select("*")
+    .eq("page", "home")
+    .order("y", { ascending: true })
+    .order("x", { ascending: true })
+    .order("order_idx", { ascending: true });
+  if (error) console.warn("[murals SSR] fetch error", error);
+  ssrTiles = (data || []) as MuralTile[];
+} catch (e) {
+  console.warn("[murals SSR] Supabase unreachable; falling back to JS render", e);
+}
+
+function autoHref(t: MuralTile): string | null {
+  if (t.href) return t.href;
+  if (!t.label) return null;
+  const slug = t.label
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return slug ? `/murals/${slug}/` : null;
+}
+function transformedSrc(src: string | null | undefined): string {
+  if (!src) return "";
+  const marker = "/storage/v1/object/public/";
+  if (!src.includes(marker)) return src;
+  const r = src.replace(marker, "/storage/v1/render/image/public/");
+  return `${r}${r.includes("?") ? "&" : "?"}width=900&quality=75`;
+}
+function tileStyle(t: MuralTile): string {
+  return [
+    `left:${t.x}cqw`,
+    `top:${t.y}cqw`,
+    `width:${t.w}cqw`,
+    `height:${t.h}cqw`,
+    `z-index:${t.order_idx || 0}`,
+    t.rotation ? `transform:rotate(${t.rotation}deg)` : "",
+  ].filter(Boolean).join(";");
+}
+const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
 ---
 
 <BaseLayout title="murals — shalagh quinn" bare>
@@ -32,10 +83,56 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
       </div>
     </section>
 
-    <!-- Free-positioning canvas: tiles are absolutely positioned in % -->
-    <section class="murals-canvas" data-mural-canvas aria-label="murals">
-      <div class="murals-canvas__loading" data-loading>loading…</div>
-    </section>
+    <!-- Free-positioning canvas. Tiles are SSR'd with cqw units so the
+         layout scales with the canvas width — no client-side math
+         needed for first paint. JS hydrates afterward to handle realtime
+         updates + the editor. -->
+    <div class="murals-canvas-wrap">
+      <section
+        class="murals-canvas"
+        data-mural-canvas
+        aria-label="murals"
+        style={`height: ${maxBottom > 0 ? `${maxBottom + 8}cqw` : "800px"};`}
+      >
+        {ssrTiles.map((t) => {
+          const href = autoHref(t);
+          const style = tileStyle(t);
+          const img = (
+            <div class="mural-tile__inner">
+              <img
+                class="mural-tile__img"
+                src={transformedSrc(t.src)}
+                alt={t.alt || ""}
+                loading="lazy"
+                decoding="async"
+                style={t.object_position ? `object-position:${t.object_position}` : ""}
+                draggable={false}
+              />
+            </div>
+          );
+          const label = t.label ? (
+            <span class="mural-tile__label">
+              {t.label}
+              {t.href || href ? <span class="mural-tile__label-arrow">{">"}</span> : null}
+            </span>
+          ) : null;
+          return href ? (
+            <a class="mural-tile" data-id={t.id} href={href} style={style}>
+              {img}
+              {label}
+            </a>
+          ) : (
+            <div class="mural-tile" data-id={t.id} style={style}>
+              {img}
+              {label}
+            </div>
+          );
+        })}
+        {ssrTiles.length === 0 && (
+          <div class="murals-canvas__loading" data-loading>loading…</div>
+        )}
+      </section>
+    </div>
   </div>
 
   <script>
@@ -109,13 +206,30 @@ import handMurals from "../../assets/images/murals/_hand-murals.png";
 
   /* ---------- Free-positioning canvas ----------
      Tile + handle styles live in murals-board.ts (JS-injected, global)
-     because Astro's scoped CSS doesn't reach DOM created dynamically. */
-  .murals-canvas {
+     because Astro's scoped CSS doesn't reach DOM created dynamically.
+     The canvas itself sets container-type: inline-size so tiles' cqw
+     units track its width. On mobile we widen the canvas to 135% of
+     its container so tiles render bigger — natural pinch-to-fit
+     behaviour without losing any of the layout. */
+  .murals-canvas-wrap {
     position: relative;
     max-width: 1280px;
     margin: 0 auto;
-    /* Height is set by JS to fit the bottom-most tile. Initial floor: */
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+  .murals-canvas {
+    position: relative;
+    width: 100%;
+    container-type: inline-size;
     min-height: 80vh;
+  }
+
+  @media (max-width: 767px) {
+    .murals-canvas {
+      width: 135%;
+    }
   }
 
   .murals-canvas__loading {

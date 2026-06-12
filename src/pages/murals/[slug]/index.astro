@@ -42,6 +42,86 @@ export async function getStaticPaths() {
 
 const { slug } = Astro.params as { slug: string };
 const displayTitle = (slug || "").replace(/[-_]+/g, " ");
+
+// Build-time tile fetch for this sub-page (both rows where page=<slug>
+// AND rows whose label slugifies to <slug>, matching what getStaticPaths
+// derived). SSR them so the page paints instantly.
+type SsrTile = {
+  id: string; src: string; alt: string;
+  x: number; y: number; w: number; h: number;
+  rotation: number; object_position: string;
+  label: string | null; href: string | null;
+  order_idx: number; page: string;
+};
+let ssrTiles: SsrTile[] = [];
+try {
+  // First take rows that were authored against this page slug, then add
+  // any rows whose label slugifies to it (the dynamic-from-label
+  // contract). Dedupe by id.
+  const seen = new Set<string>();
+  const acc: SsrTile[] = [];
+  const slugify2 = (s: string | null | undefined): string => {
+    if (!s) return "";
+    return s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  };
+
+  const { data: byPage } = await supabase
+    .from("mural_tiles")
+    .select("*")
+    .eq("page", slug)
+    .order("y", { ascending: true })
+    .order("x", { ascending: true })
+    .order("order_idx", { ascending: true });
+  for (const r of (byPage || []) as SsrTile[]) {
+    if (!seen.has(r.id)) { seen.add(r.id); acc.push(r); }
+  }
+  const { data: all } = await supabase
+    .from("mural_tiles")
+    .select("*");
+  for (const r of (all || []) as SsrTile[]) {
+    if (slugify2(r.label) === slug && !seen.has(r.id)) {
+      seen.add(r.id); acc.push(r);
+    }
+  }
+  ssrTiles = acc;
+} catch (e) {
+  console.warn("[murals/[slug]] Supabase unreachable at build time; falling back to JS render", e);
+}
+
+function autoHref(t: SsrTile): string | null {
+  if (t.href) return t.href;
+  if (!t.label) return null;
+  const s = t.label
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return s ? `/murals/${s}/` : null;
+}
+function transformedSrc(src: string | null | undefined): string {
+  if (!src) return "";
+  const marker = "/storage/v1/object/public/";
+  if (!src.includes(marker)) return src;
+  const r = src.replace(marker, "/storage/v1/render/image/public/");
+  return `${r}${r.includes("?") ? "&" : "?"}width=900&quality=75`;
+}
+function tileStyle(t: SsrTile): string {
+  return [
+    `left:${t.x}cqw`,
+    `top:${t.y}cqw`,
+    `width:${t.w}cqw`,
+    `height:${t.h}cqw`,
+    `z-index:${t.order_idx || 0}`,
+    t.rotation ? `transform:rotate(${t.rotation}deg)` : "",
+  ].filter(Boolean).join(";");
+}
+const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
 ---
 
 <BaseLayout title={`${displayTitle} — murals — shalagh quinn`} bare>
@@ -54,9 +134,52 @@ const displayTitle = (slug || "").replace(/[-_]+/g, " ");
       <h1 class="murals-sub-title" data-editable-text={`murals.${slug}.title`}>{displayTitle}</h1>
     </header>
 
-    <section class="murals-canvas" data-mural-canvas aria-label={displayTitle}>
-      <div class="murals-canvas__loading" data-loading>loading…</div>
-    </section>
+    <div class="murals-canvas-wrap">
+      <section
+        class="murals-canvas"
+        data-mural-canvas
+        aria-label={displayTitle}
+        style={`height: ${maxBottom > 0 ? `${maxBottom + 8}cqw` : "800px"};`}
+      >
+        {ssrTiles.map((t) => {
+          const href = autoHref(t);
+          const style = tileStyle(t);
+          const img = (
+            <div class="mural-tile__inner">
+              <img
+                class="mural-tile__img"
+                src={transformedSrc(t.src)}
+                alt={t.alt || ""}
+                loading="lazy"
+                decoding="async"
+                style={t.object_position ? `object-position:${t.object_position}` : ""}
+                draggable={false}
+              />
+            </div>
+          );
+          const label = t.label ? (
+            <span class="mural-tile__label">
+              {t.label}
+              {t.href || href ? <span class="mural-tile__label-arrow">{">"}</span> : null}
+            </span>
+          ) : null;
+          return href ? (
+            <a class="mural-tile" data-id={t.id} href={href} style={style}>
+              {img}
+              {label}
+            </a>
+          ) : (
+            <div class="mural-tile" data-id={t.id} style={style}>
+              {img}
+              {label}
+            </div>
+          );
+        })}
+        {ssrTiles.length === 0 && (
+          <div class="murals-canvas__loading" data-loading>loading…</div>
+        )}
+      </section>
+    </div>
   </div>
 
   <script define:vars={{ slug }}>
@@ -118,11 +241,22 @@ const displayTitle = (slug || "").replace(/[-_]+/g, " ");
     text-transform: lowercase;
   }
 
-  .murals-canvas {
+  .murals-canvas-wrap {
     position: relative;
     max-width: 1280px;
     margin: 0 auto;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+  .murals-canvas {
+    position: relative;
+    width: 100%;
+    container-type: inline-size;
     min-height: 80vh;
+  }
+  @media (max-width: 767px) {
+    .murals-canvas { width: 135%; }
   }
   .murals-canvas__loading {
     position: absolute;

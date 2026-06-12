@@ -127,7 +127,25 @@ async function loadAndRender() {
 
 function render() {
   if (!canvas) return;
-  // Clear (keep canvas itself, drop children)
+
+  // Fast path: if SSR has already painted the same set of tiles, leave
+  // the DOM in place — no flash of empty canvas → re-render. Edit mode
+  // always re-renders so it can bind handlers / give every tile its
+  // editor wiring.
+  if (!editMode) {
+    const ssrIds = Array.from(
+      canvas.querySelectorAll<HTMLElement>(".mural-tile[data-id]"),
+    ).map((el) => el.dataset.id || "");
+    if (
+      ssrIds.length === tiles.length &&
+      ssrIds.every((id, i) => id === tiles[i].id)
+    ) {
+      // Tiles already on screen and unchanged — nothing to do.
+      resizeCanvasHeight();
+      return;
+    }
+  }
+
   canvas.innerHTML = "";
 
   if (tiles.length === 0) {
@@ -141,6 +159,21 @@ function render() {
 
   resizeCanvasHeight();
   refreshSelection();
+}
+
+/**
+ * Convert a Supabase Storage public URL into a width-capped, quality-tuned
+ * render variant. Cuts mural tile payloads from ~1MB to ~80KB and is
+ * cached by Supabase's image CDN. Falls through unchanged for any URL
+ * we don't recognise.
+ */
+function transformedSrc(src: string): string {
+  if (!src) return src;
+  const marker = "/storage/v1/object/public/";
+  if (!src.includes(marker)) return src;
+  const rendered = src.replace(marker, "/storage/v1/render/image/public/");
+  const sep = rendered.includes("?") ? "&" : "?";
+  return `${rendered}${sep}width=900&quality=75`;
 }
 
 /** Derive an automatic href when a label is set but no href is. */
@@ -174,9 +207,13 @@ function buildTileEl(t: MuralTile): HTMLElement {
 
   const img = document.createElement("img");
   img.className = "mural-tile__img";
-  img.src = t.src;
+  // Use a width-capped Supabase transform — original images are 1-2MB,
+  // transformed copies cut that to ~50-150KB and still look perfect at
+  // the tile size. Saves a lot on mobile networks.
+  img.src = transformedSrc(t.src);
   img.alt = t.alt || "";
   img.loading = "lazy";
+  (img as any).decoding = "async";
   img.style.objectPosition = t.object_position || "center";
   img.draggable = false;
   inner.appendChild(img);
@@ -201,22 +238,22 @@ function buildTileEl(t: MuralTile): HTMLElement {
 /**
  * Apply position/size to a tile element.
  *
- * Important: all of t.x, t.y, t.w, t.h are percentages of the canvas WIDTH.
- * The canvas height changes as you scroll/drag, but tile dimensions never
- * track it — that decoupling is what stops the runaway-grow loop where
- * larger canvas → larger tiles → still-larger canvas.
+ * All of t.x, t.y, t.w, t.h are percentages of the canvas WIDTH. We use
+ * `cqw` (container query "width") units so the browser handles the math
+ * natively: 1cqw = 1% of the canvas inline-size. No JS resize handler
+ * needed; CSS reflows when the canvas width changes.
  */
 function applyTileStyle(el: HTMLElement, t: MuralTile) {
-  const cw = canvas ? canvas.getBoundingClientRect().width : 0;
-  el.style.left = `${t.x}%`;          // % of width — natural CSS behaviour
-  el.style.width = `${t.w}%`;          // % of width
-  el.style.top = `${(t.y / 100) * cw}px`;   // % of width, computed to px
-  el.style.height = `${(t.h / 100) * cw}px`;
+  el.style.left = `${t.x}cqw`;
+  el.style.width = `${t.w}cqw`;
+  el.style.top = `${t.y}cqw`;
+  el.style.height = `${t.h}cqw`;
   el.style.zIndex = String(t.order_idx || 0);
   el.style.transform = t.rotation ? `rotate(${t.rotation}deg)` : "";
 }
 
-/** Re-apply styles to every tile (called on window resize). */
+/** Re-apply styles to every tile (no longer needs to run on resize — cqw
+ *  units handle that — but useful after data updates). */
 function reapplyAllTileStyles() {
   if (!canvas) return;
   for (const t of tiles) {
@@ -228,15 +265,17 @@ function reapplyAllTileStyles() {
 
 function resizeCanvasHeight() {
   if (!canvas) return;
-  // All tile dimensions are % of canvas WIDTH, so the bottom-most tile's
-  // pixel position is (max(y + h) / 100) * canvasWidth — independent of
-  // the canvas's current height. This is what avoids the feedback loop.
-  const baseW = canvas.getBoundingClientRect().width;
-  const baseFloor = Math.max(CANVAS_MIN_HEIGHT_PX, window.innerHeight * 1.5);
+  // Canvas height tracks the bottom-most tile, also in cqw, so the whole
+  // layout zooms uniformly with the canvas width. Falls back to a min
+  // floor so empty pages don't collapse.
   const bottomPct = tiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
-  const bottomPx = (bottomPct / 100) * baseW;
-  const desired = Math.max(baseFloor, bottomPx + window.innerHeight);
-  canvas.style.height = `${Math.round(desired)}px`;
+  if (bottomPct > 0) {
+    canvas.style.height = `${bottomPct + 8}cqw`;
+    canvas.style.minHeight = "80vh";
+  } else {
+    canvas.style.height = `${CANVAS_MIN_HEIGHT_PX}px`;
+    canvas.style.minHeight = "";
+  }
 }
 
 /**
