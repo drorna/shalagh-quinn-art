@@ -98,8 +98,29 @@ export type SiteText = {
   letter_spacing: string | null;
   line_height: string | null;
   text_align: string | null;
+  offset_x: string | null;
+  offset_y: string | null;
+  rotation: number;
   updated_at?: string;
 };
+
+/**
+ * Append a viewport suffix to a logical id so the editor maintains a
+ * separate "@mobile" and "@desktop" copy of every text/image override.
+ * Phone edits stay on mobile, desktop edits stay on desktop, and
+ * visitors get the version that matches their screen.
+ */
+export function effectiveVariantId(baseId: string): string {
+  if (typeof window === "undefined") return `${baseId}@desktop`;
+  const isMobile = window.matchMedia("(max-width: 767px)").matches;
+  return `${baseId}@${isMobile ? "mobile" : "desktop"}`;
+}
+
+/** Currently-displayed variant (mobile or desktop). */
+export function currentVariant(): "mobile" | "desktop" {
+  if (typeof window === "undefined") return "desktop";
+  return window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop";
+}
 
 let siteTextCache: Map<string, SiteText> | null = null;
 

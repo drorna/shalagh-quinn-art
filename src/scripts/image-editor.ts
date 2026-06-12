@@ -17,6 +17,7 @@ import {
   upsertSiteImage,
   subscribeSiteImages,
   uploadSiteImageFile,
+  effectiveVariantId,
   type SiteImage,
 } from "../lib/supabase";
 
@@ -143,9 +144,17 @@ function applyAll() {
   for (const el of getEditableImages()) applyOverride(el);
 }
 
+function rowFor(baseId: string): SiteImage | undefined {
+  return (
+    cache.get(effectiveVariantId(baseId)) ||
+    cache.get(`${baseId}@desktop`) ||
+    cache.get(baseId)
+  );
+}
+
 function applyOverride(el: HTMLElement) {
-  const id = el.dataset.editableImage!;
-  const row = cache.get(id);
+  const baseId = el.dataset.editableImage!;
+  const row = rowFor(baseId);
   if (!row) {
     // Reset wrapper styles we might have added
     el.style.removeProperty("transform");
@@ -198,7 +207,7 @@ function onMouseDown(e: MouseEvent) {
   // Click vs drag detection
   const startX = e.clientX;
   const startY = e.clientY;
-  const initial = cache.get(el.dataset.editableImage!) || ({} as SiteImage);
+  const initial = rowFor(el.dataset.editableImage!) || ({} as SiteImage);
   const x0 = parsePx(initial.offset_x);
   const y0 = parsePx(initial.offset_y);
   let dragging = false;
@@ -211,7 +220,7 @@ function onMouseDown(e: MouseEvent) {
       select(el);
     }
     if (dragging) {
-      const row = updateRow(el, {
+      updateRow(el, {
         offset_x: `${Math.round(x0 + dx)}px`,
         offset_y: `${Math.round(y0 + dy)}px`,
       });
@@ -225,7 +234,8 @@ function onMouseDown(e: MouseEvent) {
     if (!dragging) {
       select(el);
     } else {
-      const row = cache.get(el.dataset.editableImage!);
+      const variantId = effectiveVariantId(el.dataset.editableImage!);
+      const row = cache.get(variantId);
       if (row) await upsertSiteImage(row);
     }
   };
@@ -290,7 +300,7 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
     const up = async () => {
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mouseup", up);
-      const row = cache.get(el.dataset.editableImage!);
+      const row = cache.get(effectiveVariantId(el.dataset.editableImage!));
       if (row) await upsertSiteImage(row);
     };
     window.addEventListener("mousemove", move);
@@ -299,13 +309,14 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
 }
 
 function updateRow(el: HTMLElement, patch: Partial<SiteImage>): SiteImage {
-  const id = el.dataset.editableImage!;
-  const current = cache.get(id) || ({
-    id, src: null, width: null, height: null,
+  const baseId = el.dataset.editableImage!;
+  const variantId = effectiveVariantId(baseId);
+  const current = cache.get(variantId) || rowFor(baseId) || ({
+    id: variantId, src: null, width: null, height: null,
     offset_x: null, offset_y: null, rotation: 0, scale: 1, filter: null, object_position: null,
   } as SiteImage);
-  const next = { ...current, id, ...patch } as SiteImage;
-  cache.set(id, next);
+  const next = { ...current, id: variantId, ...patch } as SiteImage;
+  cache.set(variantId, next);
   return next;
 }
 
@@ -335,8 +346,9 @@ function positionToolbar(el: HTMLElement) {
 
 function renderToolbar(el: HTMLElement) {
   if (!toolbar) return;
-  const id = el.dataset.editableImage!;
-  const row = cache.get(id) || ({} as SiteImage);
+  const baseId = el.dataset.editableImage!;
+  const id = effectiveVariantId(baseId);
+  const row = rowFor(baseId) || ({} as SiteImage);
 
   toolbar.innerHTML = `
     <label class="ie-btn">

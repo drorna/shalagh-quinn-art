@@ -16,6 +16,8 @@ import {
   fetchAllSiteText,
   upsertSiteText,
   subscribeSiteText,
+  effectiveVariantId,
+  currentVariant,
   type SiteText,
 } from "../lib/supabase";
 
@@ -163,10 +165,24 @@ function applyAllOverrides() {
   for (const el of getEditableEls()) applyOverride(el);
 }
 
+/** Pick the override for this element honouring viewport variant + fallback. */
+function rowFor(baseId: string): SiteText | undefined {
+  const effective = effectiveVariantId(baseId);
+  return (
+    textCache.get(effective) ||
+    textCache.get(`${baseId}@desktop`) ||
+    textCache.get(baseId) // legacy rows saved before variants
+  );
+}
+
 function applyOverride(el: HTMLElement) {
   const id = el.dataset.editableText!;
-  const row = textCache.get(id);
-  if (!row) return;
+  const row = rowFor(id);
+  if (!row) {
+    // Reset transforms we may have set previously
+    el.style.transform = "";
+    return;
+  }
   if (row.value !== null && row.value !== undefined) el.textContent = row.value;
   el.style.fontFamily      = row.font_family     || "";
   el.style.fontSize        = row.font_size       || "";
@@ -176,6 +192,16 @@ function applyOverride(el: HTMLElement) {
   el.style.letterSpacing   = row.letter_spacing  || "";
   el.style.lineHeight      = row.line_height     || "";
   el.style.textAlign       = row.text_align      || "";
+
+  const tx = row.offset_x || "0px";
+  const ty = row.offset_y || "0px";
+  const rot = row.rotation || 0;
+  if (tx !== "0px" || ty !== "0px" || rot !== 0) {
+    el.style.transform = `translate(${tx}, ${ty}) rotate(${rot}deg)`;
+    el.style.transformOrigin = "center center";
+  } else {
+    el.style.transform = "";
+  }
 }
 
 function preloadFontsInUse() {
@@ -234,12 +260,58 @@ function patchInternalLinks() {
 function bindEditClicks() {
   for (const el of getEditableEls()) {
     el.classList.add("is-editable");
+    el.addEventListener("mousedown", (e) => {
+      // Alt+drag = move the element (don't enter contenteditable).
+      if (e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        beginAltDrag(el, e);
+        return;
+      }
+    });
     el.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
       select(el);
     });
   }
+}
+
+function beginAltDrag(el: HTMLElement, e: MouseEvent) {
+  // Cancel any active text edit first
+  unselect();
+  el.classList.add("is-alt-dragging");
+  const startX = e.clientX;
+  const startY = e.clientY;
+  const initial = rowFor(el.dataset.editableText!) || ({} as SiteText);
+  const x0 = parsePx(initial.offset_x);
+  const y0 = parsePx(initial.offset_y);
+
+  const move = (ev: MouseEvent) => {
+    const dx = ev.clientX - startX;
+    const dy = ev.clientY - startY;
+    patchVariantRow(el, {
+      offset_x: `${Math.round(x0 + dx)}px`,
+      offset_y: `${Math.round(y0 + dy)}px`,
+    });
+    applyOverride(el);
+  };
+  const up = async () => {
+    window.removeEventListener("mousemove", move);
+    window.removeEventListener("mouseup", up);
+    el.classList.remove("is-alt-dragging");
+    const variantId = effectiveVariantId(el.dataset.editableText!);
+    const row = textCache.get(variantId);
+    if (row) await upsertSiteText(row);
+  };
+  window.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", up);
+}
+
+function parsePx(v: string | null | undefined): number {
+  if (!v) return 0;
+  const m = v.match(/(-?[\d.]+)/);
+  return m ? parseFloat(m[1]) : 0;
 }
 
 function select(el: HTMLElement) {
@@ -299,15 +371,26 @@ function onInput(e: Event) {
 }
 
 async function persist(el: HTMLElement) {
-  const id = el.dataset.editableText!;
-  const existing = textCache.get(id) || ({ id } as SiteText);
+  const baseId = el.dataset.editableText!;
+  const variantId = effectiveVariantId(baseId);
+  const existing = textCache.get(variantId) || rowFor(baseId) || ({ id: variantId } as SiteText);
   const row: Partial<SiteText> & { id: string } = {
     ...existing,
-    id,
+    id: variantId,
     value: el.textContent || "",
   };
   await upsertSiteText(row);
-  textCache.set(id, row as SiteText);
+  textCache.set(variantId, row as SiteText);
+}
+
+/** Mutate or insert a row for the current variant of this element. */
+function patchVariantRow(el: HTMLElement, patch: Partial<SiteText>): SiteText {
+  const baseId = el.dataset.editableText!;
+  const variantId = effectiveVariantId(baseId);
+  const current = textCache.get(variantId) || rowFor(baseId) || ({ id: variantId } as SiteText);
+  const next = { ...current, id: variantId, ...patch } as SiteText;
+  textCache.set(variantId, next);
+  return next;
 }
 
 /* ===================== Floating toolbar ===================== */
@@ -331,10 +414,12 @@ function positionToolbar(el: HTMLElement) {
 function renderToolbar(el: HTMLElement) {
   if (!toolbar) return;
   const computed = getComputedStyle(el);
-  const id = el.dataset.editableText!;
-  const row = textCache.get(id) || ({ id } as SiteText);
+  const baseId = el.dataset.editableText!;
+  const row = rowFor(baseId) || ({ id: baseId } as SiteText);
+  const variant = currentVariant();
 
   toolbar.innerHTML = `
+    <span class="te-variant" title="editing variant for current screen">${variant}</span>
     <select class="te-font" title="font family">
       <option value="">— inherit —</option>
       ${FONT_CATALOGUE.map(
@@ -352,6 +437,11 @@ function renderToolbar(el: HTMLElement) {
     </select>
     <button class="te-italic ${row.font_style === "italic" ? "is-on" : ""}" type="button" title="italic">I</button>
     <input class="te-color" type="color" title="colour" value="${row.color || rgbToHex(computed.color) || "#ffffff"}" />
+    <label class="te-rotation" title="rotation (deg)">
+      rot
+      <input type="range" min="-180" max="180" step="1" value="${row.rotation || 0}" data-field="rotation" />
+      <output>${Math.round(row.rotation || 0)}°</output>
+    </label>
     <button class="te-reset" type="button" title="reset to defaults">⟲</button>
   `;
 
@@ -362,13 +452,12 @@ function renderToolbar(el: HTMLElement) {
   const colorIn = toolbar.querySelector<HTMLInputElement>(".te-color")!;
   const resetBtn = toolbar.querySelector<HTMLButtonElement>(".te-reset")!;
 
-  const updateStyle = async (field: keyof SiteText, value: string | null) => {
-    const current = textCache.get(id) || ({ id } as SiteText);
-    const next: SiteText = { ...current, id, [field]: value } as SiteText;
-    textCache.set(id, next);
+  const variantId = effectiveVariantId(baseId);
+  const updateStyle = async (field: keyof SiteText, value: any) => {
+    const next = patchVariantRow(el, { [field]: value } as Partial<SiteText>);
     applyOverride(el);
     if (field === "font_family" && value) preloadFontsInUse();
-    await upsertSiteText({ id, [field]: value });
+    await upsertSiteText(next);
   };
 
   fontSel.addEventListener("change", () => updateStyle("font_family", fontSel.value || null));
@@ -379,12 +468,30 @@ function renderToolbar(el: HTMLElement) {
     updateStyle("font_style", isOn ? "italic" : null);
   });
   colorIn.addEventListener("change", () => updateStyle("color", colorIn.value));
+
+  // Rotation slider
+  const rotIn = toolbar.querySelector<HTMLInputElement>('[data-field="rotation"]');
+  if (rotIn) {
+    const rotOut = rotIn.parentElement?.querySelector("output");
+    rotIn.addEventListener("input", () => {
+      const v = parseFloat(rotIn.value);
+      patchVariantRow(el, { rotation: v });
+      applyOverride(el);
+      if (rotOut) rotOut.textContent = `${Math.round(v)}°`;
+    });
+    rotIn.addEventListener("change", async () => {
+      const row = textCache.get(variantId);
+      if (row) await upsertSiteText(row);
+    });
+  }
+
   resetBtn.addEventListener("click", async () => {
     const blank: SiteText = {
-      id, value: null, font_family: null, font_size: null, font_weight: null,
+      id: variantId, value: null, font_family: null, font_size: null, font_weight: null,
       font_style: null, color: null, letter_spacing: null, line_height: null, text_align: null,
+      offset_x: null, offset_y: null, rotation: 0,
     };
-    textCache.set(id, blank);
+    textCache.set(variantId, blank);
     applyOverride(el);
     await upsertSiteText(blank);
     renderToolbar(el);
@@ -420,6 +527,22 @@ function injectStyles() {
       outline: 2px solid #4cc2ff;
       outline-offset: 4px;
     }
+    body.is-text-edit [data-editable-text].is-alt-dragging {
+      outline: 2px dashed #ffcc00;
+      outline-offset: 4px;
+      cursor: move;
+    }
+    .text-edit-toolbar .te-variant {
+      background: #4cc2ff; color: #000;
+      padding: 3px 7px; border-radius: 3px;
+      font-weight: bold; text-transform: uppercase;
+      font-size: 10px;
+    }
+    .text-edit-toolbar .te-rotation {
+      display: inline-flex; align-items: center; gap: 4px; color: #aaa;
+    }
+    .text-edit-toolbar .te-rotation input[type="range"] { width: 90px; }
+    .text-edit-toolbar .te-rotation output { color: #fff; min-width: 34px; }
     .text-edit-toolbar {
       gap: 6px;
       align-items: center;
