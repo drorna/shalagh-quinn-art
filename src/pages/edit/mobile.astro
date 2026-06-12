@@ -30,6 +30,22 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>mobile edit — shalagh</title>
+    <script is:inline>
+      // If we're loaded on a real phone, the phone-in-phone simulation is
+      // counter-productive: the user wants to edit the live site directly.
+      // Redirect to /<path>?edit=<token> immediately.
+      try {
+        if (window.matchMedia("(max-width: 767px)").matches) {
+          const u = new URL(location.href);
+          const path = u.searchParams.get("path") || "/";
+          const safePath = path.startsWith("/") ? path : "/" + path;
+          const edit = u.searchParams.get("edit") || "1";
+          const target = new URL(safePath, location.origin);
+          target.searchParams.set("edit", edit);
+          location.replace(target.toString());
+        }
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />

@@ -662,28 +662,82 @@ function readImageSize(src: string): Promise<{ naturalW: number; naturalH: numbe
   });
 }
 
+/**
+ * If we're inside the /edit/mobile/ shell (same-origin iframe whose
+ * parent exposes [data-toolbar-dock]), mount the mural mini-panel out
+ * there. Same pattern as the text and image editor toolbars — the
+ * panel never covers the preview, and zoom keeps everything aligned.
+ */
+function getDockedHost(): { doc: Document; container: HTMLElement } | null {
+  try {
+    if (window.parent === window) return null;
+    const pdoc = window.parent.document;
+    const dock = pdoc.querySelector<HTMLElement>("[data-toolbar-dock]");
+    if (!dock) return null;
+    return { doc: pdoc, container: dock };
+  } catch {
+    return null;
+  }
+}
+
 function mountPanel() {
-  const panel = document.createElement("aside");
-  panel.className = "mural-mini-panel";
+  const docked = getDockedHost();
+  const owner = docked ? docked.doc : document;
+  const panel = owner.createElement("aside");
+  panel.className = docked ? "mural-mini-panel is-docked" : "mural-mini-panel";
   panel.dataset.panel = "";
+  panel.dataset.noEdit = "";
   panel.style.display = "none";
-  document.body.appendChild(panel);
+  (docked ? docked.container : document.body).appendChild(panel);
+  if (docked) {
+    // Make sure the parent shell has the matching styles loaded.
+    if (!docked.doc.getElementById("mural-edit-styles")) {
+      // Defer to injectEditorStyles, but tell it which document to write to.
+      injectEditorStyles(docked.doc);
+    }
+    window.addEventListener("pagehide", () => {
+      try { panel.remove(); } catch {}
+    });
+  }
+}
+
+function findPanel(): HTMLElement | null {
+  let p = document.querySelector<HTMLElement>("[data-panel]");
+  if (p) return p;
+  try {
+    if (window.parent !== window) {
+      p = window.parent.document.querySelector<HTMLElement>("[data-panel]");
+      if (p) return p;
+    }
+  } catch {}
+  return null;
 }
 
 function renderPanel() {
-  const panel = document.querySelector<HTMLElement>("[data-panel]");
+  const panel = findPanel();
   if (!panel) return;
   const t = tiles.find((x) => x.id === selectedId);
   if (!t) {
     panel.style.display = "none";
+    if (panel.classList.contains("is-docked")) {
+      try { panel.parentElement?.classList.remove("is-active"); } catch {}
+    }
     return;
   }
-  // Pin the panel to the top-right of the viewport so it never covers a tile
-  panel.style.display = "block";
-  panel.style.position = "fixed";
-  panel.style.right = "16px";
-  panel.style.top = "80px";
-  panel.style.left = "auto";
+  // Docked: CSS handles position; just turn it on and mark the dock active.
+  if (panel.classList.contains("is-docked")) {
+    panel.style.display = "block";
+    panel.style.position = "";
+    panel.style.left = panel.style.right = panel.style.top = "";
+    try { panel.parentElement?.classList.add("is-active"); } catch {}
+  } else {
+    // Standalone: pin to top-right so it never covers a tile.
+    panel.style.display = "block";
+    panel.style.position = "fixed";
+    panel.style.right = "16px";
+    panel.style.top = "80px";
+    panel.style.left = "auto";
+  }
 
   panel.innerHTML = `
     <div class="mural-mini-panel__head">
@@ -837,11 +891,31 @@ function injectGlobalTileStyles() {
   document.head.appendChild(s);
 }
 
-function injectEditorStyles() {
-  if (document.getElementById("mural-edit-styles")) return;
-  const s = document.createElement("style");
+function injectEditorStyles(targetDoc: Document = document) {
+  if (targetDoc.getElementById("mural-edit-styles")) return;
+  const s = targetDoc.createElement("style");
   s.id = "mural-edit-styles";
   s.textContent = `
+    /* Docked mural panel: vertical layout that sits in the parent shell's
+       toolbar dock (mobile editor). The standalone fixed-position rules
+       still apply when there's no dock. */
+    .mural-mini-panel.is-docked {
+      position: relative !important;
+      top: auto !important; right: auto !important; left: auto !important;
+      width: auto;
+      background: linear-gradient(180deg, rgba(22, 22, 22, 0.95), rgba(16, 16, 16, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      color: #fff;
+      font-family: "Inter", "SF Pro Text", system-ui, sans-serif;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+    .mural-mini-panel.is-docked .mural-mini-row {
+      display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;
+    }
+    .mural-mini-panel.is-docked input[type="text"] { width: 100%; }
+
     body.is-mural-edit .murals-page { padding-bottom: 100px; }
     /* Keep the back arrow fully usable in edit mode — site navigation
        should work exactly like the public site, just with the editor
