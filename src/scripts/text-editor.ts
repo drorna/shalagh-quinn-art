@@ -1074,10 +1074,13 @@ function injectStyles(targetDoc: Document = document) {
       z-index: 1100;
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
       max-width: 100vw;
-      overflow-x: auto;
+      /* No overflow clipping: native <select> popups need to be free to
+         render outside the toolbar's bounds. With overflow-x: auto on
+         the floating bar, dropdown items got clipped and clicks ended
+         up landing on the underlying control beside them. */
+      overflow: visible;
       flex-wrap: nowrap;
     }
-    .text-edit-toolbar::-webkit-scrollbar { height: 0; }
     .text-edit-toolbar .te-variant {
       background: linear-gradient(135deg, #4cc2ff, #6e8bff);
       color: #001020;
@@ -1137,6 +1140,18 @@ function injectStyles(targetDoc: Document = document) {
       transition: border-color 120ms ease;
     }
     .text-edit-toolbar select:hover { border-color: rgba(255, 255, 255, 0.25); }
+    /* Native <option> styling is brittle across browsers — explicitly
+       give options a dark background and light text so they're readable
+       when the dropdown opens, regardless of OS theme. */
+    .text-edit-toolbar select option {
+      background: #1a1a1f;
+      color: #e8ebf0;
+      padding: 4px 8px;
+    }
+    .text-edit-toolbar select option:checked,
+    .text-edit-toolbar select option:hover {
+      background: #2a2a32;
+    }
     .text-edit-toolbar .te-font { min-width: 160px; }
     .text-edit-toolbar .te-weight { min-width: 90px; }
     .text-edit-toolbar .te-bold,
