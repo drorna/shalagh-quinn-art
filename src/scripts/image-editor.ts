@@ -222,10 +222,15 @@ function onMouseDown(e: PointerEvent) {
   e.preventDefault();
   e.stopPropagation();
 
-  // Click vs drag detection
+  // Drag only works once the image is already selected. A first tap on
+  // an unselected image just SELECTS it on release — no accidental
+  // movement while the user is still trying to enter edit mode.
+  // Matches the text-editor model.
+  const wasSelected = selected === el;
+
   const startX = e.clientX;
   const startY = e.clientY;
-  const initial = rowFor(el.dataset.editableImage!) || ({} as SiteImage);
+  const initial = rowExact(el.dataset.editableImage!) || ({} as SiteImage);
   const x0 = parsePx(initial.offset_x);
   const y0 = parsePx(initial.offset_y);
   let dragging = false;
@@ -233,11 +238,11 @@ function onMouseDown(e: PointerEvent) {
   try { el.setPointerCapture(e.pointerId); } catch {}
 
   const move = (ev: PointerEvent) => {
+    if (!wasSelected) return; // unselected images never drag
     const dx = ev.clientX - startX;
     const dy = ev.clientY - startY;
-    if (!dragging && Math.hypot(dx, dy) > 3) {
+    if (!dragging && Math.hypot(dx, dy) > 5) {
       dragging = true;
-      select(el);
     }
     if (dragging) {
       updateRow(el, {
@@ -253,7 +258,8 @@ function onMouseDown(e: PointerEvent) {
     el.removeEventListener("pointerup", up);
     el.removeEventListener("pointercancel", up);
     if (!dragging) {
-      select(el);
+      if (!wasSelected) select(el);
+      // already-selected tap with no drag = stay selected (toolbar still up)
     } else {
       const variantId = effectiveVariantId(el.dataset.editableImage!);
       const row = cache.get(variantId);
