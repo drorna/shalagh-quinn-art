@@ -287,6 +287,14 @@ function patchInternalLinks() {
   obs.observe(document.body, { subtree: true, childList: true });
 }
 
+/**
+ * Per-element pending click timer. If a second click arrives within
+ * DOUBLE_CLICK_MS, we treat it as a double-click and navigate / fire
+ * normally. Otherwise the first click resolves into "enter edit mode".
+ */
+const DOUBLE_CLICK_MS = 280;
+const pendingClickTimer = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+
 function bindEditClicks() {
   for (const el of getEditableEls()) {
     el.classList.add("is-editable");
@@ -302,14 +310,54 @@ function bindEditClicks() {
       }
     });
 
-    el.addEventListener("click", (e) => {
-      // Links and buttons: plain click navigates / fires normally.
-      // Hold Alt to enter edit mode instead.
-      if (isInteractive && !e.altKey) return;
-      e.preventDefault();
-      e.stopPropagation();
-      select(el);
-    });
+    if (isInteractive) {
+      // Single click → edit (delayed), double click → navigate.
+      // The delay lets a second click cancel the pending edit-select.
+      el.addEventListener("click", (e) => {
+        if (e.altKey) {
+          // Power-user shortcut: jump straight into edit
+          e.preventDefault();
+          e.stopPropagation();
+          select(el);
+          return;
+        }
+
+        const pending = pendingClickTimer.get(el);
+        if (pending) {
+          // Second click within window = the user really wants to navigate.
+          clearTimeout(pending);
+          pendingClickTimer.delete(el);
+          // Let the click bubble normally so the browser navigates.
+          return;
+        }
+
+        // First click — suppress navigation, schedule edit-select.
+        e.preventDefault();
+        e.stopPropagation();
+        const timer = setTimeout(() => {
+          pendingClickTimer.delete(el);
+          select(el);
+        }, DOUBLE_CLICK_MS);
+        pendingClickTimer.set(el, timer);
+      });
+
+      // dblclick is also dispatched by browsers — make sure it never
+      // accidentally triggers a leftover edit.
+      el.addEventListener("dblclick", () => {
+        const pending = pendingClickTimer.get(el);
+        if (pending) {
+          clearTimeout(pending);
+          pendingClickTimer.delete(el);
+        }
+      });
+    } else {
+      // Plain text element: single click enters edit (no nav to worry about)
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        select(el);
+      });
+    }
   }
 }
 
@@ -452,11 +500,24 @@ function mountToolbar() {
 
 function positionToolbar(el: HTMLElement) {
   if (!toolbar) return;
-  const r = el.getBoundingClientRect();
   toolbar.style.display = "flex";
-  toolbar.style.position = "fixed";
-  toolbar.style.left = `${Math.max(8, Math.min(window.innerWidth - 460, r.left))}px`;
-  toolbar.style.top = `${Math.max(8, r.top - 56)}px`;
+  if (window.matchMedia("(max-width: 767px)").matches) {
+    // Mobile: pin to bottom, full width, ignore element position.
+    toolbar.style.position = "fixed";
+    toolbar.style.left = "0";
+    toolbar.style.right = "0";
+    toolbar.style.bottom = "0";
+    toolbar.style.top = "auto";
+    toolbar.classList.add("is-mobile");
+  } else {
+    const r = el.getBoundingClientRect();
+    toolbar.style.position = "fixed";
+    toolbar.style.left = `${Math.max(8, Math.min(window.innerWidth - 520, r.left))}px`;
+    toolbar.style.top = `${Math.max(8, r.top - 56)}px`;
+    toolbar.style.right = "auto";
+    toolbar.style.bottom = "auto";
+    toolbar.classList.remove("is-mobile");
+  }
 }
 
 function renderToolbar(el: HTMLElement) {
@@ -585,11 +646,32 @@ function injectStyles() {
       outline: 1px dashed rgba(76, 194, 255, 0.55);
       outline-offset: 4px;
     }
-    /* Interactive elements (links, buttons): green ring as a hint that
-       a plain click still navigates and Alt+click enters edit. */
+    /* Interactive elements (links, buttons): green ring on hover.
+       Single click → edit. Double click → navigate. Alt+click is a
+       power-user shortcut straight to edit. */
     body.is-text-edit [data-editable-text].is-interactive-edit:hover {
       outline-color: rgba(120, 220, 120, 0.65);
     }
+    body.is-text-edit [data-editable-text].is-interactive-edit::after {
+      content: "double-click to navigate";
+      position: absolute;
+      top: -22px;
+      right: 0;
+      background: rgba(40, 40, 40, 0.92);
+      color: #c8e6c9;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font: 10px/1.2 monospace;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 120ms ease;
+      white-space: nowrap;
+      z-index: 5;
+    }
+    body.is-text-edit [data-editable-text].is-interactive-edit:hover::after {
+      opacity: 1;
+    }
+    body.is-text-edit [data-editable-text].is-interactive-edit { position: relative; }
     body.is-text-edit [data-editable-text].is-selected {
       outline: 2px solid #4cc2ff;
       outline-offset: 4px;
@@ -630,7 +712,25 @@ function injectStyles() {
       color: #fff;
       z-index: 1100;
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      max-width: 100vw;
+      overflow-x: auto;
     }
+    .text-edit-toolbar.is-mobile {
+      gap: 8px;
+      padding: 10px 12px env(safe-area-inset-bottom);
+      border-radius: 12px 12px 0 0;
+      font-size: 14px;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      flex-wrap: nowrap;
+    }
+    .text-edit-toolbar.is-mobile input,
+    .text-edit-toolbar.is-mobile select,
+    .text-edit-toolbar.is-mobile button { font-size: 14px; padding: 8px 12px; min-height: 38px; }
+    .text-edit-toolbar.is-mobile .te-font { min-width: 140px; }
+    .text-edit-toolbar.is-mobile .te-size { width: 70px; }
+    .text-edit-toolbar.is-mobile .te-weight { min-width: 92px; }
     .text-edit-toolbar select,
     .text-edit-toolbar input[type="text"] {
       background: #222; color: #fff; border: 1px solid #555;

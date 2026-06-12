@@ -346,11 +346,23 @@ function mountToolbar() {
 
 function positionToolbar(el: HTMLElement) {
   if (!toolbar) return;
-  const r = el.getBoundingClientRect();
   toolbar.style.display = "flex";
-  toolbar.style.position = "fixed";
-  toolbar.style.left = `${Math.max(8, Math.min(window.innerWidth - 380, r.left))}px`;
-  toolbar.style.top  = `${Math.max(8, r.top - 56)}px`;
+  if (window.matchMedia("(max-width: 767px)").matches) {
+    toolbar.style.position = "fixed";
+    toolbar.style.left = "0";
+    toolbar.style.right = "0";
+    toolbar.style.bottom = "0";
+    toolbar.style.top = "auto";
+    toolbar.classList.add("is-mobile");
+  } else {
+    const r = el.getBoundingClientRect();
+    toolbar.style.position = "fixed";
+    toolbar.style.left = `${Math.max(8, Math.min(window.innerWidth - 420, r.left))}px`;
+    toolbar.style.top  = `${Math.max(8, r.top - 56)}px`;
+    toolbar.style.right = "auto";
+    toolbar.style.bottom = "auto";
+    toolbar.classList.remove("is-mobile");
+  }
 }
 
 function renderToolbar(el: HTMLElement) {
@@ -462,7 +474,20 @@ function injectStyles() {
       color: #fff;
       z-index: 1100;
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      max-width: 100vw;
+      overflow-x: auto;
     }
+    .image-edit-toolbar.is-mobile {
+      gap: 12px;
+      padding: 10px 14px env(safe-area-inset-bottom);
+      border-radius: 12px 12px 0 0;
+      font-size: 14px;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+    }
+    .image-edit-toolbar.is-mobile .ie-btn { padding: 8px 14px; font-size: 14px; min-height: 38px; }
+    .image-edit-toolbar.is-mobile .ie-field input[type="range"] { width: 130px; }
     .image-edit-toolbar .ie-btn {
       background: #4cc2ff; color: #000; border: 0; border-radius: 3px;
       padding: 5px 10px; cursor: pointer; font: inherit; font-weight: bold;
