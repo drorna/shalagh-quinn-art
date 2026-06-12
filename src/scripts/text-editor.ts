@@ -295,6 +295,23 @@ function patchInternalLinks() {
 const DOUBLE_CLICK_MS = 280;
 const pendingClickTimer = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 
+/** How many pixels from the element's edge count as "the frame" (drag). */
+const FRAME_PX_DESKTOP = 12;
+const FRAME_PX_MOBILE = 18;
+
+function isOnFrame(el: HTMLElement, clientX: number, clientY: number): boolean {
+  const r = el.getBoundingClientRect();
+  const frame = window.matchMedia("(max-width: 767px)").matches ? FRAME_PX_MOBILE : FRAME_PX_DESKTOP;
+  // Only count the inside band — outside the box belongs to other things
+  if (clientX < r.left || clientX > r.right || clientY < r.top || clientY > r.bottom) return false;
+  return (
+    clientX - r.left < frame ||
+    r.right - clientX < frame ||
+    clientY - r.top < frame ||
+    r.bottom - clientY < frame
+  );
+}
+
 function bindEditClicks() {
   for (const el of getEditableEls()) {
     el.classList.add("is-editable");
@@ -302,8 +319,8 @@ function bindEditClicks() {
     if (isInteractive) el.classList.add("is-interactive-edit");
 
     el.addEventListener("pointerdown", (e) => {
-      // Alt+drag (desktop) or move-mode (mobile or desktop) = drag-to-move.
-      if (e.altKey || moveModeEl === el) {
+      // Alt+drag, move-mode, or "frame click" (within FRAME_PX of edge) = drag.
+      if (e.altKey || moveModeEl === el || isOnFrame(el, e.clientX, e.clientY)) {
         e.preventDefault();
         e.stopPropagation();
         beginDragMove(el, e);
@@ -545,7 +562,6 @@ function renderToolbar(el: HTMLElement) {
         .join("")}
     </select>
     <button class="te-italic ${row.font_style === "italic" ? "is-on" : ""}" type="button" title="italic">I</button>
-    <button class="te-move ${moveModeEl === el ? "is-on" : ""}" type="button" title="move mode — drag the element to reposition (or Alt+drag)">↕ move</button>
     <input class="te-color" type="color" title="colour" value="${row.color || rgbToHex(computed.color) || "#ffffff"}" />
     <label class="te-rotation" title="rotation (deg)">
       rot
@@ -571,25 +587,23 @@ function renderToolbar(el: HTMLElement) {
   };
 
   fontSel.addEventListener("change", () => updateStyle("font_family", fontSel.value || null));
-  sizeIn.addEventListener("change", () => updateStyle("font_size", sizeIn.value || null));
   weightSel.addEventListener("change", () => updateStyle("font_weight", weightSel.value || null));
   italicBtn.addEventListener("click", () => {
     const isOn = italicBtn.classList.toggle("is-on");
     updateStyle("font_style", isOn ? "italic" : null);
   });
 
-  const moveBtn = toolbar.querySelector<HTMLButtonElement>(".te-move");
-  if (moveBtn) {
-    moveBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const wasOn = moveModeEl === el;
-      setMoveMode(wasOn ? null : el);
-      moveBtn.classList.toggle("is-on", !wasOn);
-      // Drop the text-edit selection so the user can drag freely
-      if (!wasOn) unselect();
-    });
-  }
+  // Live size: update visually on every keystroke; debounce the save
+  let sizeSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  sizeIn.addEventListener("input", () => {
+    patchVariantRow(el, { font_size: sizeIn.value || null });
+    applyOverride(el);
+    if (sizeSaveTimer) clearTimeout(sizeSaveTimer);
+    sizeSaveTimer = setTimeout(() => {
+      const row = textCache.get(variantId);
+      if (row) upsertSiteText(row);
+    }, 500);
+  });
   colorIn.addEventListener("change", () => updateStyle("color", colorIn.value));
 
   // Rotation slider
@@ -638,13 +652,17 @@ function injectStyles() {
   const s = document.createElement("style");
   s.id = "text-edit-styles";
   s.textContent = `
+    /* Invisible padding "frame" so the edge area is clickable. Negative
+       margin removes the padding from layout — visually nothing moves. */
     body.is-text-edit [data-editable-text].is-editable {
       cursor: text;
       transition: outline 120ms ease;
+      padding: 6px;
+      margin: -6px;
     }
     body.is-text-edit [data-editable-text].is-editable:hover {
       outline: 1px dashed rgba(76, 194, 255, 0.55);
-      outline-offset: 4px;
+      outline-offset: 0;
     }
     /* Interactive elements (links, buttons): green ring on hover.
        Single click → edit. Double click → navigate. Alt+click is a
@@ -652,43 +670,18 @@ function injectStyles() {
     body.is-text-edit [data-editable-text].is-interactive-edit:hover {
       outline-color: rgba(120, 220, 120, 0.65);
     }
-    body.is-text-edit [data-editable-text].is-interactive-edit::after {
-      content: "double-click to navigate";
-      position: absolute;
-      top: -22px;
-      right: 0;
-      background: rgba(40, 40, 40, 0.92);
-      color: #c8e6c9;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font: 10px/1.2 monospace;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 120ms ease;
-      white-space: nowrap;
-      z-index: 5;
-    }
-    body.is-text-edit [data-editable-text].is-interactive-edit:hover::after {
-      opacity: 1;
-    }
     body.is-text-edit [data-editable-text].is-interactive-edit { position: relative; }
     body.is-text-edit [data-editable-text].is-selected {
       outline: 2px solid #4cc2ff;
-      outline-offset: 4px;
+      outline-offset: 0;
     }
     body.is-text-edit [data-editable-text].is-alt-dragging,
     body.is-text-edit [data-editable-text].is-move-mode {
       outline: 2px dashed #ffcc00;
-      outline-offset: 4px;
+      outline-offset: 0;
       cursor: move;
       touch-action: none;
     }
-    .text-edit-toolbar .te-move {
-      background: #222; color: #fff; border: 1px solid #555;
-      padding: 5px 10px; border-radius: 3px; cursor: pointer;
-      font-family: monospace; font-size: 12px;
-    }
-    .text-edit-toolbar .te-move.is-on { background: #ffcc00; color: #000; border-color: #ffcc00; font-weight: bold; }
     .text-edit-toolbar .te-variant {
       background: #4cc2ff; color: #000;
       padding: 3px 7px; border-radius: 3px;
