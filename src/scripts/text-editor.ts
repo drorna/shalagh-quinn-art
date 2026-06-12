@@ -622,9 +622,9 @@ function renderToolbar(el: HTMLElement) {
       <option value="">— inherit —</option>
       ${FONT_CATALOGUE.map(
         (f) =>
-          `<option value="${f.stack}" data-family="${f.family}" ${
+          `<option value="${escAttr(f.stack)}" data-family="${escAttr(f.family)}" ${
             typo.font_family === f.stack ? "selected" : ""
-          } style="font-family:${f.stack}">${f.label}</option>`
+          } style="font-family:${escAttr(f.stack)}">${f.label}</option>`
       ).join("")}
     </select>
     <select class="te-weight" title="font weight">
@@ -760,6 +760,13 @@ function attachRepeatPress(btn: HTMLButtonElement, repeatFn: () => void) {
   btn.addEventListener("pointerup", stop);
   btn.addEventListener("pointerleave", stop);
   btn.addEventListener("pointercancel", stop);
+}
+
+/** Escape a string for safe interpolation into an HTML attribute. The font
+ * stacks in FONT_CATALOGUE contain literal `"` characters that would
+ * otherwise truncate the attribute and silently empty the option value. */
+function escAttr(s: string): string {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
 function rgbToHex(rgb: string): string | null {
