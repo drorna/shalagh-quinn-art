@@ -344,17 +344,37 @@ function onPointerDown(e: PointerEvent) {
       startAlignGuides(el);
     }
     if (moved) {
+      let useDx = dx;
+      let useDy = dy;
       patchVariantRow(el, {
-        offset_x: `${Math.round(x0 + dx)}px`,
-        offset_y: `${Math.round(y0 + dy)}px`,
+        offset_x: `${Math.round(x0 + useDx)}px`,
+        offset_y: `${Math.round(y0 + useDy)}px`,
       });
       applyOverride(el);
+      // Keep the box inside the visible viewport — push back in if any
+      // edge would have slipped past. Prevents the "I dragged it
+      // off-screen and can't get it back" situation.
+      const r = el.getBoundingClientRect();
+      const margin = 4;
+      let adjX = 0, adjY = 0;
+      if (r.left < margin)                       adjX = margin - r.left;
+      else if (r.right > window.innerWidth - margin)  adjX = window.innerWidth - margin - r.right;
+      if (r.top < margin)                        adjY = margin - r.top;
+      else if (r.bottom > window.innerHeight - margin) adjY = window.innerHeight - margin - r.bottom;
+      if (adjX !== 0 || adjY !== 0) {
+        useDx += adjX; useDy += adjY;
+        patchVariantRow(el, {
+          offset_x: `${Math.round(x0 + useDx)}px`,
+          offset_y: `${Math.round(y0 + useDy)}px`,
+        });
+        applyOverride(el);
+      }
       // Snap to nearby alignments + show guide lines
       const snap = computeAlignSnap(el.getBoundingClientRect());
       if (snap.dx !== 0 || snap.dy !== 0) {
         patchVariantRow(el, {
-          offset_x: `${Math.round(x0 + dx + snap.dx)}px`,
-          offset_y: `${Math.round(y0 + dy + snap.dy)}px`,
+          offset_x: `${Math.round(x0 + useDx + snap.dx)}px`,
+          offset_y: `${Math.round(y0 + useDy + snap.dy)}px`,
         });
         applyOverride(el);
       }

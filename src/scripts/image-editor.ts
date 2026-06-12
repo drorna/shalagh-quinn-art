@@ -277,17 +277,36 @@ function onMouseDown(e: PointerEvent) {
       startAlignGuides(el);
     }
     if (dragging) {
+      let useDx = dx;
+      let useDy = dy;
       updateRow(el, {
-        offset_x: `${Math.round(x0 + dx)}px`,
-        offset_y: `${Math.round(y0 + dy)}px`,
+        offset_x: `${Math.round(x0 + useDx)}px`,
+        offset_y: `${Math.round(y0 + useDy)}px`,
       });
       applyOverride(el);
+      // Clamp the image's bounding box into the visible viewport so it
+      // can't be dragged out of reach.
+      const r = el.getBoundingClientRect();
+      const margin = 4;
+      let adjX = 0, adjY = 0;
+      if (r.left < margin)                       adjX = margin - r.left;
+      else if (r.right > window.innerWidth - margin)  adjX = window.innerWidth - margin - r.right;
+      if (r.top < margin)                        adjY = margin - r.top;
+      else if (r.bottom > window.innerHeight - margin) adjY = window.innerHeight - margin - r.bottom;
+      if (adjX !== 0 || adjY !== 0) {
+        useDx += adjX; useDy += adjY;
+        updateRow(el, {
+          offset_x: `${Math.round(x0 + useDx)}px`,
+          offset_y: `${Math.round(y0 + useDy)}px`,
+        });
+        applyOverride(el);
+      }
       // Snap to nearby alignments + show guide lines
       const snap = computeAlignSnap(el.getBoundingClientRect());
       if (snap.dx !== 0 || snap.dy !== 0) {
         updateRow(el, {
-          offset_x: `${Math.round(x0 + dx + snap.dx)}px`,
-          offset_y: `${Math.round(y0 + dy + snap.dy)}px`,
+          offset_x: `${Math.round(x0 + useDx + snap.dx)}px`,
+          offset_y: `${Math.round(y0 + useDy + snap.dy)}px`,
         });
         applyOverride(el);
       }
