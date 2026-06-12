@@ -308,6 +308,13 @@ function onPointerDown(e: PointerEvent) {
   e.preventDefault();
   e.stopPropagation();
 
+  // Drag only works on an already-selected element. A first touch on an
+  // unselected box just SELECTS it on release — no accidental movement.
+  // Touching a selected box again either enters text editing (tap) or
+  // moves it (drag). This matches the "click to enter edit mode, THEN
+  // operate" mental model the user asked for.
+  const wasSelected = selectedEl === el;
+
   const startX = e.clientX;
   const startY = e.clientY;
   const initial = rowExact(el.dataset.editableText!) || ({} as SiteText);
@@ -318,14 +325,12 @@ function onPointerDown(e: PointerEvent) {
   try { el.setPointerCapture(e.pointerId); } catch {}
 
   const move = (ev: PointerEvent) => {
+    if (!wasSelected) return; // unselected boxes never drag
     const dx = ev.clientX - startX;
     const dy = ev.clientY - startY;
-    if (!moved && Math.hypot(dx, dy) > 4) {
+    if (!moved && Math.hypot(dx, dy) > 5) {
       moved = true;
-      // Dragging implicitly selects (and clears any active text editing
-      // somewhere else, since exitEditing only runs when needed).
       if (editingEl && editingEl !== el) void exitEditing();
-      if (selectedEl !== el) select(el);
       el.classList.add("is-alt-dragging");
     }
     if (moved) {
@@ -345,8 +350,6 @@ function onPointerDown(e: PointerEvent) {
     el.classList.remove("is-alt-dragging");
 
     if (moved) {
-      // Block the click event the browser will fire after pointerup, so a
-      // drag never accidentally enters edit mode on release.
       const blockClick = (ev: MouseEvent) => {
         ev.stopPropagation(); ev.preventDefault();
         el.removeEventListener("click", blockClick, true);
@@ -359,8 +362,8 @@ function onPointerDown(e: PointerEvent) {
       return;
     }
 
-    // Plain tap: first tap selects, a follow-up tap enters text editing.
-    if (selectedEl !== el) {
+    // Tap (no drag occurred). Tap on unselected = select. Tap on selected = edit.
+    if (!wasSelected) {
       if (editingEl) await exitEditing();
       select(el);
     } else {
@@ -504,8 +507,8 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
       patchVariantRow(el, { font_size: `${newSize}px` });
       applyOverride(el);
       positionToolbar(el);
-      const sizeOut = toolbar?.querySelector<HTMLElement>(".te-size-value");
-      if (sizeOut) sizeOut.textContent = `${newSize}px`;
+      const sizeOut = toolbar?.querySelector<HTMLInputElement>(".te-size-value");
+      if (sizeOut) sizeOut.value = String(Math.round(newSize));
     };
 
     const up = async () => {
@@ -580,19 +583,14 @@ function positionToolbar(el: HTMLElement) {
   }
 }
 
-/** Read current font-size in px from element styles or live computed. */
-function readFontSizePx(el: HTMLElement, baseId: string): number {
-  const pos = rowExact(baseId);
-  if (pos?.font_size) {
-    const m = pos.font_size.match(/(-?[\d.]+)\s*(px|rem|em)?/);
-    if (m) {
-      const n = parseFloat(m[1]);
-      const unit = m[2] || "px";
-      if (unit === "px") return n;
-      if (unit === "rem") return n * 16;
-      if (unit === "em") return n * (parseFloat(getComputedStyle(el.parentElement || document.body).fontSize) || 16);
-    }
-  }
+/**
+ * The font-size shown in the toolbar is always the live computed value —
+ * i.e. what the user actually sees on screen. Saved overrides could be
+ * stale or contain values the browser ignored (e.g. a bare "30" with no
+ * unit), so trusting them would lie about the current state. Stepper +/-
+ * and corner-drag both add to this baseline and save the result back.
+ */
+function readFontSizePx(el: HTMLElement, _baseId: string): number {
   return parseFloat(getComputedStyle(el).fontSize) || 16;
 }
 
@@ -613,9 +611,10 @@ function renderToolbar(el: HTMLElement) {
     </button>
     ${isLink ? `<button class="te-open-link" type="button" title="open link in new tab">↗ open link</button>` : ""}
     ${isInteractive && !isLink ? `<button class="te-open-link" type="button" title="trigger button">▶ run</button>` : ""}
-    <div class="te-size-stepper" title="font size">
+    <div class="te-size-stepper" title="font size — type a number or use the arrows">
       <button class="te-size-minus" type="button">−</button>
-      <span class="te-size-value">${currentFontPx}px</span>
+      <input class="te-size-value" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${currentFontPx}" maxlength="5" />
+      <span class="te-size-unit">px</span>
       <button class="te-size-plus" type="button">+</button>
     </div>
     <select class="te-font" title="font family">
@@ -650,7 +649,7 @@ function renderToolbar(el: HTMLElement) {
   const editTextBtn = toolbar.querySelector<HTMLButtonElement>(".te-edit-text")!;
   const sizeMinus = toolbar.querySelector<HTMLButtonElement>(".te-size-minus")!;
   const sizePlus = toolbar.querySelector<HTMLButtonElement>(".te-size-plus")!;
-  const sizeValue = toolbar.querySelector<HTMLElement>(".te-size-value")!;
+  const sizeValue = toolbar.querySelector<HTMLInputElement>(".te-size-value")!;
 
   const variantId = effectiveVariantId(baseId);
 
@@ -699,20 +698,40 @@ function renderToolbar(el: HTMLElement) {
     });
   }
 
-  const applySizeStep = async (deltaPx: number) => {
-    const current = readFontSizePx(el, baseId);
-    const next = Math.max(8, Math.round((current + deltaPx) * 10) / 10);
-    patchVariantRow(el, { font_size: `${next}px` });
+  const applySize = async (nextPx: number) => {
+    const clamped = Math.max(8, Math.round(nextPx * 10) / 10);
+    patchVariantRow(el, { font_size: `${clamped}px` });
     applyOverride(el);
-    sizeValue.textContent = `${Math.round(next)}px`;
+    sizeValue.value = String(Math.round(clamped));
     const row = textCache.get(variantId);
     if (row) await upsertSiteText(row);
   };
+  const applySizeStep = (deltaPx: number) =>
+    applySize(readFontSizePx(el, baseId) + deltaPx);
+
   sizeMinus.addEventListener("click", () => applySizeStep(-1));
   sizePlus.addEventListener("click", () => applySizeStep(+1));
-  // Long-press for fast change
   attachRepeatPress(sizeMinus, () => applySizeStep(-2));
   attachRepeatPress(sizePlus, () => applySizeStep(+2));
+
+  // Typing in the size field: live preview while typing, persist on
+  // Enter / blur. Esc cancels and restores the previous value.
+  const commitTypedSize = () => {
+    const n = parseFloat(sizeValue.value);
+    if (Number.isFinite(n) && n > 0) applySize(n);
+    else sizeValue.value = String(Math.round(readFontSizePx(el, baseId)));
+  };
+  sizeValue.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); commitTypedSize(); sizeValue.blur(); }
+    else if (e.key === "Escape") { sizeValue.value = String(Math.round(readFontSizePx(el, baseId))); sizeValue.blur(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); applySizeStep(+1); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); applySizeStep(-1); }
+  });
+  sizeValue.addEventListener("blur", commitTypedSize);
+  // Prevent typing in the size box from triggering the document-level
+  // deselect handler (it filters on toolbar already, but pointerdown
+  // inside the input shouldn't get stopPropagation messed up).
+  sizeValue.addEventListener("pointerdown", (e) => e.stopPropagation());
 
   // Rotation slider
   const rotIn = toolbar.querySelector<HTMLInputElement>('[data-field="rotation"]');
@@ -878,8 +897,14 @@ function injectStyles() {
     }
     .text-edit-toolbar .te-size-stepper button:hover { background: #333; }
     .text-edit-toolbar .te-size-value {
-      min-width: 44px; text-align: center; color: #fff;
+      width: 40px; text-align: center; color: #fff;
+      background: transparent; border: 0; outline: 0;
+      font: inherit; padding: 0;
     }
+    .text-edit-toolbar .te-size-value:focus { outline: 1px solid #4cc2ff; outline-offset: 1px; }
+    .text-edit-toolbar .te-size-unit { color: #888; font-size: 11px; padding-right: 2px; }
+    .text-edit-toolbar.is-mobile .te-size-value { width: 56px; font-size: 16px; }
+    .text-edit-toolbar.is-mobile .te-size-unit { font-size: 12px; }
     .text-edit-toolbar .te-rotation {
       display: inline-flex; align-items: center; gap: 4px; color: #aaa;
     }
@@ -911,7 +936,6 @@ function injectStyles() {
     .text-edit-toolbar.is-mobile select,
     .text-edit-toolbar.is-mobile button { font-size: 14px; min-height: 40px; padding: 8px 12px; }
     .text-edit-toolbar.is-mobile .te-size-stepper button { width: 36px; height: 36px; font-size: 20px; }
-    .text-edit-toolbar.is-mobile .te-size-value { min-width: 54px; }
     .text-edit-toolbar.is-mobile .te-font { min-width: 130px; }
     .text-edit-toolbar.is-mobile .te-weight { min-width: 92px; }
   `;

@@ -109,9 +109,14 @@ export type SiteText = {
  * separate "@mobile" and "@desktop" copy of every text/image override.
  * Phone edits stay on mobile, desktop edits stay on desktop, and
  * visitors get the version that matches their screen.
+ *
+ * When the editor's "mobile preview" toggle is on (window.__forceMobileEdit),
+ * every read and write goes to the @mobile variant even on a wide screen —
+ * so drorna can edit the mobile layout from her laptop.
  */
 export function effectiveVariantId(baseId: string): string {
   if (typeof window === "undefined") return `${baseId}@desktop`;
+  if ((window as any).__forceMobileEdit) return `${baseId}@mobile`;
   const isMobile = window.matchMedia("(max-width: 767px)").matches;
   return `${baseId}@${isMobile ? "mobile" : "desktop"}`;
 }
@@ -119,6 +124,7 @@ export function effectiveVariantId(baseId: string): string {
 /** Currently-displayed variant (mobile or desktop). */
 export function currentVariant(): "mobile" | "desktop" {
   if (typeof window === "undefined") return "desktop";
+  if ((window as any).__forceMobileEdit) return "mobile";
   return window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop";
 }
 
