@@ -188,12 +188,12 @@ function tileStyle(t: SsrTile): string {
     </div>
   </div>
 
-  <script define:vars={{ slug }}>
-    (window as any).__muralSlug = slug;
+  <script is:inline define:vars={{ slug }}>
+    window.__muralSlug = slug;
   </script>
   <script>
     import { initMuralsBoard } from "../../../scripts/murals-board";
-    initMuralsBoard((window as any).__muralSlug || "home");
+    initMuralsBoard(window.__muralSlug || "home");
   </script>
 </BaseLayout>
 
