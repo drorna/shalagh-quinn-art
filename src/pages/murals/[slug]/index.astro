@@ -2,15 +2,38 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { supabase } from "../../../lib/supabase";
 
-// Pre-render every distinct page slug that exists in mural_tiles.
+// Pre-render every distinct page slug that exists in mural_tiles, and ALSO
+// any slug that can be derived from a tile's label. That way the editor user
+// can label a tile "nepal", commit, and on the next deploy /murals/nepal/
+// exists — without having to first move tiles into a page='nepal' bucket.
+//
+// slugify is defined inside getStaticPaths because Astro extracts that
+// function to its own build-time bundle; top-level helpers in the
+// frontmatter aren't carried over.
 export async function getStaticPaths() {
+  const slugify = (s: string | null | undefined): string => {
+    if (!s) return "";
+    return s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  };
+
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("mural_tiles")
-      .select("page")
-      .neq("page", "home");
-    const slugs = Array.from(new Set((data || []).map((r: any) => r.page).filter(Boolean)));
-    if (slugs.length > 0) return slugs.map((slug) => ({ params: { slug } }));
+      .select("page, label");
+    if (error) console.warn("[murals/[slug]] getStaticPaths supabase error:", error);
+    const slugs = new Set<string>();
+    for (const row of (data || []) as Array<{ page: string | null; label: string | null }>) {
+      if (row.page && row.page !== "home") slugs.add(row.page);
+      const fromLabel = slugify(row.label);
+      if (fromLabel) slugs.add(fromLabel);
+    }
+    console.log(`[murals/[slug]] getStaticPaths slugs: ${[...slugs].join(", ") || "(none)"}`);
+    if (slugs.size > 0) return Array.from(slugs).map((slug) => ({ params: { slug } }));
   } catch (e) {
     console.warn("[murals/[slug]] Supabase unreachable at build time; using placeholder", e);
   }
