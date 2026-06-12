@@ -83,6 +83,7 @@ async function checkEditAccess(): Promise<boolean> {
 async function boot() {
   editMode = await checkEditAccess();
   injectStyles();
+  autoTagPlainText();
 
   textCache = await fetchAllSiteText();
   applyAllOverrides();
@@ -113,6 +114,48 @@ async function boot() {
 
 function getEditableEls(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>("[data-editable-text]"));
+}
+
+/**
+ * Walk the document and tag every plain text element (p, h1-h6, li, blockquote)
+ * with a stable auto-id so brand-new pages get editing for free. The id is
+ * derived from pathname + tag + nth-of-type within its parent, so it stays
+ * stable as long as the surrounding structure doesn't change.
+ *
+ * Elements that already have data-editable-text are left alone — explicit
+ * wrappers in the source code always win.
+ *
+ * Skipped:
+ *   - elements inside the editor toolbars (.mural-edit-toolbar, etc.)
+ *   - empty elements
+ *   - tile labels (they belong to the murals DB, not site_text)
+ */
+function autoTagPlainText() {
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  const tags = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote"];
+  const skipInside = ".mural-edit-toolbar, .mural-edit-panel, .mural-mini-panel, .text-edit-toolbar, .murals-canvas, .mural-tile";
+  const seen = new Map<string, number>();
+  for (const el of Array.from(document.querySelectorAll<HTMLElement>(tags.join(",")))) {
+    if (el.hasAttribute("data-editable-text")) continue;
+    if (el.closest(skipInside)) continue;
+    const text = (el.textContent || "").trim();
+    if (!text) continue;
+    // Stable key: page + tag + element-local index
+    const parent = el.parentElement;
+    let nth = 1;
+    if (parent) {
+      const sameKindSiblings = Array.from(parent.children).filter(
+        (c) => c.tagName === el.tagName
+      );
+      nth = sameKindSiblings.indexOf(el) + 1;
+    }
+    // De-duplicate: page-level counter for the (tag, nth) combo
+    const base = `auto:${path}:${el.tagName.toLowerCase()}:${nth}`;
+    const count = (seen.get(base) || 0) + 1;
+    seen.set(base, count);
+    const id = count > 1 ? `${base}#${count}` : base;
+    el.setAttribute("data-editable-text", id);
+  }
 }
 
 function applyAllOverrides() {
