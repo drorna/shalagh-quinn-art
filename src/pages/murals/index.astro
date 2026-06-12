@@ -37,11 +37,9 @@ function autoHref(t: MuralTile): string | null {
   return slug ? `/murals/${slug}/` : null;
 }
 function transformedSrc(src: string | null | undefined): string {
-  if (!src) return "";
-  const marker = "/storage/v1/object/public/";
-  if (!src.includes(marker)) return src;
-  const r = src.replace(marker, "/storage/v1/render/image/public/");
-  return `${r}${r.includes("?") ? "&" : "?"}width=900&quality=75`;
+  // Pass through — Supabase's render endpoint requires Image Transforms
+  // to be enabled on the project and was returning 403 on this account.
+  return src || "";
 }
 function tileStyle(t: MuralTile): string {
   return [
@@ -208,28 +206,18 @@ const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
      Tile + handle styles live in murals-board.ts (JS-injected, global)
      because Astro's scoped CSS doesn't reach DOM created dynamically.
      The canvas itself sets container-type: inline-size so tiles' cqw
-     units track its width. On mobile we widen the canvas to 135% of
-     its container so tiles render bigger — natural pinch-to-fit
-     behaviour without losing any of the layout. */
+     units track its width — uniform layout across every viewport, no
+     horizontal scroll. */
   .murals-canvas-wrap {
     position: relative;
     max-width: 1280px;
     margin: 0 auto;
-    overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
   }
   .murals-canvas {
     position: relative;
     width: 100%;
     container-type: inline-size;
     min-height: 80vh;
-  }
-
-  @media (max-width: 767px) {
-    .murals-canvas {
-      width: 135%;
-    }
   }
 
   .murals-canvas__loading {

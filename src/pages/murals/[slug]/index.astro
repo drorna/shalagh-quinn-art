@@ -105,11 +105,7 @@ function autoHref(t: SsrTile): string | null {
   return s ? `/murals/${s}/` : null;
 }
 function transformedSrc(src: string | null | undefined): string {
-  if (!src) return "";
-  const marker = "/storage/v1/object/public/";
-  if (!src.includes(marker)) return src;
-  const r = src.replace(marker, "/storage/v1/render/image/public/");
-  return `${r}${r.includes("?") ? "&" : "?"}width=900&quality=75`;
+  return src || "";
 }
 function tileStyle(t: SsrTile): string {
   return [
@@ -245,18 +241,12 @@ const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
     position: relative;
     max-width: 1280px;
     margin: 0 auto;
-    overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
   }
   .murals-canvas {
     position: relative;
     width: 100%;
     container-type: inline-size;
     min-height: 80vh;
-  }
-  @media (max-width: 767px) {
-    .murals-canvas { width: 135%; }
   }
   .murals-canvas__loading {
     position: absolute;

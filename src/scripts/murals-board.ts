@@ -162,18 +162,14 @@ function render() {
 }
 
 /**
- * Convert a Supabase Storage public URL into a width-capped, quality-tuned
- * render variant. Cuts mural tile payloads from ~1MB to ~80KB and is
- * cached by Supabase's image CDN. Falls through unchanged for any URL
- * we don't recognise.
+ * Pass-through. Earlier this routed image URLs through Supabase's
+ * /storage/v1/render/image/ endpoint to get a width-capped variant,
+ * but that endpoint requires the project's Image Transforms feature
+ * to be enabled and returned 403 on this account — breaking every
+ * mural tile. Falling back to the original public URL.
  */
 function transformedSrc(src: string): string {
-  if (!src) return src;
-  const marker = "/storage/v1/object/public/";
-  if (!src.includes(marker)) return src;
-  const rendered = src.replace(marker, "/storage/v1/render/image/public/");
-  const sep = rendered.includes("?") ? "&" : "?";
-  return `${rendered}${sep}width=900&quality=75`;
+  return src || "";
 }
 
 /** Derive an automatic href when a label is set but no href is. */
