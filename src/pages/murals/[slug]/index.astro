@@ -107,14 +107,23 @@ function autoHref(t: SsrTile): string | null {
 function transformedSrc(src: string | null | undefined): string {
   return src || "";
 }
-const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 100) + 8;
+const _rawMinX = ssrTiles.length ? Math.min(...ssrTiles.map(t => t.x)) : 0;
+const _rawMaxX = ssrTiles.length ? Math.max(...ssrTiles.map(t => t.x + t.w)) : 100;
+const _rawMinY = ssrTiles.length ? Math.min(...ssrTiles.map(t => t.y)) : 0;
+const _fitScale = (_rawMaxX - _rawMinX) > 0 ? 100 / (_rawMaxX - _rawMinX) : 1;
+
+function fitX(x: number): number { return (x - _rawMinX) * _fitScale; }
+function fitY(y: number): number { return (y - _rawMinY) * _fitScale; }
+function fitS(s: number): number { return s * _fitScale; }
+
+const maxBottom = (ssrTiles.reduce((m, t) => Math.max(m, fitY(t.y) + fitS(t.h)), 0) || 100) + 4;
 
 function tileStyle(t: SsrTile): string {
   return [
-    `left:${t.x}%`,
-    `top:${(t.y / maxBottom) * 100}%`,
-    `width:${t.w}%`,
-    `height:${(t.h / maxBottom) * 100}%`,
+    `left:${fitX(t.x)}%`,
+    `top:${(fitY(t.y) / maxBottom) * 100}%`,
+    `width:${fitS(t.w)}%`,
+    `height:${(fitS(t.h) / maxBottom) * 100}%`,
     `z-index:${t.order_idx || 0}`,
     t.rotation ? `transform:rotate(${t.rotation}deg)` : "",
   ].filter(Boolean).join(";");

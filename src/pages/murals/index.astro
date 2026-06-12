@@ -41,21 +41,30 @@ function transformedSrc(src: string | null | undefined): string {
   // to be enabled on the project and was returning 403 on this account.
   return src || "";
 }
-const maxBottom = ssrTiles.reduce((m, t) => Math.max(m, t.y + t.h), 100) + 8;
+// Stretch the tile bounding box to fill the canvas edge-to-edge: the
+// user-authored x/y positions had whitespace on the sides (data spanned
+// 11-96 % horizontally) and that gap was unused on phones. We compute
+// the minX / maxRight from the data and scale every tile so the layout
+// starts flush left and ends flush right, preserving relative spacing.
+const _rawMinX = ssrTiles.length ? Math.min(...ssrTiles.map(t => t.x)) : 0;
+const _rawMaxX = ssrTiles.length ? Math.max(...ssrTiles.map(t => t.x + t.w)) : 100;
+const _rawMinY = ssrTiles.length ? Math.min(...ssrTiles.map(t => t.y)) : 0;
+const _fitScale = (_rawMaxX - _rawMinX) > 0 ? 100 / (_rawMaxX - _rawMinX) : 1;
+
+function fitX(x: number): number { return (x - _rawMinX) * _fitScale; }
+function fitY(y: number): number { return (y - _rawMinY) * _fitScale; }
+function fitS(s: number): number { return s * _fitScale; }
+
+const maxBottom = (ssrTiles.reduce((m, t) => Math.max(m, fitY(t.y) + fitS(t.h)), 0) || 100) + 4;
 
 function tileStyle(t: MuralTile): string {
-  // x and w in the data are already % of canvas WIDTH — they map
-  // directly to CSS percentages (since the canvas is the positioning
-  // context). y and h are also stored as % of canvas WIDTH but CSS
-  // resolves top/height as % of HEIGHT — so we project them through
-  // the canvas's known aspect ratio. Works in every browser that
-  // supports `aspect-ratio` (≥2021), unlike `cqw` which needs
-  // container queries.
+  // Apply the fit transform, then project y/h through the canvas's
+  // aspect ratio. Works in every browser that supports `aspect-ratio`.
   return [
-    `left:${t.x}%`,
-    `top:${(t.y / maxBottom) * 100}%`,
-    `width:${t.w}%`,
-    `height:${(t.h / maxBottom) * 100}%`,
+    `left:${fitX(t.x)}%`,
+    `top:${(fitY(t.y) / maxBottom) * 100}%`,
+    `width:${fitS(t.w)}%`,
+    `height:${(fitS(t.h) / maxBottom) * 100}%`,
     `z-index:${t.order_idx || 0}`,
     t.rotation ? `transform:rotate(${t.rotation}deg)` : "",
   ].filter(Boolean).join(";");

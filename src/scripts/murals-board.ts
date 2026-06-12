@@ -246,17 +246,35 @@ function buildTileEl(t: MuralTile): HTMLElement {
  * Queries support (≥2022) — and on older browsers tiles collapsed on
  * top of each other.
  */
+/**
+ * Stretch the tile bounding box to fill the canvas edge-to-edge,
+ * matching the SSR fit transform. minX/minY/scale are recomputed each
+ * time the tile set changes (e.g. after dragging in edit mode).
+ */
+function getFit(): { minX: number; minY: number; scale: number } {
+  if (tiles.length === 0) return { minX: 0, minY: 0, scale: 1 };
+  const minX = Math.min(...tiles.map(t => t.x));
+  const maxX = Math.max(...tiles.map(t => t.x + t.w));
+  const minY = Math.min(...tiles.map(t => t.y));
+  const range = maxX - minX;
+  const scale = range > 0 ? 100 / range : 1;
+  return { minX, minY, scale };
+}
+
 function getMaxBottom(): number {
-  const bottom = tiles.reduce((m, t) => Math.max(m, t.y + t.h), 0);
-  return bottom > 0 ? bottom + 8 : 100;
+  if (tiles.length === 0) return 100;
+  const { minY, scale } = getFit();
+  const bottom = tiles.reduce((m, t) => Math.max(m, (t.y - minY) * scale + t.h * scale), 0);
+  return bottom > 0 ? bottom + 4 : 100;
 }
 
 function applyTileStyle(el: HTMLElement, t: MuralTile) {
   const total = getMaxBottom();
-  el.style.left = `${t.x}%`;
-  el.style.width = `${t.w}%`;
-  el.style.top = `${(t.y / total) * 100}%`;
-  el.style.height = `${(t.h / total) * 100}%`;
+  const { minX, minY, scale } = getFit();
+  el.style.left = `${(t.x - minX) * scale}%`;
+  el.style.width = `${t.w * scale}%`;
+  el.style.top = `${((t.y - minY) * scale / total) * 100}%`;
+  el.style.height = `${(t.h * scale / total) * 100}%`;
   el.style.zIndex = String(t.order_idx || 0);
   el.style.transform = t.rotation ? `rotate(${t.rotation}deg)` : "";
 }
