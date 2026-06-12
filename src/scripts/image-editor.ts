@@ -20,6 +20,7 @@ import {
   effectiveVariantId,
   type SiteImage,
 } from "../lib/supabase";
+import { startAlignGuides, endAlignGuides, computeAlignSnap } from "./align-guides";
 
 const EDIT_TOKEN_HASH = "1b74c41ae62fd8c45c9c6b129291144bb67598d7ae3110b589e141428e95ef67";
 const LOCAL_STORAGE_KEY = "shalagh.murals.editToken";
@@ -263,6 +264,7 @@ function onMouseDown(e: PointerEvent) {
     const dy = ev.clientY - startY;
     if (!dragging && Math.hypot(dx, dy) > 5) {
       dragging = true;
+      startAlignGuides(el);
     }
     if (dragging) {
       updateRow(el, {
@@ -270,6 +272,15 @@ function onMouseDown(e: PointerEvent) {
         offset_y: `${Math.round(y0 + dy)}px`,
       });
       applyOverride(el);
+      // Snap to nearby alignments + show guide lines
+      const snap = computeAlignSnap(el.getBoundingClientRect());
+      if (snap.dx !== 0 || snap.dy !== 0) {
+        updateRow(el, {
+          offset_x: `${Math.round(x0 + dx + snap.dx)}px`,
+          offset_y: `${Math.round(y0 + dy + snap.dy)}px`,
+        });
+        applyOverride(el);
+      }
       positionToolbar(el);
     }
   };
@@ -277,6 +288,7 @@ function onMouseDown(e: PointerEvent) {
     el.removeEventListener("pointermove", move);
     el.removeEventListener("pointerup", up);
     el.removeEventListener("pointercancel", up);
+    endAlignGuides();
     if (!dragging) {
       if (!wasSelected) select(el);
       // already-selected tap with no drag = stay selected (toolbar still up)
