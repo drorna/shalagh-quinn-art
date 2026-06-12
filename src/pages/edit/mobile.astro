@@ -2,15 +2,16 @@
 /**
  * Mobile-edit shell.
  *
- * Why a separate route: the only reliable way to edit the @mobile
- * layout from a desktop is to give the page a true mobile viewport.
- * CSS `vw` units and `@media (max-width: 767px)` both depend on the
- * actual window dimensions, so a `max-width: 414px` on body would
- * still compute desktop values inside. An iframe gets its own
- * viewport, so the editor scripts inside see the page exactly as a
- * phone visitor would — `matchMedia("(max-width: 767px)")` matches,
- * `effectiveVariantId()` returns @mobile naturally, and every saved
- * geometry value lines up with what's live on a real device.
+ * A separate, self-contained editor for the @mobile variant — distinct
+ * URL, distinct chrome, no overlap with the desktop editor. The site
+ * renders inside a 390px-wide iframe so the inner page sees a true
+ * mobile viewport: matchMedia returns mobile, @media (max-width:767px)
+ * activates, vw units compute against 390, and saved edits go straight
+ * to @mobile rows.
+ *
+ * The page being edited skips its own floating edit-nav when it
+ * detects it's inside an iframe (see edit-nav.ts), so the only chrome
+ * visible is this outer shell. No window-in-window nesting.
  *
  * URL: `/edit/mobile/?path=/about/&edit=<token>`
  *   `path`  — which page to load inside the iframe (defaults to `/`)
@@ -29,80 +30,198 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>mobile edit — shalagh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
     <style>
+      * { box-sizing: border-box; }
       html, body {
         margin: 0; padding: 0; height: 100%;
-        background: #1a1a1a;
-        color: #fff;
-        font-family: monospace;
+        background:
+          radial-gradient(1200px 600px at 30% 0%, rgba(76, 194, 255, 0.06), transparent 60%),
+          radial-gradient(900px 600px at 80% 100%, rgba(255, 204, 0, 0.05), transparent 60%),
+          #0e0f12;
+        color: #e8ebf0;
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 14px;
         overflow: hidden;
       }
+
       .me-shell {
         display: grid;
         grid-template-rows: auto 1fr;
         height: 100vh;
       }
+
+      /* ---------- Top bar ---------- */
+
       .me-bar {
-        display: flex; align-items: center; gap: 6px;
-        padding: 8px 12px;
-        background: #161616;
-        border-bottom: 1px solid #444;
-        font-size: 13px;
+        display: flex; align-items: center; gap: 14px;
+        padding: 10px 18px;
+        background: rgba(16, 17, 22, 0.85);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         flex-wrap: wrap;
-        z-index: 10;
+      }
+      .me-brand {
+        display: inline-flex; align-items: center; gap: 10px;
+        font-weight: 700; font-size: 14px;
+        color: #fff;
+      }
+      .me-brand .me-pill {
+        background: linear-gradient(135deg, #4cc2ff, #6e8bff);
+        color: #001020;
+        font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+        padding: 3px 8px; border-radius: 4px; text-transform: uppercase;
+      }
+      .me-bar .me-group {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 3px;
       }
       .me-bar .me-btn {
-        background: #222; color: #fff; border: 1px solid #555;
-        border-radius: 4px; padding: 5px 10px; font: inherit;
-        cursor: pointer; text-decoration: none; line-height: 1;
-        display: inline-flex; align-items: center; min-height: 30px;
-      }
-      .me-bar .me-btn:hover { background: #333; }
-      .me-bar .me-btn-primary { background: #4cc2ff; color: #000; border-color: #4cc2ff; font-weight: bold; }
-      .me-bar .me-btn-desktop { background: #ffcc00; color: #000; border-color: #ffcc00; font-weight: bold; }
-      .me-bar .me-here {
-        color: #888; padding: 0 6px; font-size: 12px;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        max-width: 220px;
-      }
-      .me-bar select {
-        background: #222; color: #fff; border: 1px solid #555;
-        padding: 5px 8px; border-radius: 3px; font: inherit;
+        background: transparent; color: #e8ebf0;
+        border: 0; border-radius: 6px;
+        padding: 6px 10px; font: inherit; font-weight: 500;
+        cursor: pointer; text-decoration: none;
+        line-height: 1; display: inline-flex; align-items: center; gap: 6px;
         min-height: 30px;
+        transition: background 120ms ease;
       }
-      .me-frame {
-        display: flex; align-items: flex-start; justify-content: center;
+      .me-bar .me-btn:hover { background: rgba(255, 255, 255, 0.08); }
+      .me-bar .me-btn-icon {
+        width: 32px; padding: 0; justify-content: center;
+        font-size: 16px;
+      }
+
+      .me-bar select {
+        background: rgba(255, 255, 255, 0.04);
+        color: #e8ebf0;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 7px 10px; border-radius: 7px;
+        font: inherit; cursor: pointer;
+        min-height: 32px;
+        min-width: 130px;
+      }
+      .me-bar select:hover { border-color: rgba(255, 255, 255, 0.18); }
+
+      .me-urlbar {
+        flex: 1 1 240px;
+        display: inline-flex; align-items: center; gap: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 7px;
+        padding: 6px 12px;
+        color: #b6bccb;
+        font-family: "SF Mono", Menlo, Consolas, monospace;
+        font-size: 12px;
+        min-height: 32px;
+        overflow: hidden;
+      }
+      .me-urlbar .me-host { color: #5d6678; }
+      .me-urlbar .me-here {
+        color: #e8ebf0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+
+      .me-bar .me-btn-desktop {
+        background: linear-gradient(135deg, #ffcc00, #ffae00);
+        color: #1a1200; font-weight: 700;
+        padding: 7px 14px;
+      }
+      .me-bar .me-btn-desktop:hover { filter: brightness(1.06); }
+      .me-bar .me-btn-view {
+        background: linear-gradient(135deg, #4cc2ff, #2196ee);
+        color: #001020; font-weight: 700;
+        padding: 7px 14px;
+      }
+      .me-bar .me-btn-view:hover { filter: brightness(1.06); }
+
+      /* ---------- Phone frame ---------- */
+
+      .me-stage {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
         overflow: auto;
-        padding: 16px;
+        padding: 30px 18px 40px;
       }
       .me-phone {
+        position: relative;
         width: 390px;
-        height: 100%;
-        max-height: calc(100vh - 80px);
-        border: 1px solid #444;
-        border-radius: 18px;
+        height: calc(100vh - 130px);
+        max-height: 860px;
+        min-height: 480px;
         background: #000;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.55);
-        overflow: hidden;
+        border-radius: 38px;
+        padding: 12px;
+        box-shadow:
+          0 0 0 1.5px rgba(255, 255, 255, 0.08),
+          0 0 0 9px #1a1c22,
+          0 0 0 10px rgba(255, 255, 255, 0.05),
+          0 30px 60px -10px rgba(0, 0, 0, 0.7);
         flex-shrink: 0;
       }
+      .me-phone__notch {
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px; height: 22px;
+        background: #000;
+        border-radius: 14px;
+        z-index: 2;
+      }
+      .me-phone__screen {
+        position: relative;
+        width: 100%; height: 100%;
+        background: #fff;
+        border-radius: 28px;
+        overflow: hidden;
+      }
       .me-phone iframe {
-        width: 100%; height: 100%; border: 0; display: block;
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        border: 0; display: block;
         background: #fff;
       }
-      .me-empty {
-        color: #888; padding: 32px;
+
+      .me-meta {
+        position: fixed;
+        bottom: 14px; left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 11px;
+        letter-spacing: 0.02em;
+        pointer-events: none;
+      }
+
+      @media (max-width: 720px) {
+        .me-bar { gap: 6px; padding: 8px 10px; }
+        .me-urlbar { display: none; }
+        .me-stage { padding: 14px 8px; }
+        .me-phone { transform: scale(0.85); transform-origin: top center; }
       }
     </style>
   </head>
   <body>
     <div class="me-shell">
       <div class="me-bar">
-        <button class="me-btn" id="me-back" title="iframe back">←</button>
-        <button class="me-btn" id="me-fwd" title="iframe forward">→</button>
-        <button class="me-btn" id="me-reload" title="reload iframe">⟳</button>
-        <select id="me-pages" title="page">
-          <option value="">— page —</option>
+        <div class="me-brand">
+          <span class="me-pill">mobile</span>
+          <span>editor</span>
+        </div>
+
+        <div class="me-group">
+          <button class="me-btn me-btn-icon" id="me-back" title="back">←</button>
+          <button class="me-btn me-btn-icon" id="me-fwd" title="forward">→</button>
+          <button class="me-btn me-btn-icon" id="me-reload" title="reload">⟳</button>
+        </div>
+
+        <select id="me-pages" title="jump to a page">
+          <option value="">pages…</option>
           <option value="/">home</option>
           <option value="/about/">about</option>
           <option value="/murals/">murals</option>
@@ -110,17 +229,27 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
           <option value="/prints/">prints</option>
           <option value="/upload/">upload</option>
         </select>
-        <span class="me-here" id="me-here"></span>
-        <span style="flex: 1"></span>
-        <a class="me-btn me-btn-desktop" id="me-desktop" href="#" title="switch to desktop edit">🖥 desktop edit</a>
-        <a class="me-btn me-btn-primary" id="me-view" href="#" target="_blank" rel="noopener" title="open public version">view</a>
+
+        <div class="me-urlbar">
+          <span class="me-host">shalagh.com</span>
+          <span class="me-here" id="me-here"></span>
+        </div>
+
+        <a class="me-btn me-btn-desktop" id="me-desktop" href="#" title="switch to desktop editor">🖥 desktop</a>
+        <a class="me-btn me-btn-view" id="me-view" href="#" target="_blank" rel="noopener" title="open public version">↗ view</a>
       </div>
-      <div class="me-frame">
+
+      <div class="me-stage">
         <div class="me-phone">
-          <iframe id="me-iframe" src={iframeSrc} title="mobile editor"></iframe>
+          <div class="me-phone__notch"></div>
+          <div class="me-phone__screen">
+            <iframe id="me-iframe" src={iframeSrc} title="mobile editor"></iframe>
+          </div>
         </div>
       </div>
     </div>
+
+    <div class="me-meta">390 × <span id="me-h"></span>  ·  editing @mobile variant</div>
 
     <script is:inline define:vars={{ initialPath: safePath }}>
       const iframe = document.getElementById("me-iframe");
@@ -128,6 +257,9 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
       const pagesSel = document.getElementById("me-pages");
       const desktopLink = document.getElementById("me-desktop");
       const viewLink = document.getElementById("me-view");
+      const heightLbl = document.getElementById("me-h");
+
+      const knownPages = new Set(["/", "/about/", "/murals/", "/portraits/", "/prints/", "/upload/"]);
 
       function withEdit(p) {
         try {
@@ -150,22 +282,22 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
           here.textContent = publicPath;
           desktopLink.href = withEdit(publicPath);
           viewLink.href = publicPath;
-          // Persist the iframe location in the outer URL so refresh resumes here
           const url = new URL(location.href);
           url.searchParams.set("path", publicPath);
-          // Drop the token from the visible URL once the iframe has it.
           if (url.searchParams.get("edit") && url.searchParams.get("edit") !== "1") {
             url.searchParams.set("edit", "1");
           }
           history.replaceState({}, "", url.toString());
-          // Sync the pages dropdown selection where possible
-          pagesSel.value = publicPath in {"/":1,"/about/":1,"/murals/":1,"/portraits/":1,"/prints/":1,"/upload/":1} ? publicPath : "";
-        } catch (e) {
-          // Cross-origin failure shouldn't happen (same origin) but be safe
-        }
+          pagesSel.value = knownPages.has(publicPath) ? publicPath : "";
+        } catch (e) {}
+      }
+      function updatePhoneHeight() {
+        const phone = document.querySelector(".me-phone__screen");
+        if (phone) heightLbl.textContent = Math.round(phone.getBoundingClientRect().height);
       }
       iframe.addEventListener("load", updateChrome);
-      setTimeout(updateChrome, 250);
+      window.addEventListener("resize", updatePhoneHeight);
+      setTimeout(() => { updateChrome(); updatePhoneHeight(); }, 250);
 
       document.getElementById("me-back").addEventListener("click", () => {
         try { iframe.contentWindow.history.back(); } catch {}

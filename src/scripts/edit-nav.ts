@@ -52,6 +52,18 @@ async function isEditMode(): Promise<boolean> {
 
 async function boot() {
   if (!(await isEditMode())) return;
+  // When the page is loaded inside the /edit/mobile/ shell (or any
+  // same-origin iframe wrapper), the outer chrome already provides
+  // navigation. Skip the inner floating nav — otherwise the user gets
+  // a second "📱 mobile edit" button that opens window-in-window
+  // mobile-edit instances. Mobile and desktop editors must stay
+  // visually separate; the inner iframe is purely the page being
+  // edited, no chrome of its own.
+  try {
+    if (window.parent !== window) return;
+  } catch {
+    return; // cross-origin → also inside a frame, also skip
+  }
   injectStyles();
   const bar = render();
   document.body.appendChild(bar);
