@@ -296,6 +296,24 @@ const sections = [
     padding-inline: clamp(0px, 2vw, var(--sp-3));
   }
 
+  /* On narrow phones the four nav items want to wrap to two rows, but
+     because the rows widths differ they end up on top of each other on
+     some devices (≈360 px) while looking spaced on others (≈412 px).
+     Force a single row at this width with a tighter gap and slightly
+     smaller font so the layout is consistent across every phone size. */
+  @media (max-width: 480px) {
+    .home-nav {
+      flex-wrap: nowrap;
+      gap: clamp(8px, 2.5vw, 14px);
+      font-size: clamp(1.05rem, 4.4vw, 1.4rem);
+      padding-inline: 0;
+    }
+    .home-nav__link {
+      white-space: nowrap;
+      flex: 0 1 auto;
+    }
+  }
+
   .home-nav__link {
     position: relative;
     padding-bottom: 2px;
