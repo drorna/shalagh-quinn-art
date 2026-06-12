@@ -789,7 +789,9 @@ function injectEditorStyles() {
   s.id = "mural-edit-styles";
   s.textContent = `
     body.is-mural-edit .murals-page { padding-bottom: 100px; }
-    body.is-mural-edit .murals-page__back { pointer-events: none; opacity: 0.3; }
+    /* Keep the back arrow fully usable in edit mode — site navigation
+       should work exactly like the public site, just with the editor
+       layered on top. */
     body.is-mural-edit .mural-tile { cursor: grab; }
     body.is-mural-edit .mural-tile:active { cursor: grabbing; }
     body.is-mural-edit .mural-tile.is-selected { outline: 2px solid #4cc2ff; outline-offset: 0; }

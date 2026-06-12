@@ -93,6 +93,7 @@ async function boot() {
     document.body.classList.add("is-text-edit");
     mountToolbar();
     bindEditClicks();
+    patchInternalLinks();
     document.addEventListener("mousedown", (e) => {
       if (
         toolbar &&
@@ -204,6 +205,31 @@ function preloadFontsInUse() {
 }
 
 /* ===================== Edit interactions ===================== */
+
+/**
+ * In edit mode, append ?edit=1 to every in-site link so navigating between
+ * pages keeps the editor session alive without the user having to retype
+ * the token URL. Also re-runs on history changes for client-routed pages.
+ */
+function patchInternalLinks() {
+  const apply = () => {
+    for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))) {
+      const raw = a.getAttribute("href") || "";
+      // Skip external, anchors, mailto:, tel:, javascript:
+      if (!raw.startsWith("/") || raw.startsWith("//")) continue;
+      try {
+        const u = new URL(raw, location.origin);
+        if (u.origin !== location.origin) continue;
+        if (!u.searchParams.has("edit")) u.searchParams.set("edit", "1");
+        a.setAttribute("href", u.pathname + (u.search || "") + (u.hash || ""));
+      } catch {}
+    }
+  };
+  apply();
+  // Watch for late-injected links (e.g. dynamic content)
+  const obs = new MutationObserver(() => apply());
+  obs.observe(document.body, { subtree: true, childList: true });
+}
 
 function bindEditClicks() {
   for (const el of getEditableEls()) {
