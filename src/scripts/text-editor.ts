@@ -540,6 +540,35 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
     const dirSignX = (dir === "ne" || dir === "se") ? 1 : -1;
     const dirSignY = (dir === "sw" || dir === "se") ? 1 : -1;
 
+    // Freeze the box's position so resizing this single element doesn't
+    // push siblings around. The trick: clone the element into a
+    // visibility:hidden placeholder, drop it where the original was,
+    // then re-anchor the original via position: absolute. The
+    // placeholder keeps the original's space in normal flow — so
+    // siblings stay put — while the floating original is free to grow
+    // / shrink with the user's drag.
+    const display = getComputedStyle(el).display;
+    const placeholder = document.createElement(el.tagName.toLowerCase());
+    placeholder.dataset.resizePlaceholder = "";
+    placeholder.style.display = display === "inline" ? "inline-block" : display;
+    placeholder.style.width = `${r.width}px`;
+    placeholder.style.height = `${r.height}px`;
+    placeholder.style.visibility = "hidden";
+    placeholder.style.margin = getComputedStyle(el).margin;
+    el.parentNode?.insertBefore(placeholder, el);
+    const frozen = {
+      position: el.style.position,
+      left: el.style.left,
+      top: el.style.top,
+      width: el.style.width,
+      margin: el.style.margin,
+    };
+    el.style.position = "absolute";
+    el.style.left = `${r.left + window.scrollX}px`;
+    el.style.top = `${r.top + window.scrollY}px`;
+    el.style.width = `${r.width}px`;
+    el.style.margin = "0";
+
     try { handle.setPointerCapture(e.pointerId); } catch {}
 
     const variantId = effectiveVariantId(el.dataset.editableText!);
@@ -553,6 +582,8 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
       const ratio = (startW + delta) / startW;
       const newSize = Math.max(8, Math.round(startSizePx * ratio * 10) / 10);
       patchVariantRow(el, { font_size: `${newSize}px` });
+      // applyOverride sets fontSize on the element; the absolute-positioned
+      // box keeps siblings stationary while font reflows inside this box.
       applyOverride(el);
       positionToolbar(el);
       const sizeOut = toolbar?.querySelector<HTMLInputElement>(".te-size-value");
@@ -563,6 +594,16 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", up);
       handle.removeEventListener("pointercancel", up);
+      // Restore inline styles + remove the placeholder so the element
+      // re-joins the document flow with its new font-size; the parent
+      // reflows naturally now that the user's done.
+      el.style.position = frozen.position;
+      el.style.left = frozen.left;
+      el.style.top = frozen.top;
+      el.style.width = frozen.width;
+      el.style.margin = frozen.margin;
+      placeholder.remove();
+      applyOverride(el);
       const row = textCache.get(variantId);
       if (row) await upsertSiteText(row);
     };
@@ -994,81 +1035,107 @@ function injectStyles(targetDoc: Document = document) {
     }
 
     .text-edit-toolbar {
-      gap: 6px;
+      gap: 10px;
       align-items: center;
-      background: #161616;
-      border: 1px solid #444;
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-family: monospace;
-      font-size: 12px;
-      color: #fff;
+      background: linear-gradient(180deg, rgba(22, 22, 26, 0.96), rgba(14, 14, 18, 0.96));
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-family: "Inter", "SF Pro Text", system-ui, sans-serif;
+      font-size: 13px;
+      color: #e8ebf0;
       z-index: 1100;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
       max-width: 100vw;
       overflow-x: auto;
       flex-wrap: nowrap;
     }
+    .text-edit-toolbar::-webkit-scrollbar { height: 0; }
     .text-edit-toolbar .te-variant {
-      background: #4cc2ff; color: #000;
-      padding: 3px 7px; border-radius: 3px;
-      font-weight: bold; text-transform: uppercase;
-      font-size: 10px;
+      background: linear-gradient(135deg, #4cc2ff, #6e8bff);
+      color: #001020;
+      padding: 4px 9px; border-radius: 5px;
+      font-weight: 800; text-transform: uppercase;
+      font-size: 10px; letter-spacing: 0.05em;
     }
     .text-edit-toolbar .te-edit-text {
-      background: #ffcc00; color: #000; border: 0; border-radius: 4px;
-      padding: 5px 10px; cursor: pointer; font: inherit; font-weight: bold;
+      background: linear-gradient(135deg, #ffcc00, #ffae00);
+      color: #1a1200; border: 0; border-radius: 7px;
+      padding: 7px 12px; cursor: pointer; font: inherit; font-weight: 700;
       white-space: nowrap;
+      transition: filter 120ms ease;
     }
+    .text-edit-toolbar .te-edit-text:hover { filter: brightness(1.08); }
     .text-edit-toolbar .te-open-link {
-      background: #4cc2ff; color: #000; border: 0; border-radius: 4px;
-      padding: 5px 10px; cursor: pointer; font: inherit; font-weight: bold;
+      background: linear-gradient(135deg, #4cc2ff, #2196ee);
+      color: #001020; border: 0; border-radius: 7px;
+      padding: 7px 12px; cursor: pointer; font: inherit; font-weight: 700;
       white-space: nowrap;
+      transition: filter 120ms ease;
     }
+    .text-edit-toolbar .te-open-link:hover { filter: brightness(1.08); }
     .text-edit-toolbar .te-size-stepper {
-      display: inline-flex; align-items: center; gap: 4px;
-      background: #222; border: 1px solid #555; border-radius: 4px;
+      display: inline-flex; align-items: center; gap: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 7px;
       padding: 2px;
     }
     .text-edit-toolbar .te-size-stepper button {
       background: transparent; color: #fff; border: 0;
       width: 26px; height: 26px; cursor: pointer; font: inherit;
-      font-size: 16px; border-radius: 3px;
+      font-size: 16px; border-radius: 5px;
+      transition: background 120ms ease;
     }
-    .text-edit-toolbar .te-size-stepper button:hover { background: #333; }
+    .text-edit-toolbar .te-size-stepper button:hover { background: rgba(255, 255, 255, 0.1); }
     .text-edit-toolbar .te-size-value {
       width: 40px; text-align: center; color: #fff;
       background: transparent; border: 0; outline: 0;
       font: inherit; padding: 0;
     }
-    .text-edit-toolbar .te-size-value:focus { outline: 1px solid #4cc2ff; outline-offset: 1px; }
-    .text-edit-toolbar .te-size-unit { color: #888; font-size: 11px; padding-right: 2px; }
+    .text-edit-toolbar .te-size-value:focus { outline: 1px solid #4cc2ff; outline-offset: 1px; border-radius: 3px; }
+    .text-edit-toolbar .te-size-unit { color: rgba(255, 255, 255, 0.45); font-size: 11px; padding-right: 4px; }
     .text-edit-toolbar.is-mobile .te-size-value { width: 56px; font-size: 16px; }
     .text-edit-toolbar.is-mobile .te-size-unit { font-size: 12px; }
     .text-edit-toolbar .te-rotation {
-      display: inline-flex; align-items: center; gap: 4px; color: #aaa;
+      display: inline-flex; align-items: center; gap: 6px;
+      color: rgba(255, 255, 255, 0.45);
     }
     .text-edit-toolbar .te-rotation input[type="range"] { width: 90px; }
-    .text-edit-toolbar .te-rotation output { color: #fff; min-width: 34px; }
+    .text-edit-toolbar .te-rotation output { color: #fff; min-width: 34px; font-variant-numeric: tabular-nums; }
     .text-edit-toolbar select {
-      background: #222; color: #fff; border: 1px solid #555;
-      padding: 4px 6px; border-radius: 3px; font: inherit;
+      background: rgba(255, 255, 255, 0.05); color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 10px; border-radius: 7px; font: inherit;
+      transition: border-color 120ms ease;
     }
+    .text-edit-toolbar select:hover { border-color: rgba(255, 255, 255, 0.25); }
     .text-edit-toolbar .te-font { min-width: 160px; }
     .text-edit-toolbar .te-weight { min-width: 90px; }
     .text-edit-toolbar .te-bold,
     .text-edit-toolbar .te-italic,
     .text-edit-toolbar .te-reset {
-      background: #222; color: #fff; border: 1px solid #555;
-      border-radius: 3px; cursor: pointer; padding: 4px 9px; font: inherit;
+      background: rgba(255, 255, 255, 0.05); color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 7px; cursor: pointer; padding: 6px 11px; font: inherit;
+      transition: background 120ms ease, border-color 120ms ease;
     }
-    .text-edit-toolbar .te-bold { font-weight: bold; }
+    .text-edit-toolbar .te-bold { font-weight: 800; }
     .text-edit-toolbar .te-italic { font-style: italic; }
+    .text-edit-toolbar .te-reset { color: rgba(255, 255, 255, 0.6); }
+    .text-edit-toolbar .te-bold:hover,
+    .text-edit-toolbar .te-italic:hover,
+    .text-edit-toolbar .te-reset:hover { background: rgba(255, 255, 255, 0.1); }
     .text-edit-toolbar .te-bold.is-on,
-    .text-edit-toolbar .te-italic.is-on { background: #4cc2ff; color: #000; border-color: #4cc2ff; }
+    .text-edit-toolbar .te-italic.is-on {
+      background: linear-gradient(135deg, #4cc2ff, #2196ee);
+      color: #001020; border-color: transparent;
+    }
     .text-edit-toolbar input[type="color"] {
-      background: transparent; border: 1px solid #555; padding: 0; width: 36px; height: 28px;
-      border-radius: 3px; cursor: pointer;
+      background: transparent; border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0; width: 36px; height: 30px;
+      border-radius: 7px; cursor: pointer;
     }
     .text-edit-toolbar.is-mobile {
       gap: 8px;
