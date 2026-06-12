@@ -154,6 +154,12 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
         padding: 7px 14px;
       }
       .me-bar .me-btn-view:hover { filter: brightness(1.06); }
+      .me-bar .me-btn-rescue {
+        background: linear-gradient(135deg, #ff5a5a, #cc3333);
+        color: #fff; font-weight: 700;
+        padding: 7px 14px;
+      }
+      .me-bar .me-btn-rescue:hover { filter: brightness(1.08); }
 
       /* ---------- Main split: phone on the left, dock on the right ---------- */
 
@@ -293,6 +299,7 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
           <span class="me-here" id="me-here"></span>
         </div>
 
+        <button class="me-btn me-btn-rescue" id="me-rescue" title="find and reset boxes/images that drifted off-screen">🚨 rescue</button>
         <a class="me-btn me-btn-desktop" id="me-desktop" href="#" title="switch to desktop editor">🖥 desktop</a>
         <a class="me-btn me-btn-view" id="me-view" href="#" target="_blank" rel="noopener" title="open public version">↗ view</a>
       </div>
@@ -381,6 +388,11 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
       pagesSel.addEventListener("change", () => {
         if (pagesSel.value) iframe.src = withEdit(pagesSel.value);
       });
+    </script>
+    <script>
+      import { openRescuePanel } from "../../scripts/rescue-panel";
+      const rescueBtn = document.getElementById("me-rescue");
+      rescueBtn?.addEventListener("click", () => openRescuePanel(document));
     </script>
   </body>
 </html>

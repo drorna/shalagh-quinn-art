@@ -11,6 +11,7 @@
  * All in-app links carry ?edit=1 so the editor session never drops.
  */
 import { supabase } from "../lib/supabase";
+import { openRescuePanel } from "./rescue-panel";
 
 const EDIT_TOKEN_HASH = "1b74c41ae62fd8c45c9c6b129291144bb67598d7ae3110b589e141428e95ef67";
 const LOCAL_STORAGE_KEY = "shalagh.murals.editToken";
@@ -97,11 +98,13 @@ function render(): HTMLElement {
       <ul class="en-list" data-pages-list><li class="en-loading">loading…</li></ul>
     </details>
     <a class="en-btn en-mobile" href="${mobileEditUrl}" title="open the mobile editor (phone-sized iframe — edits the @mobile variant with the real mobile viewport)">📱 mobile edit</a>
+    <button class="en-btn en-rescue" data-rescue title="find and reset boxes/images that drifted off-screen">🚨 rescue</button>
     <a class="en-btn en-view" href="${stripEdit(location.pathname + location.search)}" target="_blank" rel="noopener" title="view public">view</a>
     <span class="en-here">${here}</span>
   `;
   bar.querySelector<HTMLButtonElement>("[data-nav='back']")!.addEventListener("click", () => history.back());
   bar.querySelector<HTMLButtonElement>("[data-nav='fwd']")!.addEventListener("click", () => history.forward());
+  bar.querySelector<HTMLButtonElement>("[data-rescue]")!.addEventListener("click", () => openRescuePanel());
   return bar;
 }
 
@@ -270,6 +273,11 @@ function injectStyles() {
       background: #ffcc00; color: #000; border-color: #ffcc00;
       font-weight: bold; white-space: nowrap;
     }
+    .edit-nav .en-rescue {
+      background: #ff5a5a; color: #fff; border-color: #ff5a5a;
+      font-weight: bold; white-space: nowrap;
+    }
+    .edit-nav .en-rescue:hover { background: #ff7373; border-color: #ff7373; }
   `;
   document.head.appendChild(s);
 }
