@@ -21,6 +21,7 @@
 import {
   fetchAllSiteText,
   upsertSiteText,
+  deleteSiteText,
   subscribeSiteText,
   effectiveVariantId,
   currentVariant,
@@ -94,6 +95,7 @@ async function boot() {
   autoTagPlainText();
 
   textCache = await fetchAllSiteText();
+  renderCustomBoxes();
   applyAllOverrides();
   preloadFontsInUse();
 
@@ -102,6 +104,7 @@ async function boot() {
     mountToolbar();
     bindEditClicks();
     patchInternalLinks();
+    mountAddButton();
     const outside = (e: Event) => {
       const t = e.target as HTMLElement;
       if (
@@ -137,6 +140,94 @@ async function boot() {
 
 function getEditableEls(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>("[data-editable-text]"));
+}
+
+/**
+ * Free-floating "custom" text boxes the user added with the + button.
+ * They're persisted as site_text rows whose id is `custom:<path>:<uid>`.
+ * On every page load we look up rows for the current path and inject
+ * the corresponding floating <div>s so visitors see them.
+ */
+function renderCustomBoxes() {
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  const prefix = `custom:${path}:`;
+  // Deduplicate by base id (strip the @variant suffix). One row per
+  // base id is enough to know the box exists.
+  const seen = new Set<string>();
+  for (const id of textCache.keys()) {
+    if (!id.startsWith(prefix)) continue;
+    const baseId = id.replace(/@(mobile|desktop)$/, "");
+    if (seen.has(baseId)) continue;
+    seen.add(baseId);
+    // Already rendered?
+    if (document.querySelector(`[data-editable-text="${cssEscape(baseId)}"]`)) continue;
+    const el = document.createElement("div");
+    el.dataset.editableText = baseId;
+    el.className = "custom-text-box";
+    document.body.appendChild(el);
+  }
+  // Body needs to be a positioning context for the absolute boxes.
+  if (seen.size > 0 && getComputedStyle(document.body).position === "static") {
+    document.body.style.position = "relative";
+  }
+}
+
+function cssEscape(s: string): string {
+  // Astro's old TS lib doesn't ship CSS.escape on Document everywhere
+  // — small fallback for the few characters we use in custom ids.
+  return s.replace(/(["\\])/g, "\\$1");
+}
+
+/** Floating "+ text" button shown in edit mode so the user can drop a
+ *  new text box anywhere on the page. */
+function mountAddButton() {
+  const btn = document.createElement("button");
+  btn.className = "te-add-fab";
+  btn.dataset.noEdit = "";
+  btn.type = "button";
+  btn.title = "add a new text box";
+  btn.innerHTML = "+ text";
+  document.body.appendChild(btn);
+  btn.addEventListener("click", () => createCustomTextBox());
+}
+
+async function createCustomTextBox() {
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  const uid = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}${Math.random()}`)
+    .replace(/-/g, "").slice(0, 10);
+  const baseId = `custom:${path}:${uid}`;
+  const el = document.createElement("div");
+  el.dataset.editableText = baseId;
+  el.className = "custom-text-box";
+  el.textContent = "new text — tap to edit";
+  document.body.appendChild(el);
+  if (getComputedStyle(document.body).position === "static") {
+    document.body.style.position = "relative";
+  }
+  // Drop the box near the centre of the user's current viewport.
+  const vw = window.innerWidth;
+  const initX = Math.max(20, vw / 2 - 80);
+  const initY = window.scrollY + 120;
+  const xVw = `${((initX / vw) * 100).toFixed(2)}vw`;
+  const yVw = `${((initY / vw) * 100).toFixed(2)}vw`;
+  const variantId = effectiveVariantId(baseId);
+  const row: SiteText = {
+    id: variantId,
+    value: "new text — tap to edit",
+    font_family: null, font_size: null, font_weight: null, font_style: null,
+    color: null, letter_spacing: null, line_height: null, text_align: null,
+    offset_x: xVw, offset_y: yVw, rotation: 0,
+  };
+  textCache.set(variantId, row);
+  await upsertSiteText(row);
+  applyOverride(el);
+
+  // Hook this brand-new element into the same click logic as the
+  // auto-tagged ones, then select it so the user can start editing.
+  el.classList.add("is-editable");
+  el.addEventListener("pointerdown", onPointerDown);
+  select(el);
+  enterEditing(el);
 }
 
 function autoTagPlainText() {
@@ -799,6 +890,7 @@ function renderToolbar(el: HTMLElement) {
       <output>${Math.round(pos.rotation || 0)}°</output>
     </label>
     <button class="te-reset" type="button" title="reset to defaults">⟲</button>
+    <button class="te-delete" type="button" title="delete this text box">🗑</button>
   `;
 
   const fontSel = toolbar.querySelector<HTMLSelectElement>(".te-font")!;
@@ -928,6 +1020,31 @@ function renderToolbar(el: HTMLElement) {
     await upsertSiteText(blank);
     renderToolbar(el);
   });
+
+  const deleteBtn = toolbar.querySelector<HTMLButtonElement>(".te-delete");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", async () => {
+      const isCustom = baseId.startsWith("custom:");
+      const what = isCustom
+        ? "Delete this text box completely?"
+        : "Remove this text element from the page?\n(The original element is part of the page template, so this will only blank its content.)";
+      if (!confirm(what)) return;
+      // Delete every variant row for this baseId, plus the legacy non-variant row.
+      const idsToDrop = [`${baseId}@mobile`, `${baseId}@desktop`, baseId];
+      for (const id of idsToDrop) await deleteSiteText(id);
+      if (isCustom) {
+        // Custom-floating box: also remove from DOM.
+        el.remove();
+      } else {
+        // Template element: blank the content so the page still renders.
+        el.textContent = "";
+        el.style.cssText = "";
+      }
+      if (toolbar) toolbar.style.display = "none";
+      selectedEl = null;
+      editingEl = null;
+    });
+  }
 }
 
 /** Hold the button to repeat the action. Released = stop. */
@@ -1014,6 +1131,50 @@ function injectStyles(targetDoc: Document = document) {
 
     /* Editable elements in edit mode. touch-action: none so a finger drag
        never gets stolen by the browser as a scroll. */
+    /* Render line breaks the user types as actual line breaks (the
+       white-space pre-line value preserves linebreaks while still
+       collapsing other whitespace). */
+    [data-editable-text] { white-space: pre-line; }
+
+    /* Free-floating text boxes added with the editor's "+ text" button.
+       Live on top of any page, positioned by their saved offset. */
+    .custom-text-box {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.94);
+      color: #111;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 1.2rem;
+      line-height: 1.3;
+      border-radius: 4px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+      max-width: 80vw;
+      z-index: 20;
+    }
+
+    /* Floating "+ text" button — bottom-right of the editor viewport. */
+    .te-add-fab {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1200;
+      background: linear-gradient(135deg, #4cc2ff, #2196ee);
+      color: #001020;
+      border: 0;
+      border-radius: 22px;
+      padding: 10px 18px;
+      font-family: "Inter", "SF Pro Text", system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(33, 150, 238, 0.45);
+      transition: filter 120ms ease, transform 120ms ease;
+    }
+    .te-add-fab:hover { filter: brightness(1.07); transform: translateY(-1px); }
+    .te-add-fab:active { transform: translateY(0); }
     body.is-text-edit [data-editable-text].is-editable {
       cursor: pointer;
       transition: outline 120ms ease;
@@ -1156,7 +1317,8 @@ function injectStyles(targetDoc: Document = document) {
     .text-edit-toolbar .te-weight { min-width: 90px; }
     .text-edit-toolbar .te-bold,
     .text-edit-toolbar .te-italic,
-    .text-edit-toolbar .te-reset {
+    .text-edit-toolbar .te-reset,
+    .text-edit-toolbar .te-delete {
       background: rgba(255, 255, 255, 0.05); color: #fff;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 7px; cursor: pointer; padding: 6px 11px; font: inherit;
@@ -1165,6 +1327,13 @@ function injectStyles(targetDoc: Document = document) {
     .text-edit-toolbar .te-bold { font-weight: 800; }
     .text-edit-toolbar .te-italic { font-style: italic; }
     .text-edit-toolbar .te-reset { color: rgba(255, 255, 255, 0.6); }
+    .text-edit-toolbar .te-delete {
+      background: rgba(255, 90, 90, 0.12); color: #ff8080;
+      border-color: rgba(255, 90, 90, 0.25);
+    }
+    .text-edit-toolbar .te-delete:hover {
+      background: rgba(255, 90, 90, 0.22); color: #ffb0b0;
+    }
     .text-edit-toolbar .te-bold:hover,
     .text-edit-toolbar .te-italic:hover,
     .text-edit-toolbar .te-reset:hover { background: rgba(255, 255, 255, 0.1); }

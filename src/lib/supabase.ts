@@ -142,6 +142,15 @@ export async function fetchAllSiteText(): Promise<Map<string, SiteText>> {
   return m;
 }
 
+export async function deleteSiteText(id: string): Promise<void> {
+  const { error } = await supabase.from("site_text").delete().eq("id", id);
+  if (error) {
+    console.warn("[supabase] deleteSiteText", error);
+    return;
+  }
+  if (siteTextCache) siteTextCache.delete(id);
+}
+
 export async function upsertSiteText(row: Partial<SiteText> & { id: string }) {
   const payload = { ...row, updated_at: new Date().toISOString() };
   const { error } = await supabase.from("site_text").upsert(payload);
