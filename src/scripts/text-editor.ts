@@ -247,15 +247,18 @@ function unselect() {
 
 async function onBlur(e: FocusEvent) {
   const el = e.target as HTMLElement;
-  // Save when focus leaves both element AND toolbar
+  // Defer so we can read where focus went next.
   setTimeout(async () => {
     if (
       document.activeElement &&
       (document.activeElement === toolbar || toolbar?.contains(document.activeElement))
     ) {
-      // Focus went into the toolbar — re-arm
+      // Focus moved into the toolbar (font picker, size input, colour, …).
+      // Save the current text, but DON'T snatch focus back — that was the
+      // bug that froze the toolbar. Re-arm blur so saving still fires when
+      // the toolbar loses focus later.
+      await persist(el);
       el.addEventListener("blur", onBlur as any, { once: true });
-      el.focus();
       return;
     }
     await persist(el);
