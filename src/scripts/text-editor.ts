@@ -352,10 +352,12 @@ function onPointerDown(e: PointerEvent) {
       });
       applyOverride(el);
       // Keep the box inside the visible viewport — push back in if any
-      // edge would have slipped past. Prevents the "I dragged it
-      // off-screen and can't get it back" situation.
+      // edge would have slipped past, with a generous margin so a 366px
+      // editor viewport doesn't leave the element flush against the
+      // edge of a 360px-wide real phone. Prevents both "dragged
+      // off-screen" and "barely-overflowed-on-live" scenarios.
       const r = el.getBoundingClientRect();
-      const margin = 4;
+      const margin = 16;
       let adjX = 0, adjY = 0;
       if (r.left < margin)                       adjX = margin - r.left;
       else if (r.right > window.innerWidth - margin)  adjX = window.innerWidth - margin - r.right;

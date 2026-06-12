@@ -285,9 +285,11 @@ function onMouseDown(e: PointerEvent) {
       });
       applyOverride(el);
       // Clamp the image's bounding box into the visible viewport so it
-      // can't be dragged out of reach.
+      // can't be dragged out of reach. Generous 16px margin so the
+      // ~366px iframe doesn't leave images flush against the edge of a
+      // 360px-wide real phone in the live view.
       const r = el.getBoundingClientRect();
-      const margin = 4;
+      const margin = 16;
       let adjX = 0, adjY = 0;
       if (r.left < margin)                       adjX = margin - r.left;
       else if (r.right > window.innerWidth - margin)  adjX = window.innerWidth - margin - r.right;
