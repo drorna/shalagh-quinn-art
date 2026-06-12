@@ -793,7 +793,11 @@ function injectStyles() {
     body.is-text-edit [data-editable-text].is-interactive-edit:hover {
       outline-color: rgba(120, 220, 120, 0.65);
     }
-    body.is-text-edit [data-editable-text].is-interactive-edit { position: relative; }
+    /* No "position: relative" override here — it would clobber elements
+       whose actual CSS chose "absolute"/"fixed" (e.g. the UPLOAD button),
+       moving them back into the document flow. Handles still get a
+       positioned ancestor: attachHandles() promotes static → relative
+       only for the currently selected element, and restores it on unselect. */
     body.is-text-edit [data-editable-text].is-selected {
       outline: 2px solid #4cc2ff;
       outline-offset: 0;
