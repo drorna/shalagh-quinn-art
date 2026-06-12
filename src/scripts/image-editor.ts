@@ -192,11 +192,11 @@ function applyOverride(el: HTMLElement) {
 function bindHover() {
   for (const el of getEditableImages()) {
     el.classList.add("is-editable-image");
-    el.addEventListener("mousedown", onMouseDown);
+    el.addEventListener("pointerdown", onMouseDown as any);
   }
 }
 
-function onMouseDown(e: MouseEvent) {
+function onMouseDown(e: PointerEvent) {
   const el = e.currentTarget as HTMLElement;
   const target = e.target as HTMLElement;
   if (target.closest(".img-handle, .image-edit-toolbar")) return;
@@ -212,7 +212,9 @@ function onMouseDown(e: MouseEvent) {
   const y0 = parsePx(initial.offset_y);
   let dragging = false;
 
-  const move = (ev: MouseEvent) => {
+  try { el.setPointerCapture(e.pointerId); } catch {}
+
+  const move = (ev: PointerEvent) => {
     const dx = ev.clientX - startX;
     const dy = ev.clientY - startY;
     if (!dragging && Math.hypot(dx, dy) > 3) {
@@ -229,8 +231,9 @@ function onMouseDown(e: MouseEvent) {
     }
   };
   const up = async () => {
-    window.removeEventListener("mousemove", move);
-    window.removeEventListener("mouseup", up);
+    el.removeEventListener("pointermove", move);
+    el.removeEventListener("pointerup", up);
+    el.removeEventListener("pointercancel", up);
     if (!dragging) {
       select(el);
     } else {
@@ -239,8 +242,9 @@ function onMouseDown(e: MouseEvent) {
       if (row) await upsertSiteImage(row);
     }
   };
-  window.addEventListener("mousemove", move);
-  window.addEventListener("mouseup", up);
+  el.addEventListener("pointermove", move);
+  el.addEventListener("pointerup", up);
+  el.addEventListener("pointercancel", up);
 }
 
 function select(el: HTMLElement) {
@@ -278,7 +282,7 @@ function attachHandles(el: HTMLElement) {
 }
 
 function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se" | "sw") {
-  handle.addEventListener("mousedown", (e) => {
+  handle.addEventListener("pointerdown", (e) => {
     e.preventDefault();
     e.stopPropagation();
     const startX = e.clientX;
@@ -287,7 +291,9 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
     const aspect = r.width / Math.max(1, r.height);
     const dirX = dir === "ne" || dir === "se" ? 1 : -1;
 
-    const move = (ev: MouseEvent) => {
+    try { handle.setPointerCapture(e.pointerId); } catch {}
+
+    const move = (ev: PointerEvent) => {
       const dx = (ev.clientX - startX) * dirX;
       const newW = Math.max(20, startW + dx);
       updateRow(el, {
@@ -298,13 +304,15 @@ function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se
       positionToolbar(el);
     };
     const up = async () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
       const row = cache.get(effectiveVariantId(el.dataset.editableImage!));
       if (row) await upsertSiteImage(row);
     };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
   });
 }
 

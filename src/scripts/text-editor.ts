@@ -46,6 +46,7 @@ let editMode = false;
 let selectedEl: HTMLElement | null = null;
 let toolbar: HTMLElement | null = null;
 let textCache: Map<string, SiteText> = new Map();
+let moveModeEl: HTMLElement | null = null;
 
 export function initTextEditor(): void {
   if (typeof window === "undefined") return;
@@ -292,12 +293,12 @@ function bindEditClicks() {
     const isInteractive = el.tagName === "A" || el.tagName === "BUTTON";
     if (isInteractive) el.classList.add("is-interactive-edit");
 
-    el.addEventListener("mousedown", (e) => {
-      // Alt+drag = move the element. Works on any editable, including links.
-      if (e.altKey) {
+    el.addEventListener("pointerdown", (e) => {
+      // Alt+drag (desktop) or move-mode (mobile or desktop) = drag-to-move.
+      if (e.altKey || moveModeEl === el) {
         e.preventDefault();
         e.stopPropagation();
-        beginAltDrag(el, e);
+        beginDragMove(el, e);
       }
     });
 
@@ -312,7 +313,13 @@ function bindEditClicks() {
   }
 }
 
-function beginAltDrag(el: HTMLElement, e: MouseEvent) {
+function setMoveMode(el: HTMLElement | null) {
+  if (moveModeEl && moveModeEl !== el) moveModeEl.classList.remove("is-move-mode");
+  moveModeEl = el;
+  if (el) el.classList.add("is-move-mode");
+}
+
+function beginDragMove(el: HTMLElement, e: PointerEvent) {
   // Cancel any active text edit first
   unselect();
   el.classList.add("is-alt-dragging");
@@ -322,7 +329,10 @@ function beginAltDrag(el: HTMLElement, e: MouseEvent) {
   const x0 = parsePx(initial.offset_x);
   const y0 = parsePx(initial.offset_y);
 
-  const move = (ev: MouseEvent) => {
+  // Capture so we keep getting events even if the cursor leaves the element
+  try { el.setPointerCapture(e.pointerId); } catch {}
+
+  const move = (ev: PointerEvent) => {
     const dx = ev.clientX - startX;
     const dy = ev.clientY - startY;
     patchVariantRow(el, {
@@ -332,15 +342,17 @@ function beginAltDrag(el: HTMLElement, e: MouseEvent) {
     applyOverride(el);
   };
   const up = async () => {
-    window.removeEventListener("mousemove", move);
-    window.removeEventListener("mouseup", up);
+    el.removeEventListener("pointermove", move);
+    el.removeEventListener("pointerup", up);
+    el.removeEventListener("pointercancel", up);
     el.classList.remove("is-alt-dragging");
     const variantId = effectiveVariantId(el.dataset.editableText!);
     const row = textCache.get(variantId);
     if (row) await upsertSiteText(row);
   };
-  window.addEventListener("mousemove", move);
-  window.addEventListener("mouseup", up);
+  el.addEventListener("pointermove", move);
+  el.addEventListener("pointerup", up);
+  el.addEventListener("pointercancel", up);
 }
 
 function parsePx(v: string | null | undefined): number {
@@ -472,6 +484,7 @@ function renderToolbar(el: HTMLElement) {
         .join("")}
     </select>
     <button class="te-italic ${row.font_style === "italic" ? "is-on" : ""}" type="button" title="italic">I</button>
+    <button class="te-move ${moveModeEl === el ? "is-on" : ""}" type="button" title="move mode — drag the element to reposition (or Alt+drag)">↕ move</button>
     <input class="te-color" type="color" title="colour" value="${row.color || rgbToHex(computed.color) || "#ffffff"}" />
     <label class="te-rotation" title="rotation (deg)">
       rot
@@ -503,6 +516,19 @@ function renderToolbar(el: HTMLElement) {
     const isOn = italicBtn.classList.toggle("is-on");
     updateStyle("font_style", isOn ? "italic" : null);
   });
+
+  const moveBtn = toolbar.querySelector<HTMLButtonElement>(".te-move");
+  if (moveBtn) {
+    moveBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const wasOn = moveModeEl === el;
+      setMoveMode(wasOn ? null : el);
+      moveBtn.classList.toggle("is-on", !wasOn);
+      // Drop the text-edit selection so the user can drag freely
+      if (!wasOn) unselect();
+    });
+  }
   colorIn.addEventListener("change", () => updateStyle("color", colorIn.value));
 
   // Rotation slider
@@ -568,11 +594,19 @@ function injectStyles() {
       outline: 2px solid #4cc2ff;
       outline-offset: 4px;
     }
-    body.is-text-edit [data-editable-text].is-alt-dragging {
+    body.is-text-edit [data-editable-text].is-alt-dragging,
+    body.is-text-edit [data-editable-text].is-move-mode {
       outline: 2px dashed #ffcc00;
       outline-offset: 4px;
       cursor: move;
+      touch-action: none;
     }
+    .text-edit-toolbar .te-move {
+      background: #222; color: #fff; border: 1px solid #555;
+      padding: 5px 10px; border-radius: 3px; cursor: pointer;
+      font-family: monospace; font-size: 12px;
+    }
+    .text-edit-toolbar .te-move.is-on { background: #ffcc00; color: #000; border-color: #ffcc00; font-weight: bold; }
     .text-edit-toolbar .te-variant {
       background: #4cc2ff; color: #000;
       padding: 3px 7px; border-radius: 3px;
