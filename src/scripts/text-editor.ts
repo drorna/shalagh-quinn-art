@@ -1,16 +1,22 @@
 /**
  * Live text + font editor.
  *
- * View mode  : looks up every <EditableText> on the page in `site_text` and
- *              applies value / font_family / font_size / font_weight / etc.
- * Edit mode  : same, plus
- *              - hover ring on editable elements
- *              - click → contentEditable, blur → save
- *              - small floating toolbar above the selected element with
- *                a font picker, size, weight, italic toggle, colour
+ * View mode  : looks up every editable element on the page in `site_text`
+ *              and applies value / font_family / font_size / etc.
+ * Edit mode  : same, plus a unified select → resize/move → edit-text model.
  *
- * Edit mode is unlocked by the same SHA-256 token gate used by the murals
- * board, and shares localStorage with it.
+ * Interaction model (uniform across desktop + mobile):
+ *   1. Tap an editable element       → select it (handles + toolbar, no keyboard).
+ *   2. Tap the body of the selected  → enter text editing (contenteditable, keyboard).
+ *   3. Drag the body                 → move (offset_x / offset_y).
+ *   4. Drag a corner handle          → resize: font_size scales with the box.
+ *   5. Tap outside                   → deselect.
+ *   6. On <a> / <button>             → toolbar exposes "open link" so navigation
+ *                                      is an explicit action, never accidental.
+ *
+ * Positional fields (offset_x/y, rotation) are stored per viewport variant
+ * and DO NOT fall back from desktop to mobile — each variant edits its own
+ * position independently, so live mobile geometry matches edit-mode mobile.
  */
 import {
   fetchAllSiteText,
@@ -24,8 +30,6 @@ import {
 const EDIT_TOKEN_HASH = "1b74c41ae62fd8c45c9c6b129291144bb67598d7ae3110b589e141428e95ef67";
 const LOCAL_STORAGE_KEY = "shalagh.murals.editToken";
 
-// Curated Google Font list — covers the site's existing palette and a few
-// hand-written options that play with shalagh's brush titles.
 const FONT_CATALOGUE: { label: string; family: string; stack: string }[] = [
   { label: "Caveat (default handwritten)", family: "Caveat",            stack: '"Caveat", cursive' },
   { label: "Patrick Hand",                  family: "Patrick Hand",      stack: '"Patrick Hand", cursive' },
@@ -44,9 +48,9 @@ const FONT_CATALOGUE: { label: string; family: string; stack: string }[] = [
 
 let editMode = false;
 let selectedEl: HTMLElement | null = null;
+let editingEl: HTMLElement | null = null;
 let toolbar: HTMLElement | null = null;
 let textCache: Map<string, SiteText> = new Map();
-let moveModeEl: HTMLElement | null = null;
 
 export function initTextEditor(): void {
   if (typeof window === "undefined") return;
@@ -97,18 +101,24 @@ async function boot() {
     mountToolbar();
     bindEditClicks();
     patchInternalLinks();
-    document.addEventListener("mousedown", (e) => {
+    document.addEventListener("pointerdown", (e) => {
+      const t = e.target as HTMLElement;
       if (
-        toolbar &&
-        !(e.target as HTMLElement).closest("[data-editable-text]") &&
-        !(e.target as HTMLElement).closest(".text-edit-toolbar")
-      ) {
-        unselect();
-      }
+        t.closest("[data-editable-text]") ||
+        t.closest(".text-edit-toolbar") ||
+        t.closest(".te-handle") ||
+        t.closest("[data-editable-image]") ||
+        t.closest(".image-edit-toolbar") ||
+        t.closest(".img-handle") ||
+        t.closest(".edit-nav") ||
+        t.closest("[data-no-edit]")
+      ) return;
+      // Outside click: exit editing + deselect
+      if (editingEl) void exitEditing();
+      unselect();
     });
   }
 
-  // Realtime: pick up changes from the other device
   subscribeSiteText(async () => {
     textCache = await fetchAllSiteText();
     applyAllOverrides();
@@ -120,26 +130,6 @@ function getEditableEls(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>("[data-editable-text]"));
 }
 
-/**
- * Walk the document and tag every meaningful text-bearing element so it
- * becomes editable. The id is derived from pathname + tag + nth-of-type
- * within its parent so it stays stable as long as the surrounding
- * structure doesn't change.
- *
- * Covered tags: p, h1-h6, li, blockquote, a, button, span, label.
- * For interactive ones (a, button), text-editor's click handler only
- * enters edit mode when Alt is held — a plain click still navigates /
- * fires normally, so nav arrows and "enter >" buttons keep working.
- *
- * Skipped:
- *   - elements that already carry data-editable-text
- *   - any subtree under [data-no-edit] (editor toolbars, the edit-nav,
- *     the murals canvas, tile labels)
- *   - empty elements
- *   - elements that contain other elements which would themselves get
- *     tagged (we tag the deepest text node instead, so nested wrappers
- *     don't double-bind)
- */
 function autoTagPlainText() {
   const path = location.pathname.replace(/\/+$/, "") || "/";
   const tags = [
@@ -155,18 +145,11 @@ function autoTagPlainText() {
     if (el.hasAttribute("data-editable-text")) continue;
     if (el.closest(skipInside)) continue;
 
-    // Must have actual text content
     const text = (el.textContent || "").trim();
     if (!text) continue;
 
-    // For span / label, avoid double-tagging when an ancestor is also a
-    // candidate. Heading > span text → tag the heading. Use the deepest
-    // element that's a *direct* text container.
     if (el.tagName === "SPAN" || el.tagName === "LABEL") {
-      // Skip if a tagged candidate is nested inside us
       if (el.querySelector("[data-editable-text]")) continue;
-      // Skip if an ancestor in our tag set is itself a leaf text holder
-      // (e.g. p > span → tag the p, skip the span)
       const ancestor = el.parentElement?.closest("p, h1, h2, h3, h4, h5, h6, li, blockquote, a, button");
       if (ancestor && !ancestor.closest(skipInside)) {
         const ancestorOnlyText = ancestor.querySelectorAll(tags.join(",")).length <= 1;
@@ -174,7 +157,6 @@ function autoTagPlainText() {
       }
     }
 
-    // Stable key: page + tag + element-local index
     const parent = el.parentElement;
     let nth = 1;
     if (parent) {
@@ -195,37 +177,56 @@ function applyAllOverrides() {
   for (const el of getEditableEls()) applyOverride(el);
 }
 
-/** Pick the override for this element honouring viewport variant + fallback. */
-function rowFor(baseId: string): SiteText | undefined {
+/**
+ * Typography + content overrides fall back from the current variant to
+ * `@desktop` to legacy non-variant, so visitors see *something* even when
+ * only one variant has been edited.
+ */
+function rowFallback(baseId: string): SiteText | undefined {
   const effective = effectiveVariantId(baseId);
   return (
     textCache.get(effective) ||
     textCache.get(`${baseId}@desktop`) ||
-    textCache.get(baseId) // legacy rows saved before variants
+    textCache.get(baseId)
   );
+}
+
+/**
+ * Positional + size overrides come ONLY from the exact variant — desktop
+ * positions must not leak onto a mobile layout (and vice versa), because
+ * the natural responsive layout is already different per viewport.
+ */
+function rowExact(baseId: string): SiteText | undefined {
+  return textCache.get(effectiveVariantId(baseId));
 }
 
 function applyOverride(el: HTMLElement) {
   const id = el.dataset.editableText!;
-  const row = rowFor(id);
-  if (!row) {
-    // Reset transforms we may have set previously
+  const typo = rowFallback(id);
+  const pos = rowExact(id);
+
+  if (!typo && !pos) {
     el.style.transform = "";
     return;
   }
-  if (row.value !== null && row.value !== undefined) el.textContent = row.value;
-  el.style.fontFamily      = row.font_family     || "";
-  el.style.fontSize        = row.font_size       || "";
-  el.style.fontWeight      = row.font_weight     || "";
-  el.style.fontStyle       = row.font_style      || "";
-  el.style.color           = row.color           || "";
-  el.style.letterSpacing   = row.letter_spacing  || "";
-  el.style.lineHeight      = row.line_height     || "";
-  el.style.textAlign       = row.text_align      || "";
+  if (typo) {
+    if (typo.value !== null && typo.value !== undefined) el.textContent = typo.value;
+    el.style.fontFamily      = typo.font_family     || "";
+    el.style.fontWeight      = typo.font_weight     || "";
+    el.style.fontStyle       = typo.font_style      || "";
+    el.style.color           = typo.color           || "";
+    el.style.letterSpacing   = typo.letter_spacing  || "";
+    el.style.lineHeight      = typo.line_height     || "";
+    el.style.textAlign       = typo.text_align      || "";
+  }
+  // font_size is positional-ish (affects layout) AND it's also what corner-drag
+  // edits. So it comes from the exact variant only — desktop's 3rem won't
+  // explode a mobile layout it wasn't tuned for.
+  el.style.fontSize = pos?.font_size || "";
 
-  const tx = row.offset_x || "0px";
-  const ty = row.offset_y || "0px";
-  const rot = row.rotation || 0;
+  const tx  = pos?.offset_x || "0px";
+  const ty  = pos?.offset_y || "0px";
+  const rot = pos?.rotation || 0;
   if (tx !== "0px" || ty !== "0px" || rot !== 0) {
     el.style.transform = `translate(${tx}, ${ty}) rotate(${rot}deg)`;
     el.style.transformOrigin = "center center";
@@ -235,8 +236,6 @@ function applyOverride(el: HTMLElement) {
 }
 
 function preloadFontsInUse() {
-  // Build a Google Fonts URL with every font currently referenced by an
-  // overridden element so that custom-picked fonts actually load.
   const families = new Set<string>();
   for (const row of textCache.values()) {
     if (row.font_family) {
@@ -262,16 +261,10 @@ function preloadFontsInUse() {
 
 /* ===================== Edit interactions ===================== */
 
-/**
- * In edit mode, append ?edit=1 to every in-site link so navigating between
- * pages keeps the editor session alive without the user having to retype
- * the token URL. Also re-runs on history changes for client-routed pages.
- */
 function patchInternalLinks() {
   const apply = () => {
     for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))) {
       const raw = a.getAttribute("href") || "";
-      // Skip external, anchors, mailto:, tel:, javascript:
       if (!raw.startsWith("/") || raw.startsWith("//")) continue;
       try {
         const u = new URL(raw, location.origin);
@@ -282,170 +275,250 @@ function patchInternalLinks() {
     }
   };
   apply();
-  // Watch for late-injected links (e.g. dynamic content)
   const obs = new MutationObserver(() => apply());
   obs.observe(document.body, { subtree: true, childList: true });
-}
-
-/**
- * Per-element pending click timer. If a second click arrives within
- * DOUBLE_CLICK_MS, we treat it as a double-click and navigate / fire
- * normally. Otherwise the first click resolves into "enter edit mode".
- */
-const DOUBLE_CLICK_MS = 280;
-const pendingClickTimer = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
-
-/** How many pixels from the element's edge count as "the frame" (drag). */
-const FRAME_PX_DESKTOP = 12;
-const FRAME_PX_MOBILE = 18;
-
-function isOnFrame(el: HTMLElement, clientX: number, clientY: number): boolean {
-  const r = el.getBoundingClientRect();
-  // Only count the inside band — outside the box belongs to other things
-  if (clientX < r.left || clientX > r.right || clientY < r.top || clientY > r.bottom) return false;
-
-  // Cap the frame band at one third of the smaller side so a small element
-  // (e.g. the "enter >" button) still has a usable centre for text edit.
-  const baseFrame = window.matchMedia("(max-width: 767px)").matches ? FRAME_PX_MOBILE : FRAME_PX_DESKTOP;
-  const smallerSide = Math.min(r.width, r.height);
-  const frame = Math.max(4, Math.min(baseFrame, Math.floor(smallerSide / 3)));
-
-  return (
-    clientX - r.left < frame ||
-    r.right - clientX < frame ||
-    clientY - r.top < frame ||
-    r.bottom - clientY < frame
-  );
 }
 
 function bindEditClicks() {
   for (const el of getEditableEls()) {
     el.classList.add("is-editable");
-    const isInteractive = el.tagName === "A" || el.tagName === "BUTTON";
-    if (isInteractive) el.classList.add("is-interactive-edit");
-
-    el.addEventListener("pointerdown", (e) => {
-      // Alt+drag, move-mode, or "frame click" (within FRAME_PX of edge) = drag.
-      if (e.altKey || moveModeEl === el || isOnFrame(el, e.clientX, e.clientY)) {
-        e.preventDefault();
-        e.stopPropagation();
-        beginDragMove(el, e);
-      }
-    });
-
-    if (isInteractive) {
-      // Single click → edit (delayed), double click → navigate.
-      // The delay lets a second click cancel the pending edit-select.
+    if (el.tagName === "A" || el.tagName === "BUTTON") {
+      el.classList.add("is-interactive-edit");
+      // Swallow plain clicks so links/buttons never navigate accidentally in edit mode.
       el.addEventListener("click", (e) => {
-        if (e.altKey) {
-          // Power-user shortcut: jump straight into edit
-          e.preventDefault();
-          e.stopPropagation();
-          select(el);
-          return;
-        }
-
-        // If the click landed on the frame, the pointerdown handler already
-        // took it as a drag — don't queue an edit-select.
-        if (isOnFrame(el, e.clientX, e.clientY)) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-
-        const pending = pendingClickTimer.get(el);
-        if (pending) {
-          // Second click within window = the user really wants to navigate.
-          clearTimeout(pending);
-          pendingClickTimer.delete(el);
-          // Let the click bubble normally so the browser navigates.
-          return;
-        }
-
-        // First click — suppress navigation, schedule edit-select.
+        if (editingEl === el) return;
         e.preventDefault();
         e.stopPropagation();
-        const timer = setTimeout(() => {
-          pendingClickTimer.delete(el);
-          select(el);
-        }, DOUBLE_CLICK_MS);
-        pendingClickTimer.set(el, timer);
-      });
-
-      // dblclick is also dispatched by browsers — make sure it never
-      // accidentally triggers a leftover edit.
-      el.addEventListener("dblclick", () => {
-        const pending = pendingClickTimer.get(el);
-        if (pending) {
-          clearTimeout(pending);
-          pendingClickTimer.delete(el);
-        }
-      });
-    } else {
-      // Plain text element: single click enters edit (no nav to worry about)
-      el.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        select(el);
       });
     }
+    el.addEventListener("pointerdown", onPointerDown);
   }
 }
 
-function setMoveMode(el: HTMLElement | null) {
-  if (moveModeEl && moveModeEl !== el) moveModeEl.classList.remove("is-move-mode");
-  moveModeEl = el;
-  if (el) el.classList.add("is-move-mode");
-}
+function onPointerDown(e: PointerEvent) {
+  const el = e.currentTarget as HTMLElement;
+  const target = e.target as HTMLElement;
 
-function beginDragMove(el: HTMLElement, e: PointerEvent) {
-  // Cancel any active text edit first
-  unselect();
-  el.classList.add("is-alt-dragging");
+  // Defer interaction inside handles or the toolbar.
+  if (target.closest(".te-handle, .text-edit-toolbar")) return;
+
+  // Active text edit on this element → let the caret + selection behave normally.
+  if (editingEl === el) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
   const startX = e.clientX;
   const startY = e.clientY;
-  const initial = rowFor(el.dataset.editableText!) || ({} as SiteText);
+  const initial = rowExact(el.dataset.editableText!) || ({} as SiteText);
   const x0 = parsePx(initial.offset_x);
   const y0 = parsePx(initial.offset_y);
   let moved = false;
 
-  // Capture so we keep getting events even if the cursor leaves the element
   try { el.setPointerCapture(e.pointerId); } catch {}
 
   const move = (ev: PointerEvent) => {
     const dx = ev.clientX - startX;
     const dy = ev.clientY - startY;
-    if (!moved && Math.hypot(dx, dy) > 3) moved = true;
-    patchVariantRow(el, {
-      offset_x: `${Math.round(x0 + dx)}px`,
-      offset_y: `${Math.round(y0 + dy)}px`,
-    });
-    applyOverride(el);
+    if (!moved && Math.hypot(dx, dy) > 4) {
+      moved = true;
+      // Dragging implicitly selects (and clears any active text editing
+      // somewhere else, since exitEditing only runs when needed).
+      if (editingEl && editingEl !== el) void exitEditing();
+      if (selectedEl !== el) select(el);
+      el.classList.add("is-alt-dragging");
+    }
+    if (moved) {
+      patchVariantRow(el, {
+        offset_x: `${Math.round(x0 + dx)}px`,
+        offset_y: `${Math.round(y0 + dy)}px`,
+      });
+      applyOverride(el);
+      positionToolbar(el);
+    }
   };
+
   const up = async () => {
     el.removeEventListener("pointermove", move);
     el.removeEventListener("pointerup", up);
     el.removeEventListener("pointercancel", up);
     el.classList.remove("is-alt-dragging");
+
     if (moved) {
-      // Block the click event the browser will fire after pointerup, so
-      // a drag doesn't accidentally enter edit mode on release.
+      // Block the click event the browser will fire after pointerup, so a
+      // drag never accidentally enters edit mode on release.
       const blockClick = (ev: MouseEvent) => {
-        ev.stopPropagation();
-        ev.preventDefault();
+        ev.stopPropagation(); ev.preventDefault();
         el.removeEventListener("click", blockClick, true);
       };
       el.addEventListener("click", blockClick, { capture: true });
-      // Safety: drop the blocker after one tick if no click arrives
-      setTimeout(() => el.removeEventListener("click", blockClick, true), 50);
+      setTimeout(() => el.removeEventListener("click", blockClick, true), 80);
+      const variantId = effectiveVariantId(el.dataset.editableText!);
+      const row = textCache.get(variantId);
+      if (row) await upsertSiteText(row);
+      return;
     }
-    const variantId = effectiveVariantId(el.dataset.editableText!);
-    const row = textCache.get(variantId);
-    if (row) await upsertSiteText(row);
+
+    // Plain tap: first tap selects, a follow-up tap enters text editing.
+    if (selectedEl !== el) {
+      if (editingEl) await exitEditing();
+      select(el);
+    } else {
+      enterEditing(el);
+    }
   };
+
   el.addEventListener("pointermove", move);
   el.addEventListener("pointerup", up);
   el.addEventListener("pointercancel", up);
+}
+
+function select(el: HTMLElement) {
+  if (selectedEl && selectedEl !== el) unselect();
+  selectedEl = el;
+  el.classList.add("is-selected");
+  attachHandles(el);
+  renderToolbar(el);
+  positionToolbar(el);
+}
+
+function unselect() {
+  if (!selectedEl) return;
+  // Exit editing first if active
+  if (editingEl === selectedEl) {
+    selectedEl.removeAttribute("contenteditable");
+    selectedEl.classList.remove("is-editing");
+    editingEl = null;
+  }
+  selectedEl.classList.remove("is-selected");
+  selectedEl.querySelectorAll(".te-handle").forEach((h) => h.remove());
+  if (selectedEl.dataset.tePosOrig === "static") {
+    selectedEl.style.position = "";
+    delete selectedEl.dataset.tePosOrig;
+  }
+  if (toolbar) toolbar.style.display = "none";
+  selectedEl = null;
+}
+
+function enterEditing(el: HTMLElement) {
+  if (editingEl === el) return;
+  if (selectedEl !== el) select(el);
+  editingEl = el;
+  el.classList.add("is-editing");
+  el.setAttribute("contenteditable", "plaintext-only");
+  el.focus();
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel?.removeAllRanges();
+  sel?.addRange(range);
+  el.addEventListener("blur", onEditingBlur as any, { once: true });
+}
+
+async function exitEditing() {
+  if (!editingEl) return;
+  const el = editingEl;
+  el.removeAttribute("contenteditable");
+  el.classList.remove("is-editing");
+  editingEl = null;
+  await persist(el);
+}
+
+async function onEditingBlur(e: FocusEvent) {
+  const el = e.target as HTMLElement;
+  setTimeout(async () => {
+    if (
+      document.activeElement &&
+      (document.activeElement === toolbar || toolbar?.contains(document.activeElement))
+    ) {
+      // Focus moved into the toolbar — save text but keep editing alive.
+      await persist(el);
+      if (editingEl === el) el.addEventListener("blur", onEditingBlur as any, { once: true });
+      return;
+    }
+    await persist(el);
+    if (editingEl === el) {
+      el.removeAttribute("contenteditable");
+      el.classList.remove("is-editing");
+      editingEl = null;
+    }
+    // Stay in selected state — the body click handler will deselect when
+    // the user actually clicks outside.
+  }, 0);
+}
+
+function attachHandles(el: HTMLElement) {
+  el.querySelectorAll(".te-handle").forEach((h) => h.remove());
+
+  // Need positioning context for absolute handles
+  const computed = getComputedStyle(el);
+  if (computed.position === "static") {
+    el.dataset.tePosOrig = "static";
+    el.style.position = "relative";
+  }
+
+  const corners: Array<["nw" | "ne" | "se" | "sw", string]> = [
+    ["nw", "left:-8px;top:-8px;cursor:nwse-resize"],
+    ["ne", "right:-8px;top:-8px;cursor:nesw-resize"],
+    ["se", "right:-8px;bottom:-8px;cursor:nwse-resize"],
+    ["sw", "left:-8px;bottom:-8px;cursor:nesw-resize"],
+  ];
+  for (const [dir, style] of corners) {
+    const h = document.createElement("div");
+    h.className = `te-handle te-handle--${dir}`;
+    h.setAttribute("style", style);
+    h.dataset.noEdit = "";
+    el.appendChild(h);
+    bindResize(h, el, dir);
+  }
+}
+
+function bindResize(handle: HTMLElement, el: HTMLElement, dir: "nw" | "ne" | "se" | "sw") {
+  handle.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (editingEl === el) void exitEditing();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const r = el.getBoundingClientRect();
+    const startW = Math.max(20, r.width);
+    const computed = getComputedStyle(el);
+    const startSizePx = parseFloat(computed.fontSize) || 16;
+    const dirSignX = (dir === "ne" || dir === "se") ? 1 : -1;
+    const dirSignY = (dir === "sw" || dir === "se") ? 1 : -1;
+
+    try { handle.setPointerCapture(e.pointerId); } catch {}
+
+    const variantId = effectiveVariantId(el.dataset.editableText!);
+
+    const move = (ev: PointerEvent) => {
+      const dx = (ev.clientX - startX) * dirSignX;
+      const dy = (ev.clientY - startY) * dirSignY;
+      // Average of horizontal + vertical drag towards the corner. Smooth and
+      // works the same regardless of which corner you grab.
+      const delta = (dx + dy) / 2;
+      const ratio = (startW + delta) / startW;
+      const newSize = Math.max(8, Math.round(startSizePx * ratio * 10) / 10);
+      patchVariantRow(el, { font_size: `${newSize}px` });
+      applyOverride(el);
+      positionToolbar(el);
+      const sizeOut = toolbar?.querySelector<HTMLElement>(".te-size-value");
+      if (sizeOut) sizeOut.textContent = `${newSize}px`;
+    };
+
+    const up = async () => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
+      const row = textCache.get(variantId);
+      if (row) await upsertSiteText(row);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  });
 }
 
 function parsePx(v: string | null | undefined): number {
@@ -454,66 +527,10 @@ function parsePx(v: string | null | undefined): number {
   return m ? parseFloat(m[1]) : 0;
 }
 
-function select(el: HTMLElement) {
-  if (selectedEl && selectedEl !== el) unselect();
-  selectedEl = el;
-  el.classList.add("is-selected");
-  el.setAttribute("contenteditable", "plaintext-only");
-  el.focus();
-  // Place caret at end
-  const sel = window.getSelection();
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  range.collapse(false);
-  sel?.removeAllRanges();
-  sel?.addRange(range);
-  positionToolbar(el);
-  renderToolbar(el);
-
-  el.addEventListener("blur", onBlur as any, { once: true });
-  el.addEventListener("input", onInput as any);
-}
-
-function unselect() {
-  if (!selectedEl) return;
-  selectedEl.classList.remove("is-selected");
-  selectedEl.removeAttribute("contenteditable");
-  selectedEl.removeEventListener("input", onInput as any);
-  if (toolbar) toolbar.style.display = "none";
-  selectedEl = null;
-}
-
-async function onBlur(e: FocusEvent) {
-  const el = e.target as HTMLElement;
-  // Defer so we can read where focus went next.
-  setTimeout(async () => {
-    if (
-      document.activeElement &&
-      (document.activeElement === toolbar || toolbar?.contains(document.activeElement))
-    ) {
-      // Focus moved into the toolbar (font picker, size input, colour, …).
-      // Save the current text, but DON'T snatch focus back — that was the
-      // bug that froze the toolbar. Re-arm blur so saving still fires when
-      // the toolbar loses focus later.
-      await persist(el);
-      el.addEventListener("blur", onBlur as any, { once: true });
-      return;
-    }
-    await persist(el);
-    unselect();
-  }, 0);
-}
-
-function onInput(e: Event) {
-  const el = e.target as HTMLElement;
-  // Could implement debounced auto-save mid-typing; for now we save on blur.
-  void el;
-}
-
 async function persist(el: HTMLElement) {
   const baseId = el.dataset.editableText!;
   const variantId = effectiveVariantId(baseId);
-  const existing = textCache.get(variantId) || rowFor(baseId) || ({ id: variantId } as SiteText);
+  const existing = textCache.get(variantId) || rowFallback(baseId) || ({ id: variantId } as SiteText);
   const row: Partial<SiteText> & { id: string } = {
     ...existing,
     id: variantId,
@@ -523,11 +540,10 @@ async function persist(el: HTMLElement) {
   textCache.set(variantId, row as SiteText);
 }
 
-/** Mutate or insert a row for the current variant of this element. */
 function patchVariantRow(el: HTMLElement, patch: Partial<SiteText>): SiteText {
   const baseId = el.dataset.editableText!;
   const variantId = effectiveVariantId(baseId);
-  const current = textCache.get(variantId) || rowFor(baseId) || ({ id: variantId } as SiteText);
+  const current = textCache.get(variantId) || rowExact(baseId) || rowFallback(baseId) || ({ id: variantId } as SiteText);
   const next = { ...current, id: variantId, ...patch } as SiteText;
   textCache.set(variantId, next);
   return next;
@@ -547,7 +563,6 @@ function positionToolbar(el: HTMLElement) {
   if (!toolbar) return;
   toolbar.style.display = "flex";
   if (window.matchMedia("(max-width: 767px)").matches) {
-    // Mobile: pin to bottom, full width, ignore element position.
     toolbar.style.position = "fixed";
     toolbar.style.left = "0";
     toolbar.style.right = "0";
@@ -557,7 +572,7 @@ function positionToolbar(el: HTMLElement) {
   } else {
     const r = el.getBoundingClientRect();
     toolbar.style.position = "fixed";
-    toolbar.style.left = `${Math.max(8, Math.min(window.innerWidth - 520, r.left))}px`;
+    toolbar.style.left = `${Math.max(8, Math.min(window.innerWidth - 560, r.left))}px`;
     toolbar.style.top = `${Math.max(8, r.top - 56)}px`;
     toolbar.style.right = "auto";
     toolbar.style.bottom = "auto";
@@ -565,74 +580,139 @@ function positionToolbar(el: HTMLElement) {
   }
 }
 
+/** Read current font-size in px from element styles or live computed. */
+function readFontSizePx(el: HTMLElement, baseId: string): number {
+  const pos = rowExact(baseId);
+  if (pos?.font_size) {
+    const m = pos.font_size.match(/(-?[\d.]+)\s*(px|rem|em)?/);
+    if (m) {
+      const n = parseFloat(m[1]);
+      const unit = m[2] || "px";
+      if (unit === "px") return n;
+      if (unit === "rem") return n * 16;
+      if (unit === "em") return n * (parseFloat(getComputedStyle(el.parentElement || document.body).fontSize) || 16);
+    }
+  }
+  return parseFloat(getComputedStyle(el).fontSize) || 16;
+}
+
 function renderToolbar(el: HTMLElement) {
   if (!toolbar) return;
-  const computed = getComputedStyle(el);
   const baseId = el.dataset.editableText!;
-  const row = rowFor(baseId) || ({ id: baseId } as SiteText);
+  const typo = rowFallback(baseId) || ({ id: baseId } as SiteText);
+  const pos = rowExact(baseId) || ({ id: effectiveVariantId(baseId) } as SiteText);
   const variant = currentVariant();
+  const isLink = el.tagName === "A";
+  const isInteractive = isLink || el.tagName === "BUTTON";
+  const currentFontPx = Math.round(readFontSizePx(el, baseId));
 
   toolbar.innerHTML = `
     <span class="te-variant" title="editing variant for current screen">${variant}</span>
+    <button class="te-edit-text" type="button" title="edit text (or tap the text again)">
+      ✏ <span class="te-edit-text-label">edit text</span>
+    </button>
+    ${isLink ? `<button class="te-open-link" type="button" title="open link in new tab">↗ open link</button>` : ""}
+    ${isInteractive && !isLink ? `<button class="te-open-link" type="button" title="trigger button">▶ run</button>` : ""}
+    <div class="te-size-stepper" title="font size">
+      <button class="te-size-minus" type="button">−</button>
+      <span class="te-size-value">${currentFontPx}px</span>
+      <button class="te-size-plus" type="button">+</button>
+    </div>
     <select class="te-font" title="font family">
       <option value="">— inherit —</option>
       ${FONT_CATALOGUE.map(
         (f) =>
           `<option value="${f.stack}" data-family="${f.family}" ${
-            row.font_family === f.stack ? "selected" : ""
+            typo.font_family === f.stack ? "selected" : ""
           } style="font-family:${f.stack}">${f.label}</option>`
       ).join("")}
     </select>
-    <input class="te-size" type="text" placeholder="size" title="font-size (e.g. 1.4rem, 24px)" value="${row.font_size || ""}" />
     <select class="te-weight" title="font weight">
       ${["", "300", "400", "500", "600", "700"]
-        .map((w) => `<option value="${w}" ${row.font_weight === w ? "selected" : ""}>${w || "inherit"}</option>`)
+        .map((w) => `<option value="${w}" ${typo.font_weight === w ? "selected" : ""}>${w || "weight"}</option>`)
         .join("")}
     </select>
-    <button class="te-italic ${row.font_style === "italic" ? "is-on" : ""}" type="button" title="italic">I</button>
-    <input class="te-color" type="color" title="colour" value="${row.color || rgbToHex(computed.color) || "#ffffff"}" />
+    <button class="te-italic ${typo.font_style === "italic" ? "is-on" : ""}" type="button" title="italic">I</button>
+    <input class="te-color" type="color" title="colour" value="${typo.color || rgbToHex(getComputedStyle(el).color) || "#ffffff"}" />
     <label class="te-rotation" title="rotation (deg)">
-      rot
-      <input type="range" min="-180" max="180" step="1" value="${row.rotation || 0}" data-field="rotation" />
-      <output>${Math.round(row.rotation || 0)}°</output>
+      <span>rot</span>
+      <input type="range" min="-180" max="180" step="1" value="${pos.rotation || 0}" data-field="rotation" />
+      <output>${Math.round(pos.rotation || 0)}°</output>
     </label>
     <button class="te-reset" type="button" title="reset to defaults">⟲</button>
   `;
 
   const fontSel = toolbar.querySelector<HTMLSelectElement>(".te-font")!;
-  const sizeIn = toolbar.querySelector<HTMLInputElement>(".te-size")!;
   const weightSel = toolbar.querySelector<HTMLSelectElement>(".te-weight")!;
   const italicBtn = toolbar.querySelector<HTMLButtonElement>(".te-italic")!;
   const colorIn = toolbar.querySelector<HTMLInputElement>(".te-color")!;
   const resetBtn = toolbar.querySelector<HTMLButtonElement>(".te-reset")!;
+  const editTextBtn = toolbar.querySelector<HTMLButtonElement>(".te-edit-text")!;
+  const sizeMinus = toolbar.querySelector<HTMLButtonElement>(".te-size-minus")!;
+  const sizePlus = toolbar.querySelector<HTMLButtonElement>(".te-size-plus")!;
+  const sizeValue = toolbar.querySelector<HTMLElement>(".te-size-value")!;
 
   const variantId = effectiveVariantId(baseId);
-  const updateStyle = async (field: keyof SiteText, value: any) => {
+
+  // Typo fields write to the variant row (so a single change creates the row)
+  const updateTypo = async (field: keyof SiteText, value: any) => {
     const next = patchVariantRow(el, { [field]: value } as Partial<SiteText>);
     applyOverride(el);
     if (field === "font_family" && value) preloadFontsInUse();
     await upsertSiteText(next);
   };
+  const updatePos = async (field: keyof SiteText, value: any) => {
+    const next = patchVariantRow(el, { [field]: value } as Partial<SiteText>);
+    applyOverride(el);
+    await upsertSiteText(next);
+  };
 
-  fontSel.addEventListener("change", () => updateStyle("font_family", fontSel.value || null));
-  weightSel.addEventListener("change", () => updateStyle("font_weight", weightSel.value || null));
+  fontSel.addEventListener("change", () => updateTypo("font_family", fontSel.value || null));
+  weightSel.addEventListener("change", () => updateTypo("font_weight", weightSel.value || null));
   italicBtn.addEventListener("click", () => {
     const isOn = italicBtn.classList.toggle("is-on");
-    updateStyle("font_style", isOn ? "italic" : null);
+    updateTypo("font_style", isOn ? "italic" : null);
+  });
+  colorIn.addEventListener("change", () => updateTypo("color", colorIn.value));
+
+  editTextBtn.addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    enterEditing(el);
   });
 
-  // Live size: update visually on every keystroke; debounce the save
-  let sizeSaveTimer: ReturnType<typeof setTimeout> | null = null;
-  sizeIn.addEventListener("input", () => {
-    patchVariantRow(el, { font_size: sizeIn.value || null });
+  const openLinkBtn = toolbar.querySelector<HTMLButtonElement>(".te-open-link");
+  if (openLinkBtn && isLink) {
+    openLinkBtn.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const href = (el as HTMLAnchorElement).getAttribute("href") || "";
+      if (href) {
+        // Same tab is what visitors get — keep edit session via ?edit=1 patch
+        window.location.href = href;
+      }
+    });
+  } else if (openLinkBtn) {
+    // Plain button: simulate a real click via a temporary native click without
+    // our intercepting handlers in the way.
+    openLinkBtn.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      (el as HTMLButtonElement).form?.requestSubmit?.();
+    });
+  }
+
+  const applySizeStep = async (deltaPx: number) => {
+    const current = readFontSizePx(el, baseId);
+    const next = Math.max(8, Math.round((current + deltaPx) * 10) / 10);
+    patchVariantRow(el, { font_size: `${next}px` });
     applyOverride(el);
-    if (sizeSaveTimer) clearTimeout(sizeSaveTimer);
-    sizeSaveTimer = setTimeout(() => {
-      const row = textCache.get(variantId);
-      if (row) upsertSiteText(row);
-    }, 500);
-  });
-  colorIn.addEventListener("change", () => updateStyle("color", colorIn.value));
+    sizeValue.textContent = `${Math.round(next)}px`;
+    const row = textCache.get(variantId);
+    if (row) await upsertSiteText(row);
+  };
+  sizeMinus.addEventListener("click", () => applySizeStep(-1));
+  sizePlus.addEventListener("click", () => applySizeStep(+1));
+  // Long-press for fast change
+  attachRepeatPress(sizeMinus, () => applySizeStep(-2));
+  attachRepeatPress(sizePlus, () => applySizeStep(+2));
 
   // Rotation slider
   const rotIn = toolbar.querySelector<HTMLInputElement>('[data-field="rotation"]');
@@ -663,6 +743,25 @@ function renderToolbar(el: HTMLElement) {
   });
 }
 
+/** Hold the button to repeat the action. Released = stop. */
+function attachRepeatPress(btn: HTMLButtonElement, repeatFn: () => void) {
+  let timer: ReturnType<typeof setInterval> | null = null;
+  let start: ReturnType<typeof setTimeout> | null = null;
+  const stop = () => {
+    if (timer) { clearInterval(timer); timer = null; }
+    if (start) { clearTimeout(start); start = null; }
+  };
+  btn.addEventListener("pointerdown", () => {
+    stop();
+    start = setTimeout(() => {
+      timer = setInterval(repeatFn, 80);
+    }, 350);
+  });
+  btn.addEventListener("pointerup", stop);
+  btn.addEventListener("pointerleave", stop);
+  btn.addEventListener("pointercancel", stop);
+}
+
 function rgbToHex(rgb: string): string | null {
   const m = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
   if (!m) return null;
@@ -680,10 +779,10 @@ function injectStyles() {
   const s = document.createElement("style");
   s.id = "text-edit-styles";
   s.textContent = `
-    /* Editable elements in edit mode. touch-action: none means a finger
-       drag never gets stolen by the browser as a scroll. */
+    /* Editable elements in edit mode. touch-action: none so a finger drag
+       never gets stolen by the browser as a scroll. */
     body.is-text-edit [data-editable-text].is-editable {
-      cursor: text;
+      cursor: pointer;
       transition: outline 120ms ease;
       touch-action: none;
     }
@@ -691,9 +790,6 @@ function injectStyles() {
       outline: 1px dashed rgba(76, 194, 255, 0.55);
       outline-offset: 0;
     }
-    /* Interactive elements (links, buttons): green ring on hover.
-       Single click → edit. Double click → navigate. Alt+click is a
-       power-user shortcut straight to edit. */
     body.is-text-edit [data-editable-text].is-interactive-edit:hover {
       outline-color: rgba(120, 220, 120, 0.65);
     }
@@ -702,24 +798,31 @@ function injectStyles() {
       outline: 2px solid #4cc2ff;
       outline-offset: 0;
     }
-    body.is-text-edit [data-editable-text].is-alt-dragging,
-    body.is-text-edit [data-editable-text].is-move-mode {
-      outline: 2px dashed #ffcc00;
+    body.is-text-edit [data-editable-text].is-editing {
+      cursor: text;
+      outline: 2px solid #ffcc00;
       outline-offset: 0;
+      touch-action: auto;
+    }
+    body.is-text-edit [data-editable-text].is-alt-dragging {
+      outline: 2px dashed #ffcc00;
       cursor: move;
+    }
+
+    /* Corner resize handles (mirror of image editor) */
+    .te-handle {
+      position: absolute;
+      width: 16px; height: 16px;
+      background: #fff; border: 2px solid #4cc2ff;
+      box-sizing: border-box;
+      z-index: 50;
+      border-radius: 3px;
       touch-action: none;
     }
-    .text-edit-toolbar .te-variant {
-      background: #4cc2ff; color: #000;
-      padding: 3px 7px; border-radius: 3px;
-      font-weight: bold; text-transform: uppercase;
-      font-size: 10px;
+    @media (hover: hover) {
+      .te-handle { width: 12px; height: 12px; }
     }
-    .text-edit-toolbar .te-rotation {
-      display: inline-flex; align-items: center; gap: 4px; color: #aaa;
-    }
-    .text-edit-toolbar .te-rotation input[type="range"] { width: 90px; }
-    .text-edit-toolbar .te-rotation output { color: #fff; min-width: 34px; }
+
     .text-edit-toolbar {
       gap: 6px;
       align-items: center;
@@ -734,31 +837,49 @@ function injectStyles() {
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
       max-width: 100vw;
       overflow-x: auto;
-    }
-    .text-edit-toolbar.is-mobile {
-      gap: 8px;
-      padding: 10px 12px env(safe-area-inset-bottom);
-      border-radius: 12px 12px 0 0;
-      font-size: 14px;
-      border-left: 0;
-      border-right: 0;
-      border-bottom: 0;
       flex-wrap: nowrap;
     }
-    .text-edit-toolbar.is-mobile input,
-    .text-edit-toolbar.is-mobile select,
-    .text-edit-toolbar.is-mobile button { font-size: 14px; padding: 8px 12px; min-height: 38px; }
-    .text-edit-toolbar.is-mobile .te-font { min-width: 140px; }
-    .text-edit-toolbar.is-mobile .te-size { width: 70px; }
-    .text-edit-toolbar.is-mobile .te-weight { min-width: 92px; }
-    .text-edit-toolbar select,
-    .text-edit-toolbar input[type="text"] {
+    .text-edit-toolbar .te-variant {
+      background: #4cc2ff; color: #000;
+      padding: 3px 7px; border-radius: 3px;
+      font-weight: bold; text-transform: uppercase;
+      font-size: 10px;
+    }
+    .text-edit-toolbar .te-edit-text {
+      background: #ffcc00; color: #000; border: 0; border-radius: 4px;
+      padding: 5px 10px; cursor: pointer; font: inherit; font-weight: bold;
+      white-space: nowrap;
+    }
+    .text-edit-toolbar .te-open-link {
+      background: #4cc2ff; color: #000; border: 0; border-radius: 4px;
+      padding: 5px 10px; cursor: pointer; font: inherit; font-weight: bold;
+      white-space: nowrap;
+    }
+    .text-edit-toolbar .te-size-stepper {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #222; border: 1px solid #555; border-radius: 4px;
+      padding: 2px;
+    }
+    .text-edit-toolbar .te-size-stepper button {
+      background: transparent; color: #fff; border: 0;
+      width: 26px; height: 26px; cursor: pointer; font: inherit;
+      font-size: 16px; border-radius: 3px;
+    }
+    .text-edit-toolbar .te-size-stepper button:hover { background: #333; }
+    .text-edit-toolbar .te-size-value {
+      min-width: 44px; text-align: center; color: #fff;
+    }
+    .text-edit-toolbar .te-rotation {
+      display: inline-flex; align-items: center; gap: 4px; color: #aaa;
+    }
+    .text-edit-toolbar .te-rotation input[type="range"] { width: 90px; }
+    .text-edit-toolbar .te-rotation output { color: #fff; min-width: 34px; }
+    .text-edit-toolbar select {
       background: #222; color: #fff; border: 1px solid #555;
       padding: 4px 6px; border-radius: 3px; font: inherit;
     }
-    .text-edit-toolbar .te-font { min-width: 180px; }
-    .text-edit-toolbar .te-size { width: 72px; }
-    .text-edit-toolbar .te-weight { width: 84px; }
+    .text-edit-toolbar .te-font { min-width: 160px; }
+    .text-edit-toolbar .te-weight { min-width: 90px; }
     .text-edit-toolbar .te-italic,
     .text-edit-toolbar .te-reset {
       background: #222; color: #fff; border: 1px solid #555;
@@ -769,6 +890,19 @@ function injectStyles() {
       background: transparent; border: 1px solid #555; padding: 0; width: 36px; height: 28px;
       border-radius: 3px; cursor: pointer;
     }
+    .text-edit-toolbar.is-mobile {
+      gap: 8px;
+      padding: 10px 12px env(safe-area-inset-bottom);
+      border-radius: 12px 12px 0 0;
+      font-size: 14px;
+      border-left: 0; border-right: 0; border-bottom: 0;
+    }
+    .text-edit-toolbar.is-mobile select,
+    .text-edit-toolbar.is-mobile button { font-size: 14px; min-height: 40px; padding: 8px 12px; }
+    .text-edit-toolbar.is-mobile .te-size-stepper button { width: 36px; height: 36px; font-size: 20px; }
+    .text-edit-toolbar.is-mobile .te-size-value { min-width: 54px; }
+    .text-edit-toolbar.is-mobile .te-font { min-width: 130px; }
+    .text-edit-toolbar.is-mobile .te-weight { min-width: 92px; }
   `;
   document.head.appendChild(s);
 }

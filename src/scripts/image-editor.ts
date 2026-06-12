@@ -144,7 +144,12 @@ function applyAll() {
   for (const el of getEditableImages()) applyOverride(el);
 }
 
-function rowFor(baseId: string): SiteImage | undefined {
+/**
+ * Content-level overrides (src, filter, object_position) fall back from the
+ * current variant to @desktop to legacy. Visitors get *some* picture even
+ * if only one variant was edited.
+ */
+function rowFallback(baseId: string): SiteImage | undefined {
   return (
     cache.get(effectiveVariantId(baseId)) ||
     cache.get(`${baseId}@desktop`) ||
@@ -152,39 +157,52 @@ function rowFor(baseId: string): SiteImage | undefined {
   );
 }
 
+/**
+ * Positional overrides (width/height/offset/rotation/scale) come ONLY from
+ * the exact variant — desktop sizes don't leak onto a mobile layout that's
+ * naturally narrower, and vice versa.
+ */
+function rowExact(baseId: string): SiteImage | undefined {
+  return cache.get(effectiveVariantId(baseId));
+}
+
+// Back-compat alias for any remaining call sites.
+function rowFor(baseId: string): SiteImage | undefined {
+  return rowExact(baseId) || rowFallback(baseId);
+}
+
 function applyOverride(el: HTMLElement) {
   const baseId = el.dataset.editableImage!;
-  const row = rowFor(baseId);
-  if (!row) {
-    // Reset wrapper styles we might have added
+  const content = rowFallback(baseId);
+  const pos = rowExact(baseId);
+  if (!content && !pos) {
     el.style.removeProperty("transform");
     el.style.removeProperty("filter");
     return;
   }
-  // Swap src on <img> children (Astro <Image> renders an <img>)
-  if (row.src) {
+  if (content?.src) {
     const img = el.tagName === "IMG" ? (el as HTMLImageElement) : el.querySelector<HTMLImageElement>("img");
-    if (img && img.src !== row.src) {
-      img.src = row.src;
+    if (img && img.src !== content.src) {
+      img.src = content.src;
       img.removeAttribute("srcset");
       img.removeAttribute("sizes");
     }
   }
-  if (row.width)           el.style.width  = row.width;
-  if (row.height)          el.style.height = row.height;
-  if (row.object_position) {
+  if (content?.object_position) {
     const img = el.tagName === "IMG" ? (el as HTMLImageElement) : el.querySelector<HTMLImageElement>("img");
-    if (img) img.style.objectPosition = row.object_position;
+    if (img) img.style.objectPosition = content.object_position;
   }
+  el.style.filter = content?.filter || "";
 
-  const tx = row.offset_x || "0px";
-  const ty = row.offset_y || "0px";
-  const rot = row.rotation || 0;
-  const scl = row.scale || 1;
-  const transform = `translate(${tx}, ${ty}) rotate(${rot}deg) scale(${scl})`;
-  el.style.transform = transform;
+  // Positional — exact variant only
+  if (pos?.width)  el.style.width  = pos.width;  else el.style.width = "";
+  if (pos?.height) el.style.height = pos.height; else el.style.height = "";
+  const tx = pos?.offset_x || "0px";
+  const ty = pos?.offset_y || "0px";
+  const rot = pos?.rotation || 0;
+  const scl = pos?.scale || 1;
+  el.style.transform = `translate(${tx}, ${ty}) rotate(${rot}deg) scale(${scl})`;
   el.style.transformOrigin = "center center";
-  el.style.filter = row.filter || "";
 }
 
 /* ===================== Edit interactions ===================== */
