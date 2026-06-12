@@ -680,13 +680,12 @@ function injectStyles() {
   const s = document.createElement("style");
   s.id = "text-edit-styles";
   s.textContent = `
-    /* Invisible padding "frame" so the edge area is clickable. Negative
-       margin removes the padding from layout — visually nothing moves. */
+    /* Editable elements in edit mode. touch-action: none means a finger
+       drag never gets stolen by the browser as a scroll. */
     body.is-text-edit [data-editable-text].is-editable {
       cursor: text;
       transition: outline 120ms ease;
-      padding: 6px;
-      margin: -6px;
+      touch-action: none;
     }
     body.is-text-edit [data-editable-text].is-editable:hover {
       outline: 1px dashed rgba(76, 194, 255, 0.55);

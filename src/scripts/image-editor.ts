@@ -445,14 +445,18 @@ function injectStyles() {
       cursor: move;
       transition: outline 120ms ease;
       position: relative;
+      touch-action: none;
     }
     body.is-image-edit [data-editable-image].is-editable-image:hover {
       outline: 1px dashed rgba(76, 194, 255, 0.65);
-      outline-offset: 4px;
+      outline-offset: 0;
     }
     body.is-image-edit [data-editable-image].is-image-selected {
       outline: 2px solid #4cc2ff;
       outline-offset: 0;
+    }
+    body.is-image-edit .img-handle {
+      touch-action: none;
     }
     .img-handle {
       position: absolute;
