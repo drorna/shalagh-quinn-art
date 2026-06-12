@@ -49,7 +49,7 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
-    <style>
+    <style is:global>
       * { box-sizing: border-box; }
       html, body {
         margin: 0; padding: 0; height: 100%;
@@ -209,6 +209,208 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
         color: rgba(255, 255, 255, 0.5);
       }
       .me-dock.is-active .me-dock-empty { display: none; }
+
+      /* Docked editor toolbars live in this shell. Styles must be here
+         (not injected from the iframe) because cross-document style
+         injection from an iframe can fail silently in some setups. */
+      .text-edit-toolbar.is-docked,
+      .image-edit-toolbar.is-docked,
+      .mural-mini-panel.is-docked {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        background: linear-gradient(180deg, rgba(22, 22, 26, 0.96), rgba(14, 14, 18, 0.96));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        font-family: "Inter", "SF Pro Text", system-ui, sans-serif;
+        font-size: 13px;
+        color: #e8ebf0;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        overflow: visible;
+        max-width: none;
+      }
+
+      .text-edit-toolbar.is-docked .te-variant {
+        align-self: flex-start;
+        background: linear-gradient(135deg, #4cc2ff, #6e8bff);
+        color: #001020;
+        padding: 4px 10px; border-radius: 5px;
+        font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .text-edit-toolbar.is-docked .te-edit-text {
+        width: 100%; justify-content: center;
+        background: linear-gradient(135deg, #ffcc00, #ffae00);
+        color: #1a1200;
+        border: 0; border-radius: 8px;
+        padding: 10px; font: inherit; font-weight: 700;
+        cursor: pointer; transition: filter 120ms ease;
+      }
+      .text-edit-toolbar.is-docked .te-edit-text:hover { filter: brightness(1.08); }
+
+      .text-edit-toolbar.is-docked .te-open-link {
+        width: 100%; justify-content: center;
+        background: linear-gradient(135deg, #4cc2ff, #2196ee);
+        color: #001020;
+        border: 0; border-radius: 8px;
+        padding: 10px; font: inherit; font-weight: 700;
+        cursor: pointer; transition: filter 120ms ease;
+      }
+      .text-edit-toolbar.is-docked .te-open-link:hover { filter: brightness(1.08); }
+
+      .text-edit-toolbar.is-docked .te-size-stepper {
+        display: flex; align-items: center; gap: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 4px;
+      }
+      .text-edit-toolbar.is-docked .te-size-stepper button {
+        background: transparent; color: #fff; border: 0;
+        width: 36px; height: 36px; cursor: pointer;
+        font-size: 18px; border-radius: 6px;
+        transition: background 120ms ease;
+      }
+      .text-edit-toolbar.is-docked .te-size-stepper button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .text-edit-toolbar.is-docked .te-size-value {
+        flex: 1; min-width: 0; width: auto;
+        background: transparent; border: 0; outline: 0;
+        color: #fff; text-align: center;
+        font: inherit; font-size: 16px; padding: 0;
+      }
+      .text-edit-toolbar.is-docked .te-size-value:focus {
+        outline: 1px solid #4cc2ff; outline-offset: 1px; border-radius: 3px;
+      }
+      .text-edit-toolbar.is-docked .te-size-unit {
+        color: rgba(255, 255, 255, 0.45); font-size: 12px; padding-right: 4px;
+      }
+
+      .text-edit-toolbar.is-docked select {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 8px 10px; border-radius: 8px;
+        font: inherit;
+      }
+      .text-edit-toolbar.is-docked select:hover {
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+
+      .text-edit-toolbar.is-docked .te-bold,
+      .text-edit-toolbar.is-docked .te-italic,
+      .text-edit-toolbar.is-docked .te-reset {
+        background: rgba(255, 255, 255, 0.05); color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px; cursor: pointer;
+        padding: 9px 14px; font: inherit;
+        transition: background 120ms ease;
+      }
+      .text-edit-toolbar.is-docked .te-bold { font-weight: 800; }
+      .text-edit-toolbar.is-docked .te-italic { font-style: italic; }
+      .text-edit-toolbar.is-docked .te-reset { color: rgba(255, 255, 255, 0.6); }
+      .text-edit-toolbar.is-docked .te-bold:hover,
+      .text-edit-toolbar.is-docked .te-italic:hover,
+      .text-edit-toolbar.is-docked .te-reset:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .text-edit-toolbar.is-docked .te-bold.is-on,
+      .text-edit-toolbar.is-docked .te-italic.is-on {
+        background: linear-gradient(135deg, #4cc2ff, #2196ee);
+        color: #001020; border-color: transparent;
+      }
+
+      .text-edit-toolbar.is-docked .te-rotation {
+        display: flex; align-items: center; gap: 8px;
+        color: rgba(255, 255, 255, 0.55); font-size: 12px;
+      }
+      .text-edit-toolbar.is-docked .te-rotation input[type="range"] {
+        flex: 1;
+      }
+      .text-edit-toolbar.is-docked .te-rotation output {
+        color: #fff; min-width: 40px; font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      .text-edit-toolbar.is-docked input[type="color"] {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 0; width: 100%; height: 40px;
+        border-radius: 8px; cursor: pointer;
+      }
+
+      /* Image toolbar (docked) */
+      .image-edit-toolbar.is-docked .ie-btn {
+        width: 100%; justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 10px;
+        cursor: pointer; font: inherit; font-weight: 600;
+        text-align: center; display: flex; align-items: center; gap: 8px;
+      }
+      .image-edit-toolbar.is-docked .ie-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .image-edit-toolbar.is-docked .ie-open-link {
+        background: linear-gradient(135deg, #4cc2ff, #2196ee);
+        color: #001020;
+        border: 0; font-weight: 700;
+      }
+      .image-edit-toolbar.is-docked .ie-reset {
+        color: rgba(255, 255, 255, 0.6);
+      }
+      .image-edit-toolbar.is-docked .ie-field {
+        display: flex; align-items: center; gap: 8px;
+        color: rgba(255, 255, 255, 0.55); font-size: 12px;
+      }
+      .image-edit-toolbar.is-docked .ie-field input[type="range"] {
+        flex: 1;
+      }
+      .image-edit-toolbar.is-docked .ie-field output {
+        color: #fff; min-width: 44px; text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Mural mini panel (docked) */
+      .mural-mini-panel.is-docked {
+        gap: 14px;
+      }
+      .mural-mini-panel.is-docked .mural-mini-panel__head {
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 14px; font-weight: 700;
+      }
+      .mural-mini-panel.is-docked .mural-mini-panel__close {
+        background: transparent; color: rgba(255, 255, 255, 0.55);
+        border: 0; font-size: 22px; cursor: pointer; line-height: 1;
+        width: 32px; height: 32px; border-radius: 6px;
+      }
+      .mural-mini-panel.is-docked .mural-mini-panel__close:hover {
+        background: rgba(255, 255, 255, 0.08); color: #fff;
+      }
+      .mural-mini-panel.is-docked .mural-mini-row {
+        display: flex; flex-direction: column; gap: 6px;
+        font-size: 12px; color: rgba(255, 255, 255, 0.55);
+      }
+      .mural-mini-panel.is-docked .mural-mini-row > span {
+        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+      }
+      .mural-mini-panel.is-docked input[type="text"] {
+        background: rgba(255, 255, 255, 0.05); color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px; padding: 9px 11px;
+        font: inherit; width: 100%;
+      }
+      .mural-mini-panel.is-docked input[type="range"] {
+        flex: 1;
+      }
 
       /* Phone wrapper styles (kept as a deliberately distinct block from
          the dock so each can be tuned independently). */
