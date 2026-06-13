@@ -302,10 +302,23 @@ function rowExact(baseId: string): SiteText | undefined {
   return textCache.get(effectiveVariantId(baseId));
 }
 
+/** Sentinel saved in site_text.value to mark a template-baked element
+ *  as hidden — survives page refreshes (the row stays in the DB). */
+const DELETED_SENTINEL = "__DELETED__";
+
 function applyOverride(el: HTMLElement) {
   const id = el.dataset.editableText!;
   const typo = rowFallback(id);
   const pos = rowExact(id);
+
+  // Honour the "deleted" sentinel — a template element the user
+  // explicitly hid through the toolbar trash button.
+  if (typo?.value === DELETED_SENTINEL) {
+    el.style.display = "none";
+    return;
+  }
+  // Otherwise make sure we don't leave a stale display:none.
+  if (el.style.display === "none") el.style.display = "";
 
   if (!typo && !pos) {
     el.style.transform = "";
@@ -1052,22 +1065,32 @@ function renderToolbar(el: HTMLElement) {
       const isCustom = baseId.startsWith("custom:");
       const what = isCustom
         ? "Delete this text box completely?"
-        : "Remove this text element from the page?\n(The original element is part of the page template, so this will only blank its content.)";
+        : "Hide this text element from the page?\n(It's part of the template, so we mark it hidden — you can bring it back via Supabase if you change your mind.)";
       if (!confirm(what)) return;
-      // Delete every variant row for this baseId, plus the legacy non-variant row.
-      const idsToDrop = [`${baseId}@mobile`, `${baseId}@desktop`, baseId];
-      for (const id of idsToDrop) await deleteSiteText(id);
       if (isCustom) {
-        // Custom-floating box: also remove from DOM.
+        // Custom-floating box: drop all rows and remove from DOM.
+        const idsToDrop = [`${baseId}@mobile`, `${baseId}@desktop`, baseId];
+        for (const id of idsToDrop) await deleteSiteText(id);
         el.remove();
       } else {
-        // Template element: blank the content so the page still renders.
-        el.textContent = "";
-        el.style.cssText = "";
+        // Template element: write the DELETED sentinel so applyOverride
+        // hides it on every future page load too. Also drop any legacy
+        // non-variant row so the sentinel actually wins on read.
+        const variantId = effectiveVariantId(baseId);
+        const hiddenRow: SiteText = {
+          id: variantId,
+          value: DELETED_SENTINEL,
+          font_family: null, font_size: null, font_weight: null, font_style: null,
+          color: null, letter_spacing: null, line_height: null, text_align: null,
+          offset_x: null, offset_y: null, rotation: 0,
+        };
+        textCache.set(variantId, hiddenRow);
+        await upsertSiteText(hiddenRow);
+        el.style.display = "none";
       }
-      if (toolbar) toolbar.style.display = "none";
-      selectedEl = null;
-      editingEl = null;
+      // Clear the selection visuals so the user doesn't see the blue
+      // outline floating where the element used to be.
+      unselect();
     });
   }
 }
