@@ -1137,19 +1137,18 @@ function injectStyles(targetDoc: Document = document) {
     [data-editable-text] { white-space: pre-line; }
 
     /* Free-floating text boxes added with the editor's "+ text" button.
-       Live on top of any page, positioned by their saved offset. */
+       Transparent by default so the type sits directly on the page —
+       the user can change colour/font through the toolbar. */
     .custom-text-box {
       position: absolute;
       top: 0;
       left: 0;
-      padding: 6px 12px;
-      background: rgba(255, 255, 255, 0.94);
-      color: #111;
-      font-family: "Times New Roman", Times, serif;
+      padding: 2px 6px;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
       font-size: 1.2rem;
       line-height: 1.3;
-      border-radius: 4px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
       max-width: 80vw;
       z-index: 20;
     }
