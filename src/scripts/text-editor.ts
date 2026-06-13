@@ -891,6 +891,11 @@ function renderToolbar(el: HTMLElement) {
     </select>
     <button class="te-bold ${(typo.font_weight === "700" || typo.font_weight === "600") ? "is-on" : ""}" type="button" title="bold">B</button>
     <button class="te-italic ${typo.font_style === "italic" ? "is-on" : ""}" type="button" title="italic">I</button>
+    <div class="te-align" role="group" aria-label="text alignment">
+      <button class="te-align-btn ${typo.text_align === "left" ? "is-on" : ""}" type="button" data-align="left" title="align left">⇤</button>
+      <button class="te-align-btn ${typo.text_align === "center" ? "is-on" : ""}" type="button" data-align="center" title="align center">⇔</button>
+      <button class="te-align-btn ${typo.text_align === "right" ? "is-on" : ""}" type="button" data-align="right" title="align right">⇥</button>
+    </div>
     <input class="te-color" type="color" title="colour" value="${typo.color || rgbToHex(getComputedStyle(el).color) || "#ffffff"}" />
     <label class="te-rotation" title="rotation (deg)">
       <span>rot</span>
@@ -939,6 +944,18 @@ function renderToolbar(el: HTMLElement) {
   italicBtn.addEventListener("click", () => {
     const isOn = italicBtn.classList.toggle("is-on");
     updateTypo("font_style", isOn ? "italic" : null);
+  });
+  // Alignment buttons (mutually-exclusive radio behaviour). Clicking
+  // the currently-active one clears alignment back to the inherited
+  // default — handy when the user just wants to drop an override.
+  toolbar.querySelectorAll<HTMLButtonElement>(".te-align-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const align = btn.dataset.align as "left" | "center" | "right";
+      const wasOn = btn.classList.contains("is-on");
+      toolbar?.querySelectorAll(".te-align-btn").forEach((b) => b.classList.remove("is-on"));
+      if (!wasOn) btn.classList.add("is-on");
+      updateTypo("text_align", wasOn ? null : align);
+    });
   });
   colorIn.addEventListener("change", () => updateTypo("color", colorIn.value));
 
@@ -1356,6 +1373,26 @@ function injectStyles(targetDoc: Document = document) {
     .text-edit-toolbar .te-italic.is-on {
       background: linear-gradient(135deg, #4cc2ff, #2196ee);
       color: #001020; border-color: transparent;
+    }
+    .text-edit-toolbar .te-align {
+      display: inline-flex;
+      gap: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 7px;
+      padding: 2px;
+    }
+    .text-edit-toolbar .te-align-btn {
+      background: transparent; color: #fff; border: 0;
+      width: 28px; height: 28px; cursor: pointer;
+      font-size: 16px; line-height: 1; border-radius: 5px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background 120ms ease;
+    }
+    .text-edit-toolbar .te-align-btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .text-edit-toolbar .te-align-btn.is-on {
+      background: linear-gradient(135deg, #4cc2ff, #2196ee);
+      color: #001020;
     }
     .text-edit-toolbar input[type="color"] {
       background: transparent; border: 1px solid rgba(255, 255, 255, 0.15);

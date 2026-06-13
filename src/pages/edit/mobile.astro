@@ -325,6 +325,26 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
         background: linear-gradient(135deg, #4cc2ff, #2196ee);
         color: #001020; border-color: transparent;
       }
+      .text-edit-toolbar.is-docked .te-align {
+        display: flex; gap: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px; padding: 4px;
+      }
+      .text-edit-toolbar.is-docked .te-align-btn {
+        flex: 1;
+        background: transparent; color: #fff; border: 0;
+        padding: 8px; font-size: 16px; border-radius: 6px;
+        cursor: pointer; line-height: 1;
+        transition: background 120ms ease;
+      }
+      .text-edit-toolbar.is-docked .te-align-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .text-edit-toolbar.is-docked .te-align-btn.is-on {
+        background: linear-gradient(135deg, #4cc2ff, #2196ee);
+        color: #001020;
+      }
 
       .text-edit-toolbar.is-docked .te-rotation {
         display: flex; align-items: center; gap: 8px;
