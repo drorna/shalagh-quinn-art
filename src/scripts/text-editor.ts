@@ -204,10 +204,12 @@ async function createCustomTextBox() {
   if (getComputedStyle(document.body).position === "static") {
     document.body.style.position = "relative";
   }
-  // Drop the box near the centre of the user's current viewport.
+  // Drop the box's CENTRE at the middle of the current viewport.
+  // The custom-text-box CSS applies a -50%/-50% pre-transform so the
+  // saved offset corresponds to where the centre lands.
   const vw = window.innerWidth;
-  const initX = Math.max(20, vw / 2 - 80);
-  const initY = window.scrollY + 120;
+  const initX = vw / 2;
+  const initY = window.scrollY + 160;
   const xVw = `${((initX / vw) * 100).toFixed(2)}vw`;
   const yVw = `${((initY / vw) * 100).toFixed(2)}vw`;
   const variantId = effectiveVariantId(baseId);
@@ -327,8 +329,14 @@ function applyOverride(el: HTMLElement) {
   const tx  = pos?.offset_x || "0px";
   const ty  = pos?.offset_y || "0px";
   const rot = pos?.rotation || 0;
-  if (tx !== "0px" || ty !== "0px" || rot !== 0) {
-    el.style.transform = `translate(${tx}, ${ty}) rotate(${rot}deg)`;
+  // For free-floating "custom" boxes the saved offset describes where
+  // the CENTRE of the box should sit, so the box can grow both ways as
+  // the user types. -50%, -50% pulls the box back by half its own
+  // size before the user's offset is applied.
+  const centerAnchor = el.classList.contains("custom-text-box");
+  const baseTransform = centerAnchor ? "translate(-50%, -50%) " : "";
+  if (centerAnchor || tx !== "0px" || ty !== "0px" || rot !== 0) {
+    el.style.transform = `${baseTransform}translate(${tx}, ${ty}) rotate(${rot}deg)`;
     el.style.transformOrigin = "center center";
   } else {
     el.style.transform = "";
@@ -1138,7 +1146,11 @@ function injectStyles(targetDoc: Document = document) {
 
     /* Free-floating text boxes added with the editor's "+ text" button.
        Transparent by default so the type sits directly on the page —
-       the user can change colour/font through the toolbar. */
+       the user can change colour/font through the toolbar.
+       The saved offset positions the box's CENTRE, not its top-left,
+       so the box grows symmetrically as the user types — extending
+       both left and right until it hits the viewport edges, at which
+       point it wraps to a new line. Page never widens. */
     .custom-text-box {
       position: absolute;
       top: 0;
@@ -1149,7 +1161,11 @@ function injectStyles(targetDoc: Document = document) {
       font-family: inherit;
       font-size: 1.2rem;
       line-height: 1.3;
-      max-width: 80vw;
+      max-width: 92vw;
+      text-align: center;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      transform-origin: center center;
       z-index: 20;
     }
 
