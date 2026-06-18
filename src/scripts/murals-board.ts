@@ -1029,6 +1029,10 @@ function injectEditorStyles(targetDoc: Document = document) {
     .mural-edit-toolbar__save.is-ok { background: #2a4; color: #fff; }
     .mural-edit-toolbar__save.is-err { background: #c33; color: #fff; }
 
+    /* Native popovers (label autocomplete, etc.) inside the mural
+       editor mini-panel — force dark colour-scheme so they match
+       the rest of the chrome. */
+    .mural-mini-panel { color-scheme: dark; }
     .mural-mini-panel {
       position: absolute;
       width: 260px;

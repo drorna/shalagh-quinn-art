@@ -52,12 +52,19 @@ BACKUP_DIR = Path(__file__).parent
 MAX_LONGEST_SIDE = 2000
 JPEG_QUALITY = 86
 
-# Tile layout: one column at 96 % canvas width with a 2 % gap above each tile,
-# centred horizontally so the canvas paints edge-to-edge.
-TILE_X = 2.0
-TILE_W = 96.0
-TILE_GAP = 2.0
+# Tile layout: 3-column masonry that matches the existing /murals/ home
+# look. Each new tile drops into the currently-shortest column; its
+# height = column-width * (img_h / img_w) so the source aspect ratio is
+# preserved exactly. Drorna's rule "scale only, never crop / rotate /
+# change orientation" is automatic — the tile box always matches the
+# image box.
+COLS = [
+    {"x": 2.0,  "w": 31.0},
+    {"x": 34.5, "w": 31.0},
+    {"x": 67.0, "w": 31.0},
+]
 TOP_START = 4.0
+ROW_GAP = 1.0
 
 
 def slugify(s: str) -> str:
@@ -173,10 +180,11 @@ def discover_locations() -> list[tuple[str, str, Path]]:
 
 
 def build_sub_tiles(slug: str, images: list[Path]) -> list[dict]:
-    """One-column vertical layout, tile width = TILE_W, tile height =
-    TILE_W * (img_h / img_w) so the natural aspect ratio is preserved."""
+    """3-column masonry: each image drops into the currently-shortest
+    column at column-width. Tile height = column-width * (img_h / img_w)
+    so the source aspect ratio is preserved exactly."""
+    col_y = [TOP_START, TOP_START, TOP_START]
     rows: list[dict] = []
-    y = TOP_START
     for idx, path in enumerate(images):
         try:
             data, w, h = process_image(path)
@@ -189,14 +197,17 @@ def build_sub_tiles(slug: str, images: list[Path]) -> list[dict]:
         except Exception as e:
             print(f"    upload FAILED {path.name}: {e}")
             continue
-        tile_h = TILE_W * (h / max(1, w))
+        col_i = min(range(3), key=lambda i: col_y[i])
+        col = COLS[col_i]
+        tile_w = col["w"]
+        tile_h = tile_w * (h / max(1, w))
         rows.append({
             "id": uuid.uuid4().hex,
             "src": public,
             "alt": path.stem,
-            "x": TILE_X,
-            "y": round(y, 3),
-            "w": TILE_W,
+            "x": col["x"],
+            "y": round(col_y[col_i], 3),
+            "w": tile_w,
             "h": round(tile_h, 3),
             "rotation": 0,
             "object_position": "center",
@@ -205,8 +216,8 @@ def build_sub_tiles(slug: str, images: list[Path]) -> list[dict]:
             "order_idx": idx,
             "page": slug,
         })
-        y += tile_h + TILE_GAP
-        print(f"    [{idx + 1}/{len(images)}] {path.name} -> {w}x{h}, tile h={tile_h:.1f}")
+        col_y[col_i] += tile_h + ROW_GAP
+        print(f"    [{idx + 1}/{len(images)}] {path.name} -> {w}x{h}, col {col_i + 1}, tile h={tile_h:.1f}")
     return rows
 
 

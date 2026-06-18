@@ -1447,6 +1447,14 @@ function injectStyles(targetDoc: Document = document) {
     }
     .text-edit-toolbar .te-rotation input[type="range"] { width: 90px; }
     .text-edit-toolbar .te-rotation output { color: #fff; min-width: 34px; font-variant-numeric: tabular-nums; }
+    /* Native <select> and <input list=...> popovers ignore most option
+       CSS on Chromium since 118+. Setting color-scheme: dark on the
+       toolbar tells the browser to render the system popover with a
+       dark background and light text, matching the rest of the chrome.
+       Without this the font-family suggestion datalist + the weight
+       dropdown paint with the OS-default white background and become
+       unreadable on a dark toolbar. */
+    .text-edit-toolbar { color-scheme: dark; }
     .text-edit-toolbar select {
       background: rgba(255, 255, 255, 0.05); color: #fff;
       border: 1px solid rgba(255, 255, 255, 0.1);

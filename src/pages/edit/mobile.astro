@@ -51,6 +51,10 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
     <style is:global>
       * { box-sizing: border-box; }
+      /* Force the system <select> popover (and any datalist) to paint
+         with a dark background — without color-scheme the OS-default
+         white popover swallows the dark-themed labels. */
+      html { color-scheme: dark; }
       html, body {
         margin: 0; padding: 0; height: 100%;
         background:
