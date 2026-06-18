@@ -90,11 +90,11 @@ const sections = [
         aria-expanded="false"
         aria-label="explore"
       >
-        <span class="home-hero__explore-plus" aria-hidden="true">+</span><span>{h.exploreLabel ?? "EXPLORE"}</span>
+        <span class="home-hero__explore-plus" aria-hidden="true" data-editable-text="home.hero.explorePlus">+</span><span data-editable-text="home.hero.exploreLabel">{h.exploreLabel ?? "EXPLORE"}</span>
       </button>
 
       <a href="/upload/" class="home-hero__upload" aria-label="upload">
-        <span>{h.uploadLabel ?? "UPLOAD"}</span><span class="home-hero__upload-plus">+</span>
+        <span data-editable-text="home.hero.uploadLabel">{h.uploadLabel ?? "UPLOAD"}</span><span class="home-hero__upload-plus" data-editable-text="home.hero.uploadPlus">+</span>
       </a>
 
       <h1 id="hero-title" class="home-hero__title">
@@ -125,7 +125,7 @@ const sections = [
             rel="noopener noreferrer"
             class="home-identity__contact"
           >
-            <span class="home-identity__contact-label">{h.contactLabel ?? "contact"}</span>
+            <span class="home-identity__contact-label" data-editable-text="home.identity.contactLabel">{h.contactLabel ?? "contact"}</span>
             <span class="home-identity__ig" aria-hidden="true">
               <!-- placeholder for the artist-drawn instagram icon -->
               <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6">
@@ -164,7 +164,7 @@ const sections = [
               </a>
               <EditableText id={`home.section.${s.id}.subtitle`} tag="p" class="home-section__subtitle">{s.subtitle}</EditableText>
             </div>
-            <a href={s.href} class="home-section__enter">
+            <a href={s.href} class="home-section__enter" data-editable-text={`home.section.${s.id}.enter`}>
               {h.enterLabel ?? "enter"} <span aria-hidden="true">&gt;</span>
             </a>
           </div>
@@ -280,7 +280,18 @@ const sections = [
   }
 
   triggers.forEach((t) =>
-    t.addEventListener("click", () => setOpen(!curtain?.classList.contains("is-open")))
+    t.addEventListener("click", () => {
+      const isOpen = curtain?.classList.contains("is-open");
+      // In edit mode, a click on the EXPLORE button must reach the
+      // text editor so drorna can change the label. Suppress the
+      // open-the-curtain side-effect; closing (when already open) is
+      // still allowed so the in-curtain × keeps working.
+      const inEditMode =
+        document.body.classList.contains("is-text-edit") ||
+        document.body.classList.contains("is-image-edit");
+      if (!isOpen && inEditMode) return;
+      setOpen(!isOpen);
+    })
   );
 
   // Closing on link click — the navigation runs immediately after, but
