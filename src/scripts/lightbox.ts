@@ -115,6 +115,28 @@ function ensureStyles() {
       transition: background 120ms ease, transform 120ms ease;
       z-index: 1;
     }
+    .lightbox-caption {
+      position: absolute;
+      left: 50%;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      max-width: min(86vw, 720px);
+      padding: 8px 14px;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      color: rgba(255, 255, 255, 0.92);
+      font-family: Arial, "Helvetica Neue", sans-serif;
+      font-size: clamp(0.85rem, 2.6vw, 0.95rem);
+      line-height: 1.35;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 220ms ease 80ms;
+      z-index: 1;
+    }
+    .lightbox-overlay.is-open .lightbox-caption { opacity: 1; }
     .lightbox-close:hover {
       background: rgba(255, 255, 255, 0.16);
       transform: scale(1.05);
@@ -175,6 +197,18 @@ function open(img: HTMLImageElement) {
   overlay.appendChild(loading);
   overlay.appendChild(full);
   overlay.appendChild(closeBtn);
+
+  // Caption strip below the image — content comes from the original
+  // <img alt>. For mural tiles this is the editor-set "caption" field
+  // (where painted, when). If alt is empty / a default filename we
+  // suppress the strip so untouched photos don't render a placeholder.
+  const captionText = (img.alt || "").trim();
+  if (captionText && !/^\s*(IMG|DSC|cover|salt|sicamous|sooke|tofino|portugal|vietnam|israel|nakusp|calgary|nepal|oregon|victoria)[\s_\-]?\d*$/i.test(captionText)) {
+    const caption = document.createElement("div");
+    caption.className = "lightbox-caption";
+    caption.textContent = captionText;
+    overlay.appendChild(caption);
+  }
   document.body.appendChild(overlay);
   document.body.classList.add("lightbox-open");
 

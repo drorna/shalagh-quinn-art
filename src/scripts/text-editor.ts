@@ -48,6 +48,64 @@ const FONT_CATALOGUE: { label: string; family: string; stack: string }[] = [
   { label: "Helvetica / Arial",             family: "Arial",             stack: 'Arial, "Helvetica Neue", sans-serif' },
 ];
 
+/**
+ * Suggested Google Fonts to autocomplete in the font picker, on top of
+ * the catalogue above. The picker is a free-text field so drorna can
+ * type *any* Google Fonts family — these are just convenient one-tap
+ * choices. preloadFontsInUse() will fetch whatever family lands in
+ * the site_text row from fonts.googleapis.com on the next render.
+ */
+const FONT_SUGGESTIONS: string[] = [
+  // handwriting
+  "Dancing Script", "Pacifico", "Lobster", "Sacramento", "Great Vibes",
+  "Satisfy", "Allura", "Homemade Apple", "Caveat Brush", "Reenie Beanie",
+  "Cedarville Cursive", "Marck Script", "Yellowtail",
+  // display
+  "Bebas Neue", "Anton", "Abril Fatface", "Righteous", "Bungee",
+  "Fredoka One", "Alfa Slab One", "Black Ops One", "Press Start 2P",
+  "Special Elite", "Major Mono Display",
+  // serif
+  "Lora", "Merriweather", "PT Serif", "Crimson Text", "Source Serif Pro",
+  "Spectral", "Bitter", "Libre Baskerville", "Vollkorn", "Cardo",
+  // sans-serif
+  "Roboto", "Open Sans", "Lato", "Montserrat", "Oswald",
+  "Source Sans Pro", "Raleway", "PT Sans", "Nunito", "Poppins",
+  "Quicksand", "Work Sans", "Rubik", "Mulish", "DM Sans", "Manrope",
+  "Karla", "Outfit", "Public Sans",
+  // monospace
+  "Roboto Mono", "Source Code Pro", "Fira Code", "JetBrains Mono",
+  "Space Mono", "IBM Plex Mono", "Inconsolata",
+];
+
+/** Display a stored font_family value as a friendly editable name —
+ *  strip outer quotes, drop the fallback stack so the picker shows
+ *  "Bebas Neue", not '"Bebas Neue", sans-serif'. */
+function familyDisplay(stack: string | null | undefined): string {
+  if (!stack) return "";
+  const first = stack.split(",")[0].trim();
+  return first.replace(/^"|"$/g, "");
+}
+
+/** Turn a free-text family name into a safe CSS font-family stack
+ *  with a sensible fallback. If the user already typed a stack
+ *  (anything with a comma), respect it as-is. */
+function familyToStack(input: string): string {
+  const v = input.trim();
+  if (!v) return "";
+  if (v.includes(",")) return v;
+  // Heuristic fallback: pair handwriting-y names with cursive, the
+  // rest fall back to sans-serif.
+  const lower = v.toLowerCase();
+  const cursiveHints = ["script", "hand", "cursive", "marker", "ink", "brush", "caveat", "dancing", "pacifico", "lobster", "satisfy", "sacramento"];
+  const serifHints = ["serif", "garamond", "playfair", "lora", "merriweather", "spectral", "baskerville", "cardo", "times"];
+  const monoHints = ["mono", "code"];
+  let fallback = "sans-serif";
+  if (cursiveHints.some((h) => lower.includes(h))) fallback = "cursive";
+  else if (serifHints.some((h) => lower.includes(h))) fallback = "serif";
+  else if (monoHints.some((h) => lower.includes(h))) fallback = "monospace";
+  return `"${v}", ${fallback}`;
+}
+
 let editMode = false;
 let selectedEl: HTMLElement | null = null;
 let editingEl: HTMLElement | null = null;
@@ -913,15 +971,20 @@ function renderToolbar(el: HTMLElement) {
       <span class="te-size-unit">px</span>
       <button class="te-size-plus" type="button">+</button>
     </div>
-    <select class="te-font" title="font family">
-      <option value="">— inherit —</option>
-      ${FONT_CATALOGUE.map(
-        (f) =>
-          `<option value="${escAttr(f.stack)}" data-family="${escAttr(f.family)}" ${
-            typo.font_family === f.stack ? "selected" : ""
-          } style="font-family:${escAttr(f.stack)}">${f.label}</option>`
-      ).join("")}
-    </select>
+    <input
+      class="te-font"
+      type="text"
+      list="te-font-suggestions"
+      placeholder="font family"
+      title="font family — type any Google Fonts family name, or pick from the suggestions. Anything you type loads from fonts.google.com on the next paint."
+      value="${escAttr(familyDisplay(typo.font_family))}"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <datalist id="te-font-suggestions">
+      ${FONT_CATALOGUE.map((f) => `<option value="${escAttr(f.family)}">${escAttr(f.label)}</option>`).join("")}
+      ${FONT_SUGGESTIONS.map((f) => `<option value="${escAttr(f)}"></option>`).join("")}
+    </datalist>
     <select class="te-weight" title="font weight">
       ${["", "300", "400", "500", "600", "700"]
         .map((w) => `<option value="${w}" ${typo.font_weight === w ? "selected" : ""}>${w || "weight"}</option>`)
@@ -944,7 +1007,7 @@ function renderToolbar(el: HTMLElement) {
     <button class="te-delete" type="button" title="delete this text box">🗑</button>
   `;
 
-  const fontSel = toolbar.querySelector<HTMLSelectElement>(".te-font")!;
+  const fontSel = toolbar.querySelector<HTMLInputElement>(".te-font")!;
   const weightSel = toolbar.querySelector<HTMLSelectElement>(".te-weight")!;
   const boldBtn = toolbar.querySelector<HTMLButtonElement>(".te-bold")!;
   const italicBtn = toolbar.querySelector<HTMLButtonElement>(".te-italic")!;
@@ -970,7 +1033,17 @@ function renderToolbar(el: HTMLElement) {
     await upsertSiteText(next);
   };
 
-  fontSel.addEventListener("change", () => updateTypo("font_family", fontSel.value || null));
+  // Font picker is a free-text input — read the family name on every
+  // change / commit-after-typing, convert to a CSS stack with a
+  // sensible fallback, and let preloadFontsInUse() trigger the
+  // Google Fonts <link> for whatever family the user requested.
+  const commitFont = () => {
+    const stack = familyToStack(fontSel.value);
+    updateTypo("font_family", stack || null);
+  };
+  fontSel.addEventListener("change", commitFont);
+  // Also commit on blur so a tap-away mid-type still saves.
+  fontSel.addEventListener("blur", commitFont);
   weightSel.addEventListener("change", () => updateTypo("font_weight", weightSel.value || null));
   boldBtn.addEventListener("click", () => {
     const isOn = boldBtn.classList.toggle("is-on");
@@ -1393,7 +1466,22 @@ function injectStyles(targetDoc: Document = document) {
     .text-edit-toolbar select option:hover {
       background: #2a2a32;
     }
-    .text-edit-toolbar .te-font { min-width: 160px; }
+    .text-edit-toolbar .te-font {
+      min-width: 160px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 10px;
+      border-radius: 7px;
+      font: inherit;
+      outline: none;
+    }
+    .text-edit-toolbar .te-font::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+    .text-edit-toolbar .te-font:focus {
+      border-color: rgba(76, 194, 255, 0.6);
+    }
     .text-edit-toolbar .te-weight { min-width: 90px; }
     .text-edit-toolbar .te-bold,
     .text-edit-toolbar .te-italic,

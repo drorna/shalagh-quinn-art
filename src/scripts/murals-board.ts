@@ -773,6 +773,10 @@ function renderPanel() {
       <input type="text" value="${escapeAttr(t.label || "")}" data-field="label" placeholder='e.g. "nepal"' />
     </label>
     <label class="mural-mini-row">
+      <span>caption</span>
+      <input type="text" value="${escapeAttr(t.alt || "")}" data-field="alt" placeholder='e.g. "Nepal, 2024"' />
+    </label>
+    <label class="mural-mini-row">
       <span>link</span>
       <input type="text" value="${escapeAttr(t.href || "")}" data-field="href" placeholder='e.g. "/murals/nepal/"' />
     </label>
@@ -797,8 +801,14 @@ function renderPanel() {
       const field = ctrl.dataset.field as keyof MuralTile;
       let v: any = ctrl.value;
       if (field === "rotation") v = parseFloat(v);
-      if ((field === "label" || field === "href") && v === "") v = null;
+      if ((field === "label" || field === "href" || field === "alt") && v === "") v = null;
       (t as any)[field] = v;
+      // Keep the rendered tile's <img alt> in sync so visitors see the
+      // caption in the lightbox without a reload.
+      if (field === "alt") {
+        const tEl2 = canvas!.querySelector<HTMLElement>(`.mural-tile[data-id="${t.id}"] img`);
+        if (tEl2) tEl2.setAttribute("alt", v || "");
+      }
       const out = ctrl.parentElement?.querySelector("output");
       if (out && field === "rotation") out.textContent = `${v}°`;
       const tEl = canvas!.querySelector<HTMLElement>(`.mural-tile[data-id="${t.id}"]`);
