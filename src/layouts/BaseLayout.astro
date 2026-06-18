@@ -74,8 +74,21 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
     {!bare && <Header />}
     <main id="main">
       <slot />
+      <!-- Page-extras: ~80 vh of empty real estate at the bottom of every
+           page so drorna can use the editor's "+ text" floating boxes to
+           extend any page without hitting a hard scroll bottom. The
+           boxes anchor to body absolutely; this section's only job is to
+           grow the page's scroll height to give them room to land. -->
+      <div class="page-extras" aria-hidden="true"></div>
     </main>
     {!bare && <Footer />}
+
+    <style>
+      .page-extras {
+        width: 100%;
+        min-height: 80vh;
+      }
+    </style>
 
     <script>
       const observer = new IntersectionObserver(
