@@ -1,6 +1,7 @@
 ---
 import { Image } from "astro:assets";
 import type { ImageMetadata } from "astro";
+import { getEntry } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import EditableText from "../components/EditableText.astro";
 
@@ -11,79 +12,67 @@ import handPortraits from "../assets/images/home/hand-portraits.png";
 import handPrints from "../assets/images/home/hand-prints.png";
 import coverAbout from "../assets/images/home/cover-about.jpg";
 import coverMurals from "../assets/images/home/cover-murals.jpg";
+import coverPortraits from "../assets/images/home/cover-portraits.jpg";
 
-// 3-up preview images for portraits and prints (sorted by filename, take first 3)
-const portraitImports = import.meta.glob<{ default: ImageMetadata }>(
-  "/src/assets/images/portraits/portrait-*.{jpg,jpeg,png}",
-  { eager: true }
-);
+// Single cover image for prints — first sorted print artwork stands in
+// until Drorna swaps in a dedicated cover via the editor.
 const printImports = import.meta.glob<{ default: ImageMetadata }>(
   "/src/assets/images/prints/print-*.{jpg,jpeg,png}",
   { eager: true }
 );
-const portraitPreviews = Object.entries(portraitImports)
+const coverPrints = Object.entries(printImports)
   .sort(([a], [b]) => a.localeCompare(b))
-  .slice(0, 3)
-  .map(([, mod]) => mod.default);
-const printPreviews = Object.entries(printImports)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .slice(0, 3)
-  .map(([, mod]) => mod.default);
+  .map(([, mod]) => mod.default)[0];
 
-const navLinks = [
-  { label: "about", href: "/about/" },
-  { label: "murals", href: "/murals/" },
-  { label: "portraits", href: "/portraits/" },
-  { label: "prints", href: "/prints/" },
-  // "writing" stays hidden — Drorna will reactivate when there's content.
-];
+// Identity + section subtitles + handles all live in /content/pages/home.md
+// (Obsidian-editable). Markdown sets the defaults; the in-browser editor's
+// site_text overrides still win for individual elements.
+const homeEntry = await getEntry("pages", "home");
+const h = homeEntry?.data ?? {};
 
-const handles = [
-  "@shalagh",
-  "@thetimeapttern",
-  "@iseeloveinyoureyes",
-  "@slowlyrememberingwhy",
-];
+const handles =
+  h.handles ?? [
+    "@shalagh",
+    "@thetimeapttern",
+    "@iseeloveinyoureyes",
+    "@slowlyrememberingwhy",
+  ];
 
 const sections = [
   {
     id: "about",
     hand: handAbout,
     handAlt: "about",
-    subtitle: "a trust in process",
+    subtitle: h.sectionAboutSubtitle ?? "a trust in process",
     cover: coverAbout,
     coverAlt: "Drawing of a rainbow-colored figure crouching",
-    previews: null,
     href: "/about/",
   },
   {
     id: "murals",
     hand: handMurals,
     handAlt: "Murals",
-    subtitle: "the journey",
+    subtitle: h.sectionMuralsSubtitle ?? "the journey",
     cover: coverMurals,
     coverAlt: "Mural with green, yellow and pink flowing forms",
-    previews: null,
     href: "/murals/",
   },
   {
     id: "portraits",
     hand: handPortraits,
     handAlt: "Portraits",
-    subtitle: "the people",
-    cover: null,
-    coverAlt: "",
-    previews: portraitPreviews,
+    subtitle: h.sectionPortraitsSubtitle ?? "the people",
+    cover: coverPortraits,
+    coverAlt: "Portrait preview",
     href: "/portraits/",
   },
   {
     id: "prints",
     hand: handPrints,
     handAlt: "Prints",
-    subtitle: "the sale",
-    cover: null,
-    coverAlt: "",
-    previews: printPreviews,
+    subtitle: h.sectionPrintsSubtitle ?? "the sale",
+    cover: coverPrints,
+    coverAlt: "Print preview",
     href: "/prints/",
   },
 ];
@@ -93,6 +82,17 @@ const sections = [
   <div class="home">
     <!-- Hero: trust the process (stars are baked into the artwork image) -->
     <section class="home-hero" aria-labelledby="hero-title">
+      <button
+        type="button"
+        class="home-hero__explore"
+        data-explore-toggle
+        aria-controls="explore-curtain"
+        aria-expanded="false"
+        aria-label="explore"
+      >
+        <span class="home-hero__explore-plus" aria-hidden="true">+</span><span>EXPLORE</span>
+      </button>
+
       <a href="/upload/" class="home-hero__upload" aria-label="upload">
         <span>UPLOAD</span><span class="home-hero__upload-plus">+</span>
       </a>
@@ -110,18 +110,12 @@ const sections = [
       </h1>
     </section>
 
-    <!-- Identity row + top nav -->
+    <!-- Identity row -->
     <header class="home-meta" aria-label="primary">
-      <nav class="home-nav" aria-label="primary navigation">
-        {navLinks.map((link) => (
-          <a href={link.href} class="home-nav__link">{link.label}</a>
-        ))}
-      </nav>
-
       <div class="home-identity">
         <div class="home-identity__left">
-          <EditableText id="home.identity.name" tag="p" class="home-identity__name">shalagh</EditableText>
-          <EditableText id="home.identity.pron" tag="p" class="home-identity__pron">pronounced shay - la</EditableText>
+          <EditableText id="home.identity.name" tag="p" class="home-identity__name">{h.identityName ?? "shalagh"}</EditableText>
+          <EditableText id="home.identity.pron" tag="p" class="home-identity__pron">{h.identityPron ?? "pronounced shay - la"}</EditableText>
         </div>
 
         <div class="home-identity__right">
@@ -188,28 +182,117 @@ const sections = [
               />
             </a>
           )}
-
-          {s.previews && s.previews.length > 0 && (
-            <a href={s.href} class="home-section__previews" aria-label={s.handAlt}>
-              {s.previews.map((p) => (
-                <Image
-                  src={p}
-                  alt=""
-                  widths={[300, 500, 700, 900]}
-                  sizes="(min-width: 900px) 30vw, 30vw"
-                  quality={84}
-                  loading="lazy"
-                  class="home-section__preview-img"
-                />
-              ))}
-            </a>
-          )}
         </section>
       ))}
     </div>
+
+    <!-- Extras canvas: editable empty real estate at the end of the home
+         page. Custom floating boxes from the editor's "+ text" tool
+         anchor to body (absolute positioning), but absolute elements
+         don't grow their parent's scroll height — so this section
+         contributes the vertical room. Drop custom text / image boxes
+         anywhere over this area to keep extending the page over time.
+         Invisible to visitors until populated. -->
+    <section class="home-extras" aria-label="more"></section>
   </div>
 
+  <!-- Explore curtain: full-screen black overlay with handwritten section
+       titles in white. Triggered by the top-left EXPLORE button; closes on
+       the in-curtain X, on link click, or with Escape. -->
+  <aside
+    id="explore-curtain"
+    class="explore-curtain"
+    data-explore-curtain
+    aria-hidden="true"
+    aria-label="explore menu"
+  >
+    <button
+      type="button"
+      class="explore-curtain__close"
+      data-explore-toggle
+      aria-label="close menu"
+    >
+      <span aria-hidden="true">&times;</span>
+    </button>
+
+    <nav class="explore-curtain__nav" aria-label="explore navigation">
+      <a href="/about/" class="explore-curtain__link">
+        <Image
+          src={handAbout}
+          alt="about"
+          widths={[400, 600, 800]}
+          sizes="(min-width: 700px) 360px, 60vw"
+          quality={92}
+          loading="lazy"
+          class="explore-curtain__img"
+        />
+      </a>
+      <a href="/murals/" class="explore-curtain__link">
+        <Image
+          src={handMurals}
+          alt="Murals"
+          widths={[400, 600, 800]}
+          sizes="(min-width: 700px) 360px, 60vw"
+          quality={92}
+          loading="lazy"
+          class="explore-curtain__img"
+        />
+      </a>
+      <a href="/portraits/" class="explore-curtain__link">
+        <Image
+          src={handPortraits}
+          alt="Portraits"
+          widths={[400, 600, 800]}
+          sizes="(min-width: 700px) 360px, 60vw"
+          quality={92}
+          loading="lazy"
+          class="explore-curtain__img"
+        />
+      </a>
+      <a href="/prints/" class="explore-curtain__link">
+        <Image
+          src={handPrints}
+          alt="Prints"
+          widths={[400, 600, 800]}
+          sizes="(min-width: 700px) 360px, 60vw"
+          quality={92}
+          loading="lazy"
+          class="explore-curtain__img"
+        />
+      </a>
+    </nav>
+  </aside>
+
 </BaseLayout>
+
+<script>
+  // Curtain toggle. Mirrors any [data-explore-toggle] click into an
+  // `is-open` class on the curtain + body, and handles Escape to close.
+  const curtain = document.querySelector<HTMLElement>("[data-explore-curtain]");
+  const triggers = document.querySelectorAll<HTMLElement>("[data-explore-toggle]");
+
+  function setOpen(open: boolean) {
+    if (!curtain) return;
+    curtain.classList.toggle("is-open", open);
+    curtain.setAttribute("aria-hidden", String(!open));
+    document.body.classList.toggle("is-explore-open", open);
+    triggers.forEach((t) => t.setAttribute("aria-expanded", String(open)));
+  }
+
+  triggers.forEach((t) =>
+    t.addEventListener("click", () => setOpen(!curtain?.classList.contains("is-open")))
+  );
+
+  // Closing on link click — the navigation runs immediately after, but
+  // the curtain transitioning closed makes the back-button hit feel right.
+  curtain?.querySelectorAll<HTMLAnchorElement>(".explore-curtain__link").forEach((a) =>
+    a.addEventListener("click", () => setOpen(false))
+  );
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && curtain?.classList.contains("is-open")) setOpen(false);
+  });
+</script>
 
 <style>
   /* =========================================================
@@ -245,10 +328,10 @@ const sections = [
     justify-content: center;
   }
 
-  .home-hero__upload {
+  .home-hero__upload,
+  .home-hero__explore {
     position: absolute;
     top: var(--sp-3);
-    right: var(--sp-4);
     font-family: var(--font-sans);
     font-size: clamp(0.95rem, 1.4vw, 1.1rem);
     font-weight: 600;
@@ -258,9 +341,24 @@ const sections = [
     align-items: center;
     gap: 0.35em;
     text-transform: uppercase;
+    z-index: 3;
   }
 
-  .home-hero__upload-plus {
+  .home-hero__upload {
+    right: var(--sp-4);
+  }
+
+  .home-hero__explore {
+    left: var(--sp-4);
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .home-hero__upload-plus,
+  .home-hero__explore-plus {
     font-weight: 400;
     font-size: 1.1em;
     line-height: 1;
@@ -283,64 +381,13 @@ const sections = [
     display: block;
   }
 
-  /* ---------- Top nav + identity ---------- */
+  /* ---------- Identity row ---------- */
 
   .home-meta {
     padding: var(--sp-3) var(--sp-4) var(--sp-6);
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
-  }
-
-  .home-nav {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: var(--sp-3);
-    font-family: "Times New Roman", Times, serif;
-    font-size: clamp(1.4rem, 2.2vw, 1.85rem);
-    font-weight: 400;
-    color: var(--color-ink);
-    margin-bottom: var(--sp-6);
-    padding-inline: clamp(0px, 2vw, var(--sp-3));
-  }
-
-  /* On narrow phones the four nav items want to wrap to two rows, but
-     because the rows widths differ they end up on top of each other on
-     some devices (≈360 px) while looking spaced on others (≈412 px).
-     Force a single row at this width with a tighter gap and slightly
-     smaller font so the layout is consistent across every phone size. */
-  @media (max-width: 480px) {
-    .home-nav {
-      flex-wrap: nowrap;
-      gap: clamp(8px, 2.5vw, 14px);
-      font-size: clamp(1.05rem, 4.4vw, 1.4rem);
-      padding-inline: 0;
-    }
-    .home-nav__link {
-      white-space: nowrap;
-      flex: 0 1 auto;
-    }
-  }
-
-  .home-nav__link {
-    position: relative;
-    padding-bottom: 2px;
-  }
-
-  .home-nav__link::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 1px;
-    background: var(--color-ink);
-    transform: scaleX(0);
-    transform-origin: left center;
-    transition: transform var(--duration-base) var(--ease-out);
-  }
-
-  .home-nav__link:hover::after {
-    transform: scaleX(1);
   }
 
   .home-identity {
@@ -504,27 +551,102 @@ const sections = [
     height: auto;
   }
 
-  /* 3-up preview strip for portraits/prints */
-  .home-section__previews {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--sp-2);
+  /* ---------- Extras canvas (bottom of page) ---------- */
+
+  .home-extras {
+    /* Generous bottom canvas — about 1.5 phone screens tall — so drorna
+       can drop floating text / image boxes (added through the editor's
+       "+ text" tool) anywhere in this space. Invisible to visitors
+       until they paint it with content. Custom boxes are absolutely
+       positioned against body, so this section's main job is to grow
+       the page's scroll height enough to make that area reachable. */
     width: 100%;
-    align-self: stretch;
+    min-height: 150vh;
   }
 
-  @media (min-width: 700px) {
-    .home-section__previews {
-      gap: var(--sp-3);
-    }
+  /* ---------- Explore curtain ---------- */
+
+  .explore-curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: #000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(var(--sp-6), 8vw, var(--sp-12)) var(--sp-4);
+    /* Slide-down "curtain": starts above the viewport and translates
+       into place. transform is hardware-accelerated so the animation
+       stays smooth across phones. */
+    transform: translateY(-100%);
+    transition: transform 0.55s cubic-bezier(0.22, 0.7, 0.18, 1);
+    pointer-events: none;
+    overscroll-behavior: contain;
   }
 
-  .home-section__preview-img {
+  .explore-curtain.is-open {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  :global(body.is-explore-open) {
+    overflow: hidden;
+  }
+
+  .explore-curtain__close {
+    position: absolute;
+    top: clamp(var(--sp-3), 4vw, var(--sp-5));
+    right: clamp(var(--sp-3), 4vw, var(--sp-5));
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: Arial, "Helvetica Neue", sans-serif;
+    font-size: clamp(2rem, 4vw, 2.6rem);
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    padding: var(--sp-1) var(--sp-2);
+  }
+
+  .explore-curtain__nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(var(--sp-6), 7vw, var(--sp-12));
+    width: 100%;
+    max-width: 540px;
+  }
+
+  .explore-curtain__link {
+    display: block;
+    line-height: 0;
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 0.45s ease-out var(--curtain-delay, 0s),
+      transform 0.45s ease-out var(--curtain-delay, 0s);
+  }
+
+  .explore-curtain.is-open .explore-curtain__link {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Stagger the link reveal so they fall in one after another. */
+  .explore-curtain__link:nth-child(1) { --curtain-delay: 0.18s; }
+  .explore-curtain__link:nth-child(2) { --curtain-delay: 0.26s; }
+  .explore-curtain__link:nth-child(3) { --curtain-delay: 0.34s; }
+  .explore-curtain__link:nth-child(4) { --curtain-delay: 0.42s; }
+
+  .explore-curtain__img {
     display: block;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    aspect-ratio: 3 / 4;
+    height: auto;
+    max-width: clamp(220px, 60vw, 360px);
+    /* Handwriting source is black ink — invert to render in white on the
+       curtain's black background. Matches the inner-page title treatment. */
+    filter: invert(1);
   }
 
   /* ---------- Responsive tweaks ---------- */

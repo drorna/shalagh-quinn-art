@@ -4,94 +4,70 @@
 
 ---
 
-## פעיל
+## פעיל / ממתינות לדרור
 
-### דף `/murals/`
+### עורך + תוכן
 - [ ] להחליף את תמונות הראשית והמשנית לכל מדינה לפי תיקיית מיפוי שדרור ישלח (ממתין)
+- [ ] קובץ כתב יד "its about TIME" באיכות גבוהה (כרגע חיתוך מתוך screenshot)
+- [ ] להחליף את אייקון האינסטגרם בלוגו שדרור ישלח (ממתין; ניתן להחליף גם דרך עורך התמונות)
+- [x] תוכן ל-`/writing/` — הדף עוד לא קיים → **נוצר**, נטען מ-`content/pages/writing.md`
+- [ ] להתקין Obsidian Git plugin ולחבר את `content/` כ-vault (ראו `content/README.md`)
+- [ ] בעריכת תוכן ב-Obsidian — לבדוק שאין override קודם ב-Supabase שתופס עדיפות (אם יש, ללחוץ סל פסולת בעורך לאיפוס)
+- [ ] להוסיף כתב יד "writing" כדי שאפשר יהיה לכלול אותו בוילון Explore (כרגע מוסתר)
 
-### דף `/about/`
-- [ ] קובץ כתב יד "its about TIME" באיכות גבוהה (כרגע חיתוך מתוך ה-screenshot של דרור — נמוך ברזולוציה)
-
-### דף הבית `/`
-- [ ] להחליף את אייקון האינסטגרם בלוגו שדרור ישלח (ממתין)
-
-### דף `/writing/`
-- [ ] לקבל מדרור הנחיות לתוכן + לבנות
-
----
-
-## בוצע (אישור מדרור)
-
-### דף `/murals/`
-- [x] הכיתוב של שמות המיקומים בגריד הראשי — גדול יותר ובפונט אריאל
-- [x] התיאור בראש העמוד — בפונט טיימס ניו רומן
-- [x] חץ חזרה לדף הבית בראש העמוד
-- [x] הגדלה נוספת של תוויות המקומות
-- [x] לייאאוט אורגני בפסיפס — שילוב בין מורלס ופורטרייטס (2 עמודות במחשב, 1 במובייל, כל מדינה היא card עם תמונה ראשית + שם) — *הוחלף בלייאאוט הבא:*
-- [x] ~~שורה לכל מדינה עם variation~~ → *בוטל לבקשת דרור*
-- [x] ~~משניות גדולות + חפיפה אנכית~~ → *בוטל לבקשת דרור (התמונות עלו אחת על השנייה)*
-- [x] חזרה לעיצוב של תחילת היום (שורה לכל מדינה, ראשית + משנית, gap רחב, בלי חפיפה) עם שינוי הגדלים בלבד: ראשית 45% במקום 50%, משנית 45% במקום 32%
-- [x] **שינוי לפורמט פורטרייטס** — מסונרי 3 עמודות במחשב, 2 במובייל. כל מדינה תורמת 2 תמונות (ראשית + משנית) ל-grid אחד; רק תמונת הראשית מציגה את שם המיקום + חץ; שתי התמונות מקושרות לדף הפנימי של המדינה
-
-### דף `/murals/{country}/`
-- [x] חץ חזרה לעמוד `/murals/`, משמאל לכותרת שם המדינה
-
-### דף `/portraits/`
-- [x] רקע שחור, פריסת פסיפס (3 עמודות במחשב, 2 במובייל)
-- [x] חץ חזרה לדף הבית
-- [x] עיבוד כל 46 התמונות מהתיקייה שדרור שלח (EXIF rotation, resize, optimize)
-- [x] הכותרת היא תמונת כתב היד "Portraits" (אותה התמונה מהדף הבית, הפוכה ללבן)
-
-### דף הבית `/`
-- [x] שורת התפריט (מורלס, פורטרייטס וכו') — גדולה יותר
-- [x] לחיצה על קישור בתפריט — מובילה לעמוד הספציפי (לא לאנקור)
-- [x] "פרונאונסד שיי־לה" — לא מודגש
-- [x] תיקון סיבוב התמונה הראשית של פורטרייטס (cover-portraits.jpg)
-- [x] הסתרת "writing" מהתפריט (דרור לא ביקש להחזיר; טעיתי כשראיתי ב-PDF החדש)
-- [x] שינוי הפונט של שורת התפריט ל-Times New Roman
-- [x] הוספת תת-כותרת איטליק (Times) מתחת לכל כותרת סקציה: about="a trust in process", Murals="the journey", Portraits="the people", Prints="the sale"
-- [x] תצוגה של 3 תמונות בסקציית פורטרייטס במקום 1
-- [x] תצוגה של 3 תמונות בסקציית פרינטס במקום 0
-- [x] בניית דף `/prints/` עם 15 התמונות מהזיפ החדש
-- [x] בניית דף `/about/` חדש: רקע שחור, "its about TIME" + "a trust in process" + סיפור + תמונת yoga
-- [x] הוספת תמונת ה-yoga figure האמיתית (Layer 5.png) עם רקע שקוף
-- [x] תיקון טקסט האודות לפי התמלול של דרור: "obessed" (לא obsessed), רווח כפול ב-"disconnected  from", "..." לא "…", "mural" (יחיד) לא "murals >"
-- [x] הסרת הכיתוב המסתובב סביב התמונה (4 השורות עם rotate)
-- [x] הגדלת התמונה של ה-yoga (min-height: 80vh, max-height: 90vh)
-- [x] החלפת הכותרת מפונט דיגיטלי לתמונת כתב יד (נחתכה מתוך screenshot של דרור)
-- [x] תיקון חיתוך הכותרת — לא חתוכה יותר (padding 16px במקום 8px, וגבולות tight נכונים)
-- [x] הקטנת תמונת ה-yoga (מ-min-height:80vh ל-clamp(220px, 38vw, 360px))
-- [x] שינוי הפריסה ל-float:right על התמונה כדי שהטקסט יזרום סביבה וימשיך לרוחב מלא מתחתיה
-
-### עמוד `/upload/`
-- [x] רקע שחור
-- [x] טקסט הסבר ושדה תיוג אופציונלי
-- [x] כפתור העלאה: מצלמה / גלריה
-- [x] קישור מ"UPLOAD+" בדף הבית
-- [x] שמירה: דרך FormSubmit לאימייל של שאלא (לא דאטה בייס)
+### החלטות עתידיות
+- [ ] צמצום RLS לפני "השקה אמיתית" — כרגע site_text / site_image / mural_tiles פתוחים לכל מי שיש לו את הpublishable key
+- [ ] לשקול variant שלישי לטאבלט (כרגע רק mobile <768, desktop >=768; iPad נופל ב-desktop)
+- [ ] אם דרור מוסיף label חדש לאריח — צריך deploy חדש בשביל ש-/murals/<slug>/ ייווצר. אם זה מפריע — לעבור ל-SSR לראוט הזה (בלבד)
 
 ---
 
-## הערות
-- כל פעם שדרור משנה דעת או מוסיף — אעדכן את הקובץ הזה.
-- אסור לסמן בוצע בלי אישור של דרור.
+## בוצע (היסטוריה מצומצמת)
+
+### סשן 2026-06-18
+- [x] **תפריט Explore כווילון** — במקום שורת הקישורים יש כפתור EXPLORE שמאל למעלה, וכשלוחצים יורד וילון שחור מלא מסך עם כתב יד לבן של about/Murals/Portraits/Prints (Esc סוגר)
+- [x] **תמונה אחת** בסקציות portraits + prints בדף הבית במקום 3
+- [x] **תיקון באג**: כותרות "Murals/Portraits/Prints" בכתב יד היו מוסתרות (wrapper של ה-editor ננעל על width:0 לתמונות שטוענות עצלות) — תוקן ב-`image-editor.ts`
+- [x] **חיבור לאובסידיאן**: `content/pages/*.md` ניתן לעריכה ישירה ב-Obsidian; Astro Content Collections (`src/content.config.ts`) קוראים בזמן build; דפי about/murals/portraits/prints/writing/home נטענים מ-MD כברירת מחדל, ו-site_text overrides עדיין מנצחים. כולל README הסבר ל-`content/README.md`
+
+### אתר (תוכן ועיצוב)
+- [x] דף הבית: רקע מנט, hero "trust the process", תפריט Times, identity, 4 בלוקי סקציה עם תת־כותרות איטליק, 3 תמונות תצוגה לפורטרייטס + פרינטס
+- [x] /about/ — רקע שחור, "its about TIME" + "a trust in process" + סיפור, yoga figure float-right, "follow the jounrey... mural"
+- [x] /murals/ — רקע שחור, "Murals" + "the jounrey" + פסקה, ועכשיו canvas free-positioning מ-Supabase
+- [x] /murals/[slug]/ — דפי מיקומים דינמיים נוצרים מ-page+label של mural_tiles
+- [x] /portraits/ — 46 דיוקנאות, פסיפס 3 עמודות מחשב / 2 מובייל, כותרת בכתב יד מהופך
+- [x] /prints/ — 15 הדפסים, אותו פסיפס, "the sale"
+- [x] /upload/ — טופס FormSubmit שולח למייל של שאלא, עם מצלמה/גלריה
+- [x] BaseLayout עם `bare` prop מסתיר Header/Footer ישנים בדפים החדשים
+- [x] עיבוד EXIF + HEIC→JPG + resize לכל התמונות המקוריות מדרור
+
+### עורך ויזואלי (הסשנים האחרונים)
+- [x] עורך canvas של תמונות במורלס (Supabase mural_tiles)
+- [x] טוקן SHA-256 גייט בכל הסקריפטים
+- [x] עורך טקסט: תוכן, פונט (13 פונטים), גודל, משקל, איטליק, צבע, סיבוב, הזזה
+- [x] עורך תמונות: drag, resize, rotate, scale, replace upload, reset
+- [x] תפריט ניווט צף (← → ⌂ + pages dropdown + view)
+- [x] variants per-viewport (`@mobile` / `@desktop`) — שמירה מופרדת + fallback
+- [x] auto-tagging של p/h1-h6/li/a/button/span — דף חדש מקבל עורך מיידית
+- [x] שמירה אוטומטית עם debounce 500ms על שדות טקסט + Realtime sync בין מכשירים
+- [x] click frame (12px מהקצה) = drag, click body = edit
+- [x] single click = edit, double click = navigate על קישורים/כפתורים
+- [x] תיקון bug של scroll במובייל (touch-action: none) + הסרת padding שהפר את הpublic layout
+- [x] גלילה אוטומטית כשגוררים אריח קרוב לקצה viewport
+- [x] הקנבס גדל אוטומטית כשמזיזים אריח למטה
+
+### תשתית
+- [x] Cloudflare Pages env vars: PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_KEY
+- [x] Supabase tables: mural_tiles, site_text, site_image (כולם עם GRANT לanon)
+- [x] טוקן עריכה: `80nl4NHCW-cUk-3GL1P8zg` (SHA-256: `1b74c41ae62fd8c45c9c6b129291144bb67598d7ae3110b589e141428e95ef67`)
 
 ---
 
-## דיפלוי
-- `d3e02f8` Complete redesign — נדחף ל-`origin/main` (אתר חי, GitHub Pages/Cloudflare/וכו' אמור לבנות אוטומטית).
+## טכני — איך להמשיך בסשן הבא
 
-## עורך ויזואלי / Supabase
-- עורך לייב ל-`/murals/`: גש ל-`/murals/?edit=1`
-- **תמונות וסידור נשמרים ב-Supabase (פרויקט shalagh-admin)**:
-  - Storage bucket: `murals` (public)
-  - טבלה: `mural_tiles` (id, src, w, h, rotation, object_position, label, href, ...)
-- 2 מחשבים עובדים על אותו state מיידית (subscribe ל-realtime changes)
-- אין צורך ב-git push לעדכון תמונות; שינוי במחשב אחד = השני רואה אחרי רענון
-- **גישה מוגבלת לעורך**: ה-URL מכיל token סודי (`?edit=<token>`). הקוד מאמת ע"י השוואת SHA-256 ל-hash שב-bundle (לא ה-token עצמו). אחרי אימות ראשון, נשמר ב-localStorage ולא צריך שוב.
-  - **ה-token הסודי שלך**: `80nl4NHCW-cUk-3GL1P8zg` — שמור במקום בטוח
-  - **URL מלא לעורך**: `https://shalagh.com/murals/?edit=80nl4NHCW-cUk-3GL1P8zg`
-  - להחלפת token: `node -e "const c=require('crypto');const t=c.randomBytes(16).toString('base64url');console.log('TOKEN:',t,'HASH:',c.createHash('sha256').update(t).digest('hex'))"` → להחליף את `EDIT_TOKEN_HASH` ב-`src/scripts/murals-board.ts`
-- TODO עתידי: צמצום ה-RLS לאחר השקה ("Public write" פתוח לכל אחד באינטרנט עכשיו)
-- TODO עתידי: עורך גם לדפי המדינה (`/murals/[country]/`)
-- TODO עתידי: dark masonry packing אמיתי (Muuri.js) אם CSS Grid dense לא מספיק טוב
+- **Token**: `80nl4NHCW-cUk-3GL1P8zg`. URL מלא: `https://shalagh.com/?edit=80nl4NHCW-cUk-3GL1P8zg`
+- **להחליף Token**: `node -e "const c=require('crypto');const t=c.randomBytes(16).toString('base64url');console.log('TOKEN:',t,'HASH:',c.createHash('sha256').update(t).digest('hex'))"` → להחליף `EDIT_TOKEN_HASH` בכל ארבעת ה-scripts (`murals-board.ts`, `text-editor.ts`, `image-editor.ts`, `edit-nav.ts`)
+- **גישה מ-מחשב/מכשיר חדש**: לפתוח את ה-URL המלא פעם אחת; ה-token נשמר ב-`localStorage.shalagh.murals.editToken` + מוסתר מה-URL bar
+- **דחיפה לאתר**: כל push ל-`main` מפעיל build ב-Cloudflare Pages. תוך 1-2 דקות באוויר.
+- **לוודא RLS לפני השקה רחבה**: כרגע `public.site_text`, `public.site_image`, `public.mural_tiles` פתוחים לכל אחד עם ה-publishable key. תוכל לצמצם לפי IP/header/auth ב-RLS policies לפני שהאתר עובר לקהל רחב יותר.
+- **תיעוד אגרסיבי יותר**: `~/.claude/projects/.../memory/project_shalagh_quinn_art.md` + `editor_system.md` מכילים את הארכיטקטורה המלאה.

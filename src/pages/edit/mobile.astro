@@ -436,14 +436,24 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
          the dock so each can be tuned independently). */
       .me-phone {
         position: relative;
-        /* Fixed phone dimensions so the editor canvas is the same on
-           every host monitor / browser window. The live site adapts
-           responsively to whatever device the visitor is on. */
-        width: 390px;
-        height: 758px;
+        /* Dimensions are driven by the device picker (390 default ≈ iPhone
+           13/14). The live site adapts responsively to whatever device
+           the visitor is on. Set via CSS custom properties so the JS
+           picker only has to update --me-phone-w / --me-phone-h.
+
+           The 12 px padding paints the phone's black bezel — but it
+           used to eat from the inner viewport (390 outer → 366 inner),
+           making every vw inside the iframe compute 6 % off vs the real
+           iPhone. Now we grow the outer dimensions by the padding so
+           the inner screen is exactly the picked device width. */
+        --me-phone-w: 390px;
+        --me-phone-h: 844px;
+        --me-phone-pad: 12px;
+        width: calc(var(--me-phone-w) + var(--me-phone-pad) * 2);
+        height: calc(var(--me-phone-h) + var(--me-phone-pad) * 2);
         background: #000;
         border-radius: 38px;
-        padding: 12px;
+        padding: var(--me-phone-pad);
         box-shadow:
           0 0 0 1.5px rgba(255, 255, 255, 0.08),
           0 0 0 9px #1a1c22,
@@ -514,7 +524,15 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
           <option value="/murals/">murals</option>
           <option value="/portraits/">portraits</option>
           <option value="/prints/">prints</option>
+          <option value="/writing/">writing</option>
           <option value="/upload/">upload</option>
+        </select>
+
+        <select id="me-device" title="choose the iPhone width to simulate — should match the phone drorna is comparing against">
+          <option value="375x667">iPhone SE / 13 mini · 375×667</option>
+          <option value="390x844" selected>iPhone 12-14 · 390×844</option>
+          <option value="393x852">iPhone 14 Pro / 15 / 15 Pro · 393×852</option>
+          <option value="430x932">iPhone Pro Max / Plus · 430×932</option>
         </select>
 
         <div class="me-urlbar">
@@ -549,17 +567,68 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
       </div>
     </div>
 
-    <div class="me-meta">390 × <span id="me-h"></span>  ·  editing @mobile variant</div>
+    <div class="me-meta"><span id="me-w">390</span> × <span id="me-h">844</span>  ·  editing @mobile variant</div>
 
     <script is:inline define:vars={{ initialPath: safePath }}>
       const iframe = document.getElementById("me-iframe");
       const here = document.getElementById("me-here");
       const pagesSel = document.getElementById("me-pages");
+      const deviceSel = document.getElementById("me-device");
       const desktopLink = document.getElementById("me-desktop");
       const viewLink = document.getElementById("me-view");
       const heightLbl = document.getElementById("me-h");
+      const phoneEl = document.querySelector(".me-phone");
+      const widthLbl = document.getElementById("me-w");
 
-      const knownPages = new Set(["/", "/about/", "/murals/", "/portraits/", "/prints/", "/upload/"]);
+      const knownPages = new Set(["/", "/about/", "/murals/", "/portraits/", "/prints/", "/writing/", "/upload/"]);
+
+      // Persist the user's device choice across edits — once they figure
+      // out which iPhone width matches their real phone, that selection
+      // should stick for every editor session on this browser.
+      const DEVICE_KEY = "shalagh.murals.mobileDevice";
+      const savedDevice = (() => {
+        try { return localStorage.getItem(DEVICE_KEY) || "390x844"; }
+        catch { return "390x844"; }
+      })();
+      deviceSel.value = savedDevice;
+      applyDevice(savedDevice);
+
+      function applyDevice(value) {
+        const [w, h] = value.split("x").map(Number);
+        if (!w || !h) return;
+        phoneEl.style.setProperty("--me-phone-w", w + "px");
+        phoneEl.style.setProperty("--me-phone-h", h + "px");
+        if (widthLbl) widthLbl.textContent = w;
+        if (heightLbl) heightLbl.textContent = h;
+      }
+      deviceSel.addEventListener("change", () => {
+        try { localStorage.setItem(DEVICE_KEY, deviceSel.value); } catch {}
+        applyDevice(deviceSel.value);
+      });
+
+      // Chrome on Windows reserves ~15px inside the iframe for the
+      // vertical scrollbar, eating viewport width. iOS Safari paints
+      // an overlay scrollbar that does NOT eat width. So the iframe's
+      // effective vw is *smaller* than the real iPhone's, and every
+      // vw-based offset / clamp() in the page computes a few px off.
+      // Injecting CSS into the iframe to hide the scrollbar (scroll
+      // still works via wheel/touch) restores parity.
+      function hideIframeScrollbar() {
+        try {
+          const doc = iframe.contentDocument;
+          if (!doc || doc.getElementById("__me-hide-scroll")) return;
+          const s = doc.createElement("style");
+          s.id = "__me-hide-scroll";
+          s.textContent =
+            "html { scrollbar-width: none; -ms-overflow-style: none; }" +
+            "html::-webkit-scrollbar { width: 0; height: 0; display: none; }" +
+            "body { scrollbar-width: none; }" +
+            "body::-webkit-scrollbar { width: 0; height: 0; display: none; }";
+          doc.head.appendChild(s);
+        } catch (e) {
+          /* same-origin only; cross-origin would throw — not our case here. */
+        }
+      }
 
       function withEdit(p) {
         try {
@@ -592,12 +661,12 @@ const iframeSrc = `${safePath}${safePath.includes("?") ? "&" : "?"}edit=${encode
         } catch (e) {}
       }
       function updatePhoneHeight() {
-        const phone = document.querySelector(".me-phone__screen");
-        if (phone) heightLbl.textContent = Math.round(phone.getBoundingClientRect().height);
+        /* updateChrome handles the height label via applyDevice — leave
+           hook in place for backwards-compat with the resize listener. */
       }
-      iframe.addEventListener("load", updateChrome);
+      iframe.addEventListener("load", () => { hideIframeScrollbar(); updateChrome(); });
       window.addEventListener("resize", updatePhoneHeight);
-      setTimeout(() => { updateChrome(); updatePhoneHeight(); }, 250);
+      setTimeout(() => { hideIframeScrollbar(); updateChrome(); }, 250);
 
       document.getElementById("me-back").addEventListener("click", () => {
         try { iframe.contentWindow.history.back(); } catch {}

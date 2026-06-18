@@ -1,5 +1,6 @@
 ---
 import { Image } from "astro:assets";
+import { getEntry, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EditableText from "../../components/EditableText.astro";
 
@@ -7,6 +8,20 @@ import EditableText from "../../components/EditableText.astro";
 import yogaImg from "../../assets/images/about/yoga-figure.png";
 // Handwritten title "its about TIME" — cropped from Drorna's design screenshot.
 import titleImg from "../../assets/images/about/hand-its-about-time.png";
+
+// Content lives in /content/pages/about.md so Drorna can edit it in
+// Obsidian. The browser editor's per-element overrides (site_text) still
+// apply on top — markdown is the default, Supabase wins when present.
+const entry = await getEntry("pages", "about");
+const f = entry?.data ?? { title: "about" };
+// Paragraphs after the frontmatter are split by blank lines and rendered
+// as the body of the story. Empty string → no body, only the structured
+// pieces (stanza / quote / tail) display.
+const body = entry?.body ?? "";
+const paragraphs = body
+  .split(/\n\s*\n/)
+  .map((p) => p.trim())
+  .filter(Boolean);
 ---
 
 <BaseLayout title="about — shalagh quinn" bare>
@@ -44,27 +59,37 @@ import titleImg from "../../assets/images/about/hand-its-about-time.png";
         />
       </h1>
 
-      <EditableText id="about.subtitle" tag="p" class="about-page__subtitle">a trust in process</EditableText>
+      {f.subtitle && (
+        <EditableText id="about.subtitle" tag="p" class="about-page__subtitle">{f.subtitle}</EditableText>
+      )}
 
       <div class="about-page__story">
-        <EditableText id="about.story.stanza" tag="p" class="about-page__story-stanza">when I was 23
-I had a vision</EditableText>
+        {f.stanza && (
+          <EditableText id="about.story.stanza" tag="p" class="about-page__story-stanza">{f.stanza.trim()}</EditableText>
+        )}
 
-        <EditableText id="about.story.quote" tag="p" class="about-page__story-quote">enjoy the process of learning about
-yourself in everything you do</EditableText>
+        {f.quote && (
+          <EditableText id="about.story.quote" tag="p" class="about-page__story-quote">{f.quote.trim()}</EditableText>
+        )}
 
-        <EditableText id="about.story.p1" tag="p">it came at a time in my life when I need to let go of controlling my time. I was dealing with an addiction to an adhd medication that left me obessed with perfecting my world, planning my time, and making the most of it all - but disconnected  from my body.</EditableText>
+        {paragraphs.map((p, i) => (
+          <EditableText id={`about.story.p${i + 1}`} tag="p">{p}</EditableText>
+        ))}
 
-        <EditableText id="about.story.p2" tag="p">Yoga helped connected me back to my body and returned the memory that life was a an unknown unfolding process meant to follow</EditableText>
-
-        <EditableText id="about.story.p3" tag="p">for the rest of my twenties,
-each day I have followed this unknown unfolding process
-as it has taken me around the world.</EditableText>
-
-        <p class="about-page__story-tail">
-          <EditableText id="about.story.tail" tag="span">follow the jounrey...</EditableText><br />
-          <a href="/murals/" class="about-page__forward"><EditableText id="about.story.cta" tag="span">mural</EditableText></a>
-        </p>
+        {(f.tail || f.ctaLabel) && (
+          <p class="about-page__story-tail">
+            {f.tail && (
+              <>
+                <EditableText id="about.story.tail" tag="span">{f.tail}</EditableText><br />
+              </>
+            )}
+            {f.ctaLabel && (
+              <a href={f.ctaHref || "/murals/"} class="about-page__forward">
+                <EditableText id="about.story.cta" tag="span">{f.ctaLabel}</EditableText>
+              </a>
+            )}
+          </p>
+        )}
       </div>
     </article>
   </div>

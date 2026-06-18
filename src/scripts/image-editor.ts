@@ -159,11 +159,30 @@ function autoTagImages() {
     // INSERT TIME — once the img is inside the (sizes-to-content)
     // wrapper, getComputedStyle on it would reflect the broken inner
     // size, not the page's intent.
-    if (isBlock && imgCs.width && imgCs.width !== "auto") {
+    //
+    // Lazy-loaded images below the fold have no intrinsic size yet, so
+    // their pre-wrap computedWidth is "0px". Locking the wrapper to 0
+    // permanently hides the image (was the bug behind the missing Murals
+    // / Portraits / Prints section titles). Only freeze the width when it
+    // resolves to something positive; otherwise defer until the img loads.
+    const widthPx = parseFloat(imgCs.width);
+    if (isBlock && widthPx > 0 && imgCs.width !== "auto") {
       wrapper.style.width = imgCs.width;
     }
     img.parentElement?.insertBefore(wrapper, img);
     wrapper.appendChild(img);
+
+    if (isBlock && !wrapper.style.width && !img.complete) {
+      img.addEventListener(
+        "load",
+        () => {
+          const cs = getComputedStyle(img);
+          const w = parseFloat(cs.width);
+          if (w > 0 && cs.width !== "auto") wrapper.style.width = cs.width;
+        },
+        { once: true }
+      );
+    }
   }
 }
 

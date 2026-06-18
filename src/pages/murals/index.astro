@@ -1,9 +1,19 @@
 ---
 import { Image } from "astro:assets";
+import { getEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EditableText from "../../components/EditableText.astro";
 import handMurals from "../../assets/images/murals/_hand-murals.png";
 import { supabase, type MuralTile } from "../../lib/supabase";
+
+// Intro copy lives in /content/pages/murals.md so Drorna can edit it
+// from Obsidian. site_text overrides still win at runtime if set.
+const muralsEntry = await getEntry("pages", "murals");
+const mf = muralsEntry?.data ?? { title: "Murals" };
+const muralsIntroParas = (muralsEntry?.body ?? "")
+  .split(/\n\s*\n/)
+  .map((p) => p.trim())
+  .filter(Boolean);
 
 // Build-time tile fetch so the page paints with content on first byte —
 // no "loading…" flicker, no client-side round trip to Supabase before
@@ -90,11 +100,16 @@ function tileStyle(t: MuralTile): string {
           class="murals-intro__title-img"
         />
       </h1>
-      <EditableText id="murals.intro.journey" tag="p" class="murals-intro__journey">the jounrey</EditableText>
+      {mf.subtitle && (
+        <EditableText id="murals.intro.journey" tag="p" class="murals-intro__journey">{mf.subtitle}</EditableText>
+      )}
       <div class="murals-intro__copy">
-        <EditableText id="murals.intro.p1" tag="p">since 2020 I have been travelling and painitng walls through exchanges.</EditableText>
-        <EditableText id="murals.intro.p2" tag="p">I have let the art be my guide moving me through many wordls painting cafes, restuaurants, hostels, and guesthouses.</EditableText>
-        <EditableText id="murals.intro.end" tag="p" class="murals-intro__copy-end">enjoy the journey</EditableText>
+        {muralsIntroParas.map((p, i) => (
+          <EditableText id={`murals.intro.p${i + 1}`} tag="p">{p}</EditableText>
+        ))}
+        {mf.end && (
+          <EditableText id="murals.intro.end" tag="p" class="murals-intro__copy-end">{mf.end}</EditableText>
+        )}
       </div>
     </section>
 

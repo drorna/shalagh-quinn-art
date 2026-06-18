@@ -1,0 +1,107 @@
+---
+import { getEntry } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import EditableText from "../../components/EditableText.astro";
+
+// All copy comes from /content/pages/writing.md — drorna writes prose
+// in Obsidian, each blank-line-separated chunk becomes its own paragraph.
+const entry = await getEntry("pages", "writing");
+const f = entry?.data ?? { title: "Writing" };
+const paragraphs = (entry?.body ?? "")
+  .split(/\n\s*\n/)
+  .map((p) => p.trim())
+  .filter(Boolean);
+---
+
+<BaseLayout title={`${f.title} — shalagh quinn`} bare>
+  <div class="writing-page">
+    <a href="/" class="writing-page__back" aria-label="back home">
+      <span aria-hidden="true">&lt;</span>
+    </a>
+
+    <article class="writing-page__inner">
+      <header class="writing-page__header">
+        <EditableText id="writing.title" tag="h1" class="writing-page__title">{f.title}</EditableText>
+        {f.subtitle && (
+          <EditableText id="writing.subtitle" tag="p" class="writing-page__subtitle">{f.subtitle}</EditableText>
+        )}
+      </header>
+
+      <div class="writing-page__body">
+        {paragraphs.map((p, i) => (
+          <EditableText id={`writing.p${i + 1}`} tag="p">{p}</EditableText>
+        ))}
+      </div>
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  :global(body.is-bare) {
+    background: #000;
+    color: #fff;
+    font-family: var(--font-sans);
+  }
+
+  .writing-page {
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(var(--sp-4), 5vw, var(--sp-8)) clamp(var(--sp-3), 4vw, var(--sp-8)) var(--sp-16);
+    position: relative;
+  }
+
+  .writing-page__back {
+    position: absolute;
+    top: clamp(var(--sp-3), 4vw, var(--sp-6));
+    left: clamp(var(--sp-3), 4vw, var(--sp-6));
+    color: #fff;
+    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    line-height: 1;
+    opacity: 0.85;
+    z-index: 5;
+  }
+
+  .writing-page__inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding-top: clamp(var(--sp-5), 5vw, var(--sp-8));
+  }
+
+  .writing-page__header {
+    margin-bottom: var(--sp-6);
+  }
+
+  .writing-page__title {
+    margin: 0;
+    font-family: "Times New Roman", Times, serif;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 400;
+    color: #fff;
+    line-height: 1.05;
+  }
+
+  .writing-page__subtitle {
+    margin: var(--sp-2) 0 0;
+    font-family: "Times New Roman", Times, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+    color: #fff;
+  }
+
+  .writing-page__body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+    line-height: 1.6;
+    color: #fff;
+  }
+
+  .writing-page__body p {
+    margin: 0 0 var(--sp-3);
+  }
+</style>
