@@ -886,7 +886,7 @@ function injectGlobalTileStyles() {
       right: 6px;
       bottom: 6px;
       color: #fff;
-      font-family: "Caveat", "Patrick Hand", cursive;
+      font-family: Arial, "Helvetica Neue", sans-serif;
       font-weight: 700;
       /* Label scales with viewport width so smaller phones get smaller
          labels and desktop gets the original size. */

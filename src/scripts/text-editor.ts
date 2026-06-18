@@ -105,6 +105,31 @@ async function boot() {
     bindEditClicks();
     patchInternalLinks();
     mountAddButton();
+
+    // Global navigation guard: in edit mode, ANY plain click on an <a>
+    // must not navigate. bindEditClicks only covers anchors that got
+    // auto-tagged as editable text — anchors that wrap only an image
+    // (e.g. the explore-curtain links, the home-section title links,
+    // the home-section cover links) have no text to tag, so they
+    // bypassed the per-element swallow and the first click navigated.
+    // Capture-phase swallow catches all of them up front; the
+    // text-editor / image-editor per-element pointerdown handlers
+    // still drive the actual edit-mode entry. Double-click is allowed
+    // through so power users can still navigate when they intend to.
+    document.addEventListener(
+      "click",
+      (e) => {
+        const t = e.target as HTMLElement | null;
+        if (!t) return;
+        const a = t.closest("a") as HTMLAnchorElement | null;
+        if (!a) return;
+        if (a.closest("[data-no-edit], .edit-nav, .text-edit-toolbar, .image-edit-toolbar, .mural-edit-toolbar, .mural-edit-panel, .mural-mini-panel")) return;
+        if ((e as MouseEvent).detail >= 2) return; // dblclick → navigate
+        e.preventDefault();
+        e.stopPropagation();
+      },
+      true,
+    );
     const outside = (e: Event) => {
       const t = e.target as HTMLElement;
       if (

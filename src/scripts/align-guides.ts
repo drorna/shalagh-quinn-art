@@ -13,7 +13,11 @@
  * end on pointerup.
  */
 
-const SNAP_PX = 5;
+// 0 disables the snap entirely — drorna asked to stop the magnetic-lock
+// that made it impossible to pass a neighbouring box's edge by 1-2 px.
+// To bring soft alignment guides back without the snap, refactor
+// computeAlignSnap to draw guides at a wider threshold but return {0,0}.
+const SNAP_PX = 0;
 const GUIDE_COLOR = "#ff44aa";
 
 let guideLayer: HTMLElement | null = null;
