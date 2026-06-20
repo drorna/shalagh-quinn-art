@@ -29,12 +29,20 @@ import requests
 
 SUPABASE_URL = "https://zjifkawkhxjryfkhqssn.supabase.co"
 SUPABASE_KEY = "sb_publishable_3VcUVR1O0F-pFthIqHUmrw_AObZrMf6"
+# Plaintext edit token. After the RLS migration this is also required on
+# read-only requests if you ever want to inspect the row count on a
+# restricted bucket (here only writes are gated, so reads work without).
+EDIT_TOKEN = "80nl4NHCW-cUk-3GL1P8zg"
 BACKUPS_DIR = Path(__file__).parent.parent / "backups"
 KEEP_COUNT = 10  # most recent snapshots kept; older ones deleted
 
 
 def auth_headers() -> dict:
-    return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "x-edit-token": EDIT_TOKEN,
+    }
 
 
 def fetch_table(table: str) -> list[dict]:

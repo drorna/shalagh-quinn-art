@@ -7,7 +7,36 @@ if (!url || !key) {
   console.warn("Supabase env vars missing. Set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_KEY in .env");
 }
 
-export const supabase = createClient(url, key);
+const LOCAL_STORAGE_KEY = "shalagh.murals.editToken";
+
+/** Read the edit token at request time. We can't bake it into the
+ *  client config at module load because the token isn't necessarily
+ *  in localStorage yet (the first call to ?edit=<token> writes it).
+ *  Returning '' when absent makes the server-side check_edit_token()
+ *  RLS rule fail closed — exactly what visitors should see. */
+function currentEditToken(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return localStorage.getItem(LOCAL_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+/** Custom fetch that injects x-edit-token on every Supabase request.
+ *  Server-side RLS reads this header via current_setting('request.headers')
+ *  and decides whether writes are allowed. Reads ignore the header
+ *  (their policy is USING true), so visitors still see the site. */
+const fetchWithToken: typeof fetch = (input, init) => {
+  const headers = new Headers(init?.headers);
+  const tok = currentEditToken();
+  if (tok) headers.set("x-edit-token", tok);
+  return fetch(input, { ...init, headers });
+};
+
+export const supabase = createClient(url, key, {
+  global: { fetch: fetchWithToken },
+});
 
 export const STORAGE_BUCKET = "murals";
 
