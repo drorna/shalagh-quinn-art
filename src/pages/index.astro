@@ -427,7 +427,7 @@ const sections = [
   /* ---------- Identity + contact ---------- */
 
   .home-meta {
-    padding: var(--sp-3) var(--sp-4) var(--sp-6);
+    padding: clamp(8px, 3vw, 16px) clamp(16px, 5vw, 24px) clamp(24px, 7vw, 40px);
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
@@ -436,54 +436,59 @@ const sections = [
   /* Name + pronunciation, centred under the hero. */
   .home-identity-name {
     text-align: center;
-    margin-bottom: var(--sp-5);
+    margin-bottom: clamp(20px, 6vw, 32px);
   }
 
   .home-identity__name {
     margin: 0;
     font-family: var(--font-sans);
-    font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+    font-size: clamp(1.35rem, 5vw, 1.7rem);
     font-weight: 700;
-    line-height: 1.15;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
   }
 
   .home-identity__pron {
-    margin: 4px 0 0;
+    margin: 6px 0 0;
     font-family: var(--font-sans);
     font-style: italic;
     font-weight: 400;
-    font-size: clamp(0.95rem, 3.2vw, 1.1rem);
-    color: var(--color-ink);
+    font-size: clamp(0.95rem, 3.4vw, 1.1rem);
+    color: var(--color-ink-mute, var(--color-ink));
+    opacity: 0.78;
   }
 
   /* Contact row: IG + handles on the left, contact + email on the
-     right. Stacks naturally if the right side wraps. */
+     right. Stays as a single flex row at all phone widths and only
+     drops to stacked if a very narrow viewport runs out of room. */
   .home-contact-row {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: var(--sp-4);
+    gap: clamp(16px, 5vw, 32px);
   }
 
   .home-contact-row__left {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--sp-2);
+    gap: 10px;
+    min-width: 0;
   }
 
   .home-contact-row__right {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: var(--sp-1);
+    gap: 4px;
     text-align: right;
+    min-width: 0;
   }
 
   .home-identity__ig {
     display: inline-flex;
-    width: 44px;
-    height: 44px;
+    width: clamp(40px, 11vw, 52px);
+    height: clamp(40px, 11vw, 52px);
     align-items: center;
     justify-content: center;
     color: var(--color-ink);
@@ -505,25 +510,26 @@ const sections = [
     font-family: var(--font-sans);
     font-style: italic;
     font-weight: 500;
-    font-size: clamp(0.95rem, 3vw, 1.05rem);
+    font-size: clamp(0.9rem, 3vw, 1rem);
     color: var(--color-ink);
-    line-height: 1.6;
+    line-height: 1.55;
   }
 
   .home-identity__contact-label {
     font-family: var(--font-sans);
     font-style: italic;
     font-weight: 600;
-    font-size: clamp(1.05rem, 3.6vw, 1.25rem);
+    font-size: clamp(1rem, 3.6vw, 1.2rem);
     color: var(--color-ink);
+    line-height: 1.1;
   }
 
   .home-identity__email {
     font-family: var(--font-sans);
-    font-style: italic;
     font-weight: 400;
-    font-size: clamp(0.85rem, 2.8vw, 1rem);
+    font-size: clamp(0.8rem, 2.7vw, 0.95rem);
     color: var(--color-ink);
+    opacity: 0.78;
     word-break: break-all;
   }
 
@@ -564,12 +570,13 @@ const sections = [
   }
 
   .home-section__subtitle {
-    margin: 0;
+    margin: 6px 0 0;
     font-family: "Times New Roman", Times, serif;
     font-style: italic;
     font-weight: 400;
-    font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+    font-size: clamp(0.95rem, 3.4vw, 1.1rem);
     color: var(--color-ink);
+    opacity: 0.85;
   }
 
   .home-section__hand {
@@ -579,22 +586,25 @@ const sections = [
     max-width: 100%;
   }
 
-  .home-section__hand--about {
-    max-height: clamp(80px, 11vw, 140px);
-  }
-
+  /* All four section titles share one handwriting size so about doesn't
+     read as a different hierarchy than murals / portraits / prints. */
+  .home-section__hand--about,
   .home-section__hand--murals,
   .home-section__hand--portraits,
   .home-section__hand--prints {
-    max-height: clamp(60px, 8vw, 110px);
+    max-height: clamp(64px, 12vw, 110px);
   }
 
   .home-section__enter {
     font-family: var(--font-sans);
-    font-size: clamp(1.3rem, 2vw, 1.75rem);
-    font-weight: 600;
+    font-size: clamp(1rem, 4vw, 1.4rem);
+    font-weight: 500;
     color: var(--color-ink);
     white-space: nowrap;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3em;
+    line-height: 1;
   }
 
   .home-section__cover-link {
