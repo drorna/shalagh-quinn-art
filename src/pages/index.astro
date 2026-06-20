@@ -430,19 +430,19 @@ const sections = [
 
   /* ---------- Identity + contact ---------- */
 
-  /* All four gaps on the meta+about transition are balanced — no
-     dramatic empty zone next to a tight one. Step-to-step gap is
-     ~80 px; bottom padding to "about" lands in the same range. */
+  /* Step gaps generous (~100 px on phone) with a slightly larger
+     bottom padding so the about transition still reads as the
+     biggest break — but every gap stays within a balanced range. */
   .home-meta {
     padding: clamp(24px, 7vw, 40px) clamp(20px, 6vw, 32px)
-             clamp(56px, 14vw, 96px);
+             clamp(80px, 20vw, 128px);
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    gap: clamp(72px, 18vw, 120px);
+    gap: clamp(96px, 25vw, 160px);
   }
 
   /* Each meta block is its own row; alignment switches per block. */
