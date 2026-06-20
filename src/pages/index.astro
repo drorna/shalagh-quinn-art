@@ -475,10 +475,24 @@ const sections = [
   .home-identity__name {
     margin: 0;
     font-family: var(--font-sans);
-    font-size: clamp(1.35rem, 5vw, 1.7rem);
     font-weight: 700;
     letter-spacing: 0.01em;
-    line-height: 1.1;
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.05em;
+  }
+
+  /* "@" stays at the previous body size; the name "Shalagh" grows
+     into a hero-like display weight. */
+  .home-identity__name-at {
+    font-size: clamp(1.2rem, 4vw, 1.5rem);
+    font-weight: 600;
+  }
+
+  .home-identity__name-word {
+    font-size: clamp(2.4rem, 9vw, 3.2rem);
+    font-weight: 700;
   }
 
   .home-identity__pron {
@@ -553,7 +567,10 @@ const sections = [
   .home-section {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-4);
+    justify-content: space-between;
+    gap: clamp(20px, 6vw, 36px);
+    min-height: 92vh;
+    padding-block: clamp(16px, 4vw, 24px);
   }
 
   .home-section__head {
