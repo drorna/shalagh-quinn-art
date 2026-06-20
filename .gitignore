@@ -23,6 +23,11 @@ pnpm-debug.log*
 .idea/
 .claude/
 
+# Obsidian workspace state (per-user UI prefs, plugin data, plugin
+# install state). The vault content itself — pages/*.md, README.md —
+# is the source of truth and IS in git.
+shalagh-quinn-art/.obsidian/
+
 # Source images (working files, not for deployment)
 source-images/
 
