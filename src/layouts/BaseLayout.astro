@@ -84,9 +84,14 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
     {!bare && <Footer />}
 
     <style>
+      /* page-extras used to add 80 vh of empty space so the editor's
+         floating "+text" boxes had landing room. Drorna doesn't want
+         the empty tail, so the extras section now collapses to zero
+         unless a page opts in (see home-extras below for the only
+         override that still keeps it). */
       .page-extras {
         width: 100%;
-        min-height: 80vh;
+        min-height: 0;
       }
     </style>
 

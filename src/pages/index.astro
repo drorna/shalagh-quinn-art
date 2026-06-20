@@ -610,14 +610,11 @@ const sections = [
   /* ---------- Extras canvas (bottom of page) ---------- */
 
   .home-extras {
-    /* Generous bottom canvas — about 1.5 phone screens tall — so drorna
-       can drop floating text / image boxes (added through the editor's
-       "+ text" tool) anywhere in this space. Invisible to visitors
-       until they paint it with content. Custom boxes are absolutely
-       positioned against body, so this section's main job is to grow
-       the page's scroll height enough to make that area reachable. */
+    /* Collapsed by request — drorna doesn't want a tall empty tail
+       on the home page. Bump min-height back if you ever need
+       landing room for floating editor boxes. */
     width: 100%;
-    min-height: 150vh;
+    min-height: 0;
   }
 
   /* ---------- Explore curtain ---------- */
