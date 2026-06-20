@@ -536,8 +536,19 @@ export function initLightbox(): void {
     "click",
     (e) => {
       const t = e.target as HTMLElement;
-      if (!t || t.tagName !== "IMG") return;
-      const img = t as HTMLImageElement;
+      if (!t) return;
+      // Direct click on an <img>, OR a click on a tile container whose
+      // image has pointer-events: none (e.g. mural tiles in non-edit
+      // mode — the click target there is the .mural-tile div, not the
+      // img inside). For the tile case we walk down to the contained
+      // image.
+      let img: HTMLImageElement | null =
+        t.tagName === "IMG" ? (t as HTMLImageElement) : null;
+      if (!img) {
+        const tile = t.closest(".mural-tile, [data-lightbox-target]") as HTMLElement | null;
+        if (tile) img = tile.querySelector("img");
+      }
+      if (!img) return;
       if (!shouldOpen(img)) return;
       e.preventDefault();
       e.stopPropagation();

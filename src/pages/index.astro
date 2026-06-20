@@ -359,14 +359,13 @@ const sections = [
 
   .home-hero {
     position: relative;
-    padding: clamp(8px, 2vw, 16px) clamp(16px, 5vw, 24px) clamp(20px, 6vw, 32px);
+    padding: clamp(24px, 7vw, 40px) clamp(16px, 5vw, 24px) clamp(28px, 8vw, 48px);
     display: flex;
-    /* Anchor the title image near the TOP of the hero (just under the
-       explore / upload bar) so the eye starts where drorna wants the
-       first thing read. Everything below shifts up with it. */
-    align-items: flex-start;
+    /* Centred again — drorna asked to bring the title image back down
+       to the middle of the hero viewport. */
+    align-items: center;
     justify-content: center;
-    min-height: 62vh;
+    min-height: 78vh;
   }
 
   /* ---------- Top bar (explore left, upload right) ---------- */
@@ -431,21 +430,19 @@ const sections = [
 
   /* ---------- Identity + contact ---------- */
 
-  /* The three steps (name+pron, contact, IG+handles) span roughly
-     one full mobile viewport with equal gaps between them. A bigger
-     bottom padding then pushes "about" further down for the
-     pronounced break drorna asked for. */
+  /* All four gaps on the meta+about transition are balanced — no
+     dramatic empty zone next to a tight one. Step-to-step gap is
+     ~80 px; bottom padding to "about" lands in the same range. */
   .home-meta {
-    padding: clamp(16px, 4vw, 24px) clamp(20px, 6vw, 32px)
-             clamp(72px, 18vw, 120px);
+    padding: clamp(24px, 7vw, 40px) clamp(20px, 6vw, 32px)
+             clamp(56px, 14vw, 96px);
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    min-height: 95vh;
-    gap: clamp(60px, 14vw, 96px);
+    gap: clamp(72px, 18vw, 120px);
   }
 
   /* Each meta block is its own row; alignment switches per block. */
