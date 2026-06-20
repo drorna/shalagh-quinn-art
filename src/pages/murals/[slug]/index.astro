@@ -256,7 +256,8 @@ function tileStyle(t: SsrTile): string {
   .murals-canvas {
     position: relative;
     width: 100%;
-    min-height: 80vh;
+    /* No min-height — would override the aspect-ratio rule and
+       stretch every tile vertically, which read as cropping. */
   }
   .murals-canvas__loading {
     position: absolute;

@@ -293,7 +293,10 @@ function resizeCanvasHeight() {
   const total = getMaxBottom();
   if (tiles.length > 0) {
     canvas.style.aspectRatio = `100 / ${total}`;
-    canvas.style.minHeight = "80vh";
+    /* DON'T set min-height — it overrides aspect-ratio and stretches
+       every tile vertically, which reads as cropping on sub-pages
+       whose tiles are sized to their natural image aspect. */
+    canvas.style.minHeight = "";
     canvas.style.height = "";
   } else {
     canvas.style.aspectRatio = "";

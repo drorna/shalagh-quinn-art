@@ -254,7 +254,7 @@ function tileStyle(t: MuralTile): string {
     /* Height is driven by aspect-ratio (set inline from
        max(y+h) of all tiles) — universal browser support, no
        container queries required. */
-    min-height: 80vh;
+    /* No min-height: 80 vh — clobbers the aspect-ratio rule. */
   }
 
   .murals-canvas__loading {
