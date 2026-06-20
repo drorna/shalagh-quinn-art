@@ -13,7 +13,7 @@
 import { supabase } from "../lib/supabase";
 import { openRescuePanel } from "./rescue-panel";
 
-const EDIT_TOKEN_HASH = "1b74c41ae62fd8c45c9c6b129291144bb67598d7ae3110b589e141428e95ef67";
+const EDIT_TOKEN_HASH = "cbde44bf2659acff6b22287b4205de441701a9a64120931529c08a860894a377";
 const LOCAL_STORAGE_KEY = "shalagh.murals.editToken";
 
 export function initEditNav(): void {

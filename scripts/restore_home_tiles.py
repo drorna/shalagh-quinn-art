@@ -17,9 +17,7 @@ from pathlib import Path
 
 import requests
 
-SUPABASE_URL = "https://zjifkawkhxjryfkhqssn.supabase.co"
-SUPABASE_KEY = "sb_publishable_3VcUVR1O0F-pFthIqHUmrw_AObZrMf6"
-EDIT_TOKEN = "80nl4NHCW-cUk-3GL1P8zg"
+from _env import SUPABASE_URL, SUPABASE_KEY, EDIT_TOKEN  # noqa: E402
 BACKUP = Path(__file__).parent / "mural_tiles_backup_20260618T210244Z.json"
 
 

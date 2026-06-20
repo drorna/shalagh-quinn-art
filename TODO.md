@@ -59,13 +59,13 @@
 ### תשתית
 - [x] Cloudflare Pages env vars: PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_KEY
 - [x] Supabase tables: mural_tiles, site_text, site_image (כולם עם GRANT לanon)
-- [x] טוקן עריכה: `80nl4NHCW-cUk-3GL1P8zg` (SHA-256: `1b74c41ae62fd8c45c9c6b129291144bb67598d7ae3110b589e141428e95ef67`)
+- [x] טוקן עריכה: `(see .env)` (SHA-256: `cbde44bf2659acff6b22287b4205de441701a9a64120931529c08a860894a377`)
 
 ---
 
 ## טכני — איך להמשיך בסשן הבא
 
-- **Token**: `80nl4NHCW-cUk-3GL1P8zg`. URL מלא: `https://shalagh.com/?edit=80nl4NHCW-cUk-3GL1P8zg`
+- **Token**: `(see .env)`. URL מלא: `https://shalagh.com/?edit=(see .env)`
 - **להחליף Token**: `node -e "const c=require('crypto');const t=c.randomBytes(16).toString('base64url');console.log('TOKEN:',t,'HASH:',c.createHash('sha256').update(t).digest('hex'))"` → להחליף `EDIT_TOKEN_HASH` בכל ארבעת ה-scripts (`murals-board.ts`, `text-editor.ts`, `image-editor.ts`, `edit-nav.ts`)
 - **גישה מ-מחשב/מכשיר חדש**: לפתוח את ה-URL המלא פעם אחת; ה-token נשמר ב-`localStorage.shalagh.murals.editToken` + מוסתר מה-URL bar
 - **דחיפה לאתר**: כל push ל-`main` מפעיל build ב-Cloudflare Pages. תוך 1-2 דקות באוויר.

@@ -365,37 +365,33 @@ const sections = [
     justify-content: center;
   }
 
-  .home-hero__upload,
-  .home-hero__explore {
-    position: absolute;
-    top: var(--sp-3);
-    font-family: var(--font-sans);
-    font-size: clamp(0.95rem, 1.4vw, 1.1rem);
-    font-weight: 600;
-    letter-spacing: 0.04em;
+  /* ---------- Top bar (explore left, upload right) ---------- */
+
+  .home-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-3) var(--sp-4) var(--sp-2);
+    max-width: 1280px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .home-topbar__btn {
+    font-family: Arial, "Helvetica Neue", sans-serif;
+    font-size: clamp(0.85rem, 2.6vw, 1rem);
+    font-weight: 500;
     color: var(--color-ink);
     display: inline-flex;
     align-items: center;
-    gap: 0.35em;
-    text-transform: uppercase;
-    z-index: 3;
-  }
-
-  .home-hero__upload {
-    right: var(--sp-4);
-  }
-
-  .home-hero__explore {
-    left: var(--sp-4);
+    gap: 0.25em;
     background: transparent;
     border: none;
     padding: 0;
     cursor: pointer;
-    font: inherit;
   }
 
-  .home-hero__upload-plus,
-  .home-hero__explore-plus {
+  .home-topbar__btn-plus {
     font-weight: 400;
     font-size: 1.1em;
     line-height: 1;
@@ -427,7 +423,7 @@ const sections = [
     .home-hero__title-img--desktop { display: block; }
   }
 
-  /* ---------- Identity row ---------- */
+  /* ---------- Identity + contact ---------- */
 
   .home-meta {
     padding: var(--sp-3) var(--sp-4) var(--sp-6);
@@ -436,23 +432,18 @@ const sections = [
     width: 100%;
   }
 
-  .home-identity {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-    gap: var(--sp-4);
-  }
-
-  .home-identity__left {
-    text-align: left;
+  /* Name + pronunciation, centred under the hero. */
+  .home-identity-name {
+    text-align: center;
+    margin-bottom: var(--sp-5);
   }
 
   .home-identity__name {
     margin: 0;
     font-family: var(--font-sans);
-    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
-    font-weight: 600;
-    line-height: 1.2;
+    font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+    font-weight: 700;
+    line-height: 1.15;
   }
 
   .home-identity__pron {
@@ -460,44 +451,45 @@ const sections = [
     font-family: var(--font-sans);
     font-style: italic;
     font-weight: 400;
-    font-size: clamp(0.95rem, 1.3vw, 1.1rem);
+    font-size: clamp(0.95rem, 3.2vw, 1.1rem);
     color: var(--color-ink);
   }
 
-  .home-identity__right {
+  /* Contact row: IG + handles on the left, contact + email on the
+     right. Stacks naturally if the right side wraps. */
+  .home-contact-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-4);
+  }
+
+  .home-contact-row__left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
+  }
+
+  .home-contact-row__right {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: var(--sp-2);
+    gap: var(--sp-1);
     text-align: right;
-  }
-
-  .home-identity__contact {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-2);
-    font-family: var(--font-sans);
-    font-style: italic;
-    font-weight: 600;
-    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
-    color: var(--color-ink);
-  }
-
-  .home-identity__contact-label {
-    line-height: 1;
   }
 
   .home-identity__ig {
     display: inline-flex;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     align-items: center;
     justify-content: center;
     color: var(--color-ink);
   }
 
-  /* Handwritten brush IG icon — the PNG already carries the strokes
-     on a transparent background, so no white box behind it. */
+  /* Handwritten brush IG icon — PNG carries strokes on alpha so no
+     white box behind it. */
   .home-identity__ig-img {
     width: 100%;
     height: 100%;
@@ -512,9 +504,26 @@ const sections = [
     font-family: var(--font-sans);
     font-style: italic;
     font-weight: 500;
-    font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+    font-size: clamp(0.95rem, 3vw, 1.05rem);
     color: var(--color-ink);
-    line-height: 1.7;
+    line-height: 1.6;
+  }
+
+  .home-identity__contact-label {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-weight: 600;
+    font-size: clamp(1.05rem, 3.6vw, 1.25rem);
+    color: var(--color-ink);
+  }
+
+  .home-identity__email {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(0.85rem, 2.8vw, 1rem);
+    color: var(--color-ink);
+    word-break: break-all;
   }
 
   /* ---------- Sections ---------- */

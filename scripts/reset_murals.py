@@ -43,9 +43,7 @@ except Exception:
     pass
 
 
-SUPABASE_URL = "https://zjifkawkhxjryfkhqssn.supabase.co"
-SUPABASE_KEY = "sb_publishable_3VcUVR1O0F-pFthIqHUmrw_AObZrMf6"
-EDIT_TOKEN = "80nl4NHCW-cUk-3GL1P8zg"
+from _env import SUPABASE_URL, SUPABASE_KEY, EDIT_TOKEN  # noqa: E402
 BUCKET = "murals"
 SOURCE_ROOT = Path("C:/Users/nadel/Downloads/mural-page-extracted/mural page")
 BACKUP_DIR = Path(__file__).parent
