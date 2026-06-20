@@ -91,6 +91,19 @@ body {
   overflow-x: hidden;
 }
 
+/* Desktop visual scale: the responsive layout was sized for a phone-
+   sized viewport, so on a 1440+ desktop everything reads oversized.
+   `zoom` shrinks the whole document uniformly while preserving every
+   internal proportion — images, text, gaps, transforms all scale
+   together. Mobile is left at zoom: 1 because the viewport meta
+   already locks it to a 390 px logical canvas (see BaseLayout).
+   Adjust the value to taste — 0.75 = 25% smaller on desktop. */
+@media (min-width: 1024px) {
+  body {
+    zoom: 0.75;
+  }
+}
+
 img,
 picture,
 svg {
