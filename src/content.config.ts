@@ -34,6 +34,7 @@ const pages = defineCollection({
     uploadLabel: z.string().optional(),
     enterLabel: z.string().optional(),
     contactLabel: z.string().optional(),
+    contactEmail: z.string().optional(),
     sectionAboutSubtitle: z.string().optional(),
     sectionMuralsSubtitle: z.string().optional(),
     sectionPortraitsSubtitle: z.string().optional(),

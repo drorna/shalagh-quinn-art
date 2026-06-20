@@ -1,11 +1,12 @@
 ---
 title: shalagh quinn
-identityName: shalagh
+identityName: "@Shalagh"
 identityPron: pronounced shay - la
-exploreLabel: EXPLORE
-uploadLabel: UPLOAD
+exploreLabel: explore
+uploadLabel: upload
 enterLabel: enter
 contactLabel: contact
+contactEmail: shalaghquinns@gmail.com
 sectionAboutSubtitle: a trust in process
 sectionMuralsSubtitle: the journey
 sectionPortraitsSubtitle: the people

@@ -82,27 +82,29 @@ const sections = [
 
 <BaseLayout title="shalagh quinn" bare>
   <div class="home">
-    <!-- Hero: trust the process (stars are baked into the artwork image) -->
-    <section class="home-hero" aria-labelledby="hero-title">
+    <!-- Top bar: explore (left) and upload (right). Sits above the hero
+         on a row of its own so the hero image sits cleanly underneath
+         the two labels without overlap. -->
+    <header class="home-topbar" aria-label="primary">
       <button
         type="button"
-        class="home-hero__explore"
+        class="home-topbar__btn home-topbar__explore"
         data-explore-toggle
         aria-controls="explore-curtain"
         aria-expanded="false"
         aria-label="explore"
       >
-        <span class="home-hero__explore-plus" aria-hidden="true" data-editable-text="home.hero.explorePlus">+</span><span data-editable-text="home.hero.exploreLabel">{h.exploreLabel ?? "EXPLORE"}</span>
+        <span class="home-topbar__btn-plus" aria-hidden="true" data-editable-text="home.hero.explorePlus">+</span><span data-editable-text="home.hero.exploreLabel">{h.exploreLabel ?? "explore"}</span>
       </button>
 
-      <a href="/upload/" class="home-hero__upload" aria-label="upload">
-        <span data-editable-text="home.hero.uploadLabel">{h.uploadLabel ?? "UPLOAD"}</span><span class="home-hero__upload-plus" data-editable-text="home.hero.uploadPlus">+</span>
+      <a href="/upload/" class="home-topbar__btn home-topbar__upload" aria-label="upload">
+        <span data-editable-text="home.hero.uploadLabel">{h.uploadLabel ?? "upload"}</span><span class="home-topbar__btn-plus" data-editable-text="home.hero.uploadPlus">+</span>
       </a>
+    </header>
 
+    <!-- Hero: trust the process (mobile) / the process (desktop) -->
+    <section class="home-hero" aria-labelledby="hero-title">
       <h1 id="hero-title" class="home-hero__title">
-        <!-- Two variants of the handwritten title. Mobile keeps the
-             original "trust the process" — desktop swaps in the new
-             "the process" brush piece. CSS shows exactly one. -->
         <Image
           src={trustTheProcess}
           alt="trust the process"
@@ -124,39 +126,46 @@ const sections = [
       </h1>
     </section>
 
-    <!-- Identity row -->
+    <!-- Identity: name + pronunciation centred below the hero. -->
     <header class="home-meta" aria-label="primary">
-      <div class="home-identity">
-        <div class="home-identity__left">
-          <EditableText id="home.identity.name" tag="p" class="home-identity__name">{h.identityName ?? "shalagh"}</EditableText>
-          <EditableText id="home.identity.pron" tag="p" class="home-identity__pron">{h.identityPron ?? "pronounced shay - la"}</EditableText>
-        </div>
+      <div class="home-identity-name">
+        <EditableText id="home.identity.name" tag="p" class="home-identity__name">{h.identityName ?? "@Shalagh"}</EditableText>
+        <EditableText id="home.identity.pron" tag="p" class="home-identity__pron">{h.identityPron ?? "pronounced shay - la"}</EditableText>
+      </div>
 
-        <div class="home-identity__right">
+      <!-- Contact row: left column = IG icon + the handles list,
+           right column = "contact" label + the email link. -->
+      <div class="home-contact-row">
+        <div class="home-contact-row__left">
           <a
             href="https://instagram.com/shalagh"
             target="_blank"
             rel="noopener noreferrer"
-            class="home-identity__contact"
+            class="home-identity__ig"
+            aria-label="instagram"
           >
-            <span class="home-identity__contact-label" data-editable-text="home.identity.contactLabel">{h.contactLabel ?? "contact"}</span>
-            <span class="home-identity__ig" aria-hidden="true">
-              <Image
-                src={instaLogo}
-                alt="instagram"
-                widths={[80, 120, 200]}
-                sizes="32px"
-                quality={92}
-                loading="eager"
-                class="home-identity__ig-img"
-              />
-            </span>
+            <Image
+              src={instaLogo}
+              alt="instagram"
+              widths={[80, 120, 200]}
+              sizes="44px"
+              quality={92}
+              loading="eager"
+              class="home-identity__ig-img"
+            />
           </a>
           <ul class="home-identity__handles">
             {handles.map((h) => (
               <li>{h}</li>
             ))}
           </ul>
+        </div>
+
+        <div class="home-contact-row__right">
+          <span class="home-identity__contact-label" data-editable-text="home.identity.contactLabel">{h.contactLabel ?? "contact"}</span>
+          <a href={`mailto:${h.contactEmail ?? "shalaghquinns@gmail.com"}`} class="home-identity__email" data-editable-text="home.identity.contactEmail">
+            {h.contactEmail ?? "shalaghquinns@gmail.com"}
+          </a>
         </div>
       </div>
     </header>
