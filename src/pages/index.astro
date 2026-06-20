@@ -462,7 +462,10 @@ const sections = [
     text-align: right;
   }
 
-  .home-identity__name {
+  /* EditableText renders these via its own component, so the index
+     page's data-astro-cid scoping doesn't reach them. `:global()`
+     keeps the rules unscoped. */
+  :global(.home-identity__name) {
     margin: 0;
     font-family: var(--font-sans);
     font-size: clamp(3.4rem, 13vw, 4.6rem);
@@ -471,9 +474,7 @@ const sections = [
     line-height: 1;
   }
 
-  /* Pronunciation sits on the line directly under "Shalagh" with
-     no top margin so they read as one stacked typographic unit. */
-  .home-identity__pron {
+  :global(.home-identity__pron) {
     margin: 0;
     font-family: var(--font-sans);
     font-style: italic;
@@ -575,7 +576,7 @@ const sections = [
     line-height: 0;
   }
 
-  .home-section__subtitle {
+  :global(.home-section__subtitle) {
     margin: 6px 0 0;
     font-family: "Times New Roman", Times, serif;
     font-style: italic;
