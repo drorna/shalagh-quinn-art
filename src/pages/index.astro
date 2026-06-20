@@ -94,11 +94,11 @@ const sections = [
         aria-expanded="false"
         aria-label="explore"
       >
-        <span class="home-topbar__btn-plus" aria-hidden="true" data-editable-text="home.hero.explorePlus">+</span><span data-editable-text="home.hero.exploreLabel">{h.exploreLabel ?? "explore"}</span>
+        <span data-editable-text="home.hero.exploreLabel">{h.exploreLabel ?? "explore"}</span><span class="home-topbar__btn-mark" aria-hidden="true" data-editable-text="home.hero.exploreMark">&gt;</span>
       </button>
 
       <a href="/upload/" class="home-topbar__btn home-topbar__upload" aria-label="upload">
-        <span data-editable-text="home.hero.uploadLabel">{h.uploadLabel ?? "upload"}</span><span class="home-topbar__btn-plus" data-editable-text="home.hero.uploadPlus">+</span>
+        <span data-editable-text="home.hero.uploadLabel">{h.uploadLabel ?? "upload"}</span><span class="home-topbar__btn-mark" data-editable-text="home.hero.uploadPlus">+</span>
       </a>
     </header>
 
@@ -354,12 +354,11 @@ const sections = [
 
   .home-hero {
     position: relative;
-    /* Height is driven by content, not by the viewport — a fixed
-       proportional padding above and below the trust-the-process image
-       gives the same hero shape on every phone, regardless of how tall
-       the visitor's browser window is. */
-    padding: clamp(var(--sp-6), 12vw, var(--sp-12)) var(--sp-4)
-             clamp(var(--sp-5), 10vw, var(--sp-10));
+    /* Hero sits right under the top bar with breathing room above and a
+       smaller cap below — visually anchored to the title image, no
+       wasted vertical space. */
+    padding: clamp(20px, 6vw, 40px) clamp(16px, 5vw, 24px)
+             clamp(12px, 3vw, 20px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -371,7 +370,7 @@ const sections = [
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--sp-3) var(--sp-4) var(--sp-2);
+    padding: clamp(14px, 4vw, 18px) clamp(16px, 5vw, 24px) 0;
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
@@ -379,21 +378,23 @@ const sections = [
 
   .home-topbar__btn {
     font-family: Arial, "Helvetica Neue", sans-serif;
-    font-size: clamp(0.85rem, 2.6vw, 1rem);
+    font-size: clamp(0.85rem, 3.4vw, 1rem);
     font-weight: 500;
+    letter-spacing: 0.01em;
     color: var(--color-ink);
     display: inline-flex;
-    align-items: center;
-    gap: 0.25em;
+    align-items: baseline;
+    gap: 0.35em;
     background: transparent;
     border: none;
     padding: 0;
     cursor: pointer;
+    line-height: 1;
   }
 
-  .home-topbar__btn-plus {
+  .home-topbar__btn-mark {
     font-weight: 400;
-    font-size: 1.1em;
+    font-size: 1em;
     line-height: 1;
   }
 
