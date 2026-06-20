@@ -138,16 +138,7 @@ const sections = [
          to one side, top-to-bottom.  -->
     <header class="home-meta" aria-label="primary">
       <div class="home-meta-block home-meta-block--left">
-        {(() => {
-          const raw = h.identityName ?? "@Shalagh";
-          const at = raw.startsWith("@") ? "@" : "";
-          const rest = at ? raw.slice(1) : raw;
-          return (
-            <p class="home-identity__name" data-editable-text="home.identity.name">
-              <span class="home-identity__name-at">{at}</span><span class="home-identity__name-word">{rest}</span>
-            </p>
-          );
-        })()}
+        <EditableText id="home.identity.name" tag="p" class="home-identity__name">{h.identityName ?? "Shalagh"}</EditableText>
         <EditableText id="home.identity.pron" tag="p" class="home-identity__pron">{h.identityPron ?? "pronounced shay - la"}</EditableText>
       </div>
 
@@ -372,10 +363,10 @@ const sections = [
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Each section ≈ one mobile screen. Hero is slightly shorter than
-       100 vh so the top of the @Shalagh block peeks at the bottom of
-       the first viewport — that's the cue to scroll for screen 2. */
-    min-height: 88vh;
+    /* Each section gets its own full mobile viewport — no peek into
+       the next, per drorna's spec. The cue to scroll is the fact that
+       the hero image isn't pinned to the top edge. */
+    min-height: 100vh;
   }
 
   /* ---------- Top bar (explore left, upload right) ---------- */
@@ -438,22 +429,24 @@ const sections = [
     .home-hero__variant--desktop { display: block; width: min(86vw, 860px); }
   }
 
-  /* ---------- Identity + contact (full-screen rhythm) ---------- */
+  /* ---------- Identity + contact (full-screen, blocks at top) ---------- */
 
-  /* Whole identity area = one mobile viewport. Three blocks distribute
-     top-to-bottom so name lands near the top, contact in the middle,
-     IG + handles at the bottom. The very last lines of the IG block
-     touch the next section so "about" peeks at the bottom of screen 2. */
+  /* Whole identity area = one mobile viewport. The three blocks
+     (name, contact, IG+handles) sit at the TOP of the screen with
+     tight spacing between them, and the rest of the viewport is
+     empty space below — that's the cue that "about" lives on a
+     separate, dedicated screen. */
   .home-meta {
-    padding: clamp(28px, 8vw, 48px) clamp(20px, 6vw, 32px) clamp(20px, 6vw, 32px);
+    padding: clamp(40px, 12vw, 80px) clamp(20px, 6vw, 32px)
+             clamp(24px, 8vw, 64px);
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     min-height: 100vh;
-    gap: clamp(28px, 9vw, 60px);
+    gap: clamp(16px, 5vw, 28px);
   }
 
   /* Each meta block is its own row; alignment switches per block. */
@@ -475,24 +468,10 @@ const sections = [
   .home-identity__name {
     margin: 0;
     font-family: var(--font-sans);
+    font-size: clamp(2.4rem, 9vw, 3.2rem);
     font-weight: 700;
     letter-spacing: 0.01em;
     line-height: 1;
-    display: flex;
-    align-items: baseline;
-    gap: 0.05em;
-  }
-
-  /* "@" stays at the previous body size; the name "Shalagh" grows
-     into a hero-like display weight. */
-  .home-identity__name-at {
-    font-size: clamp(1.2rem, 4vw, 1.5rem);
-    font-weight: 600;
-  }
-
-  .home-identity__name-word {
-    font-size: clamp(2.4rem, 9vw, 3.2rem);
-    font-weight: 700;
   }
 
   .home-identity__pron {
@@ -558,19 +537,25 @@ const sections = [
   .home-sections {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 var(--sp-4) var(--sp-12);
+    padding: 0 clamp(16px, 5vw, 24px) clamp(40px, 12vw, 80px);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-8);
+    /* BIG gap between sections — ~20 vh on mobile — so the next
+       section's handwritten title image never peeks above the fold
+       of the current section. Matches the empty real estate at the
+       bottom of the meta block. */
+    gap: 20vh;
   }
 
   .home-section {
     display: flex;
     flex-direction: column;
+    /* Title block at the top, cover image at the bottom, with the
+       remaining viewport space distributed between them. */
     justify-content: space-between;
-    gap: clamp(20px, 6vw, 36px);
-    min-height: 92vh;
-    padding-block: clamp(16px, 4vw, 24px);
+    gap: clamp(16px, 4vw, 28px);
+    min-height: 100vh;
+    padding-block: clamp(20px, 5vw, 32px);
   }
 
   .home-section__head {

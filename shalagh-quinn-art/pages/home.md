@@ -1,6 +1,6 @@
 ---
 title: shalagh quinn
-identityName: "@Shalagh"
+identityName: Shalagh
 identityPron: pronounced shay - la
 exploreLabel: explore
 uploadLabel: upload
