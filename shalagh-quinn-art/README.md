@@ -4,7 +4,7 @@ This folder *is* an Obsidian vault. Every `.md` file under `pages/` maps to one 
 
 ## One-time setup
 
-1. **Open this folder as an Obsidian vault.** In Obsidian → *Open another vault* → *Open folder as vault* → pick `C:\Users\nadel\projects\art-website\content`.
+1. **Open this folder as an Obsidian vault.** In Obsidian → *Open another vault* → *Open folder as vault* → pick `C:\Users\nadel\projects\art-website\shalagh-quinn-art`.
 2. **Install the Obsidian Git plugin.** Settings → Community plugins → Browse → search "Obsidian Git" → Install + Enable.
 3. **Configure auto-push.** Open the Obsidian Git settings:
    - *Vault backup interval (minutes)*: 5 (or whatever cadence feels right)

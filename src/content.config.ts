@@ -2,10 +2,12 @@ import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
 
 /**
- * Content lives outside src/ on purpose: the `content/` folder at the
- * repo root doubles as an Obsidian vault. Drorna opens that folder in
- * Obsidian, edits the .md files, and the Obsidian Git plugin auto-pushes
- * to GitHub; Cloudflare Pages then redeploys in 1-2 minutes.
+ * Content lives outside src/ on purpose: the `shalagh-quinn-art/`
+ * folder at the repo root doubles as an Obsidian vault. Drorna opens
+ * that folder in Obsidian, edits the .md files, and the Obsidian Git
+ * plugin auto-pushes to GitHub; Cloudflare Pages then redeploys in
+ * 1-2 minutes. (Renamed from the generic 'content/' so it sits clearly
+ * alongside other vaults in Obsidian's recent-list.)
  *
  * Each .md file's filename (about, murals, portraits, prints, writing,
  * home) is the slug. Pages import the entry by slug via getEntry().
@@ -15,7 +17,7 @@ import { glob } from "astro/loaders";
  * structured slots (stanza, quote, intro, tail, cta).
  */
 const pages = defineCollection({
-  loader: glob({ pattern: "**/*.md", base: "./content/pages" }),
+  loader: glob({ pattern: "**/*.md", base: "./shalagh-quinn-art/pages" }),
   schema: z.object({
     title: z.string(),
     subtitle: z.string().optional(),
