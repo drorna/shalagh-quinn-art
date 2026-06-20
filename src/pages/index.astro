@@ -126,47 +126,48 @@ const sections = [
       </h1>
     </section>
 
-    <!-- Identity: name + pronunciation centred below the hero. -->
+    <!-- Identity stack. Per drorna's layout spec:
+           name + pronunciation = left aligned
+           contact label + email = right aligned
+           IG icon + handles = left aligned
+         No two-column row; each block sits on its own line aligned
+         to one side, top-to-bottom.  -->
     <header class="home-meta" aria-label="primary">
-      <div class="home-identity-name">
+      <div class="home-meta-block home-meta-block--left">
         <EditableText id="home.identity.name" tag="p" class="home-identity__name">{h.identityName ?? "@Shalagh"}</EditableText>
         <EditableText id="home.identity.pron" tag="p" class="home-identity__pron">{h.identityPron ?? "pronounced shay - la"}</EditableText>
       </div>
 
-      <!-- Contact row: left column = IG icon + the handles list,
-           right column = "contact" label + the email link. -->
-      <div class="home-contact-row">
-        <div class="home-contact-row__left">
-          <a
-            href="https://instagram.com/shalagh"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="home-identity__ig"
-            aria-label="instagram"
-          >
-            <Image
-              src={instaLogo}
-              alt="instagram"
-              widths={[80, 120, 200]}
-              sizes="44px"
-              quality={92}
-              loading="eager"
-              class="home-identity__ig-img"
-            />
-          </a>
-          <ul class="home-identity__handles">
-            {handles.map((h) => (
-              <li>{h}</li>
-            ))}
-          </ul>
-        </div>
+      <div class="home-meta-block home-meta-block--right">
+        <span class="home-identity__contact-label" data-editable-text="home.identity.contactLabel">{h.contactLabel ?? "contact"}</span>
+        <a href={`mailto:${h.contactEmail ?? "shalaghquinns@gmail.com"}`} class="home-identity__email" data-editable-text="home.identity.contactEmail">
+          {h.contactEmail ?? "shalaghquinns@gmail.com"}
+        </a>
+      </div>
 
-        <div class="home-contact-row__right">
-          <span class="home-identity__contact-label" data-editable-text="home.identity.contactLabel">{h.contactLabel ?? "contact"}</span>
-          <a href={`mailto:${h.contactEmail ?? "shalaghquinns@gmail.com"}`} class="home-identity__email" data-editable-text="home.identity.contactEmail">
-            {h.contactEmail ?? "shalaghquinns@gmail.com"}
-          </a>
-        </div>
+      <div class="home-meta-block home-meta-block--left">
+        <a
+          href="https://instagram.com/shalagh"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="home-identity__ig"
+          aria-label="instagram"
+        >
+          <Image
+            src={instaLogo}
+            alt="instagram"
+            widths={[80, 120, 200]}
+            sizes="48px"
+            quality={92}
+            loading="eager"
+            class="home-identity__ig-img"
+          />
+        </a>
+        <ul class="home-identity__handles">
+          {handles.map((h) => (
+            <li>{h}</li>
+          ))}
+        </ul>
       </div>
     </header>
 

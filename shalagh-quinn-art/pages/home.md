@@ -16,4 +16,5 @@ handles:
   - "@thetimeapttern"
   - "@iseeloveinyoureyes"
   - "@slowlyrememberingwhy"
+  - "@30secondportraits"
 ---
