@@ -359,13 +359,14 @@ const sections = [
 
   .home-hero {
     position: relative;
-    padding: clamp(16px, 4vw, 24px) clamp(16px, 5vw, 24px) clamp(20px, 6vw, 32px);
+    padding: clamp(8px, 2vw, 16px) clamp(16px, 5vw, 24px) clamp(20px, 6vw, 32px);
     display: flex;
-    align-items: center;
+    /* Anchor the title image near the TOP of the hero (just under the
+       explore / upload bar) so the eye starts where drorna wants the
+       first thing read. Everything below shifts up with it. */
+    align-items: flex-start;
     justify-content: center;
-    /* A bit shorter than a full mobile viewport so the gap between
-       trust-the-process and Shalagh is comfortable but not empty. */
-    min-height: 78vh;
+    min-height: 62vh;
   }
 
   /* ---------- Top bar (explore left, upload right) ---------- */
@@ -430,20 +431,21 @@ const sections = [
 
   /* ---------- Identity + contact ---------- */
 
-  /* Meta block sized so name → contact → IG step rhythm reads as
-     ladders descending: name + pron tight, generous gap to contact,
-     generous gap to IG. Bottom padding kept small so about doesn't
-     sit at a far-away offset. */
+  /* The three steps (name+pron, contact, IG+handles) span roughly
+     one full mobile viewport with equal gaps between them. A bigger
+     bottom padding then pushes "about" further down for the
+     pronounced break drorna asked for. */
   .home-meta {
     padding: clamp(16px, 4vw, 24px) clamp(20px, 6vw, 32px)
-             clamp(16px, 4vw, 24px);
+             clamp(72px, 18vw, 120px);
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    gap: clamp(40px, 10vw, 68px);
+    min-height: 95vh;
+    gap: clamp(60px, 14vw, 96px);
   }
 
   /* Each meta block is its own row; alignment switches per block. */
@@ -468,7 +470,9 @@ const sections = [
   :global(.home-identity__name) {
     margin: 0;
     font-family: var(--font-sans);
-    font-size: clamp(3.4rem, 13vw, 4.6rem);
+    /* ~25 % smaller than the previous 3.4-4.6 rem so it reads as a
+       confident display weight, not a poster headline. */
+    font-size: clamp(2.55rem, 9.75vw, 3.45rem);
     font-weight: 700;
     letter-spacing: 0.01em;
     line-height: 1;
@@ -555,20 +559,27 @@ const sections = [
     padding-block: clamp(20px, 5vw, 32px);
   }
 
+  /* Grid keeps the > arrow vertically centred with the handwritten
+     title image only — the subtitle below the title is on its own
+     row, with the arrow's column empty there. */
   .home-section__head {
-    display: flex;
-    /* Top-align so the > arrow sits at the same baseline as the
-       handwritten logo, NOT the subtitle below it. */
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--sp-4);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "title   arrow"
+      "subtitle .";
+    column-gap: var(--sp-4);
+    row-gap: 6px;
+    align-items: center;
   }
 
+  .home-section__title-link { grid-area: title; align-self: center; }
+  .home-section__enter      { grid-area: arrow; align-self: center; }
+  :global(.home-section__subtitle) { grid-area: subtitle; }
+
   .home-section__title-block {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
-    max-width: 75%;
+    display: contents;
   }
 
   .home-section__title-link {
@@ -608,12 +619,8 @@ const sections = [
     font-weight: 500;
     color: var(--color-ink);
     line-height: 1;
-    /* Lift the arrow to vertically centre against the handwritten
-       title image (which is taller than a single text line). */
-    align-self: stretch;
     display: inline-flex;
     align-items: center;
-    padding-top: clamp(8px, 3vw, 16px);
   }
 
   .home-section__cover-link {
