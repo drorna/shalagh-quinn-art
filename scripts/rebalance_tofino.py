@@ -1,16 +1,13 @@
 """
-Re-pack /murals/tofino/ tiles so the three columns end at similar y.
+Tofino tile layout, manual 2 / 2 / 2 split.
 
-The default shortest-column masonry handles same-aspect images fine but
-gets thrown off by Tonfio 4 — a 1125 x 2000 portrait that's 2.5× taller
-than the five landscape tiles. The algorithm processed it last and
-dumped the whole height onto col 2, leaving cols 1 and 3 looking
-truncated.
+Six images, one of which (Tonfio 4) is a 1125 x 2000 portrait that
+dwarfs every other tile. Pure masonry leaves one column either way
+too tall or sparsely populated. We instead place EXACTLY two images
+per column, pairing the tall outlier with the shortest landscape to
+keep column heights within a few percent of each other.
 
-This script re-reads the existing tofino rows from Supabase, sorts them
-by aspect (tallest first), repacks with the same shortest-column rule,
-and UPDATEs each row's x/y. Width / height ratio is preserved (drorna's
-rule: no crop, no rotate, only scale).
+Aspect ratios are preserved — only x and y change.
 
 Run:
     py scripts/rebalance_tofino.py
@@ -33,6 +30,16 @@ COLS = [
 TOP_START = 4.0
 ROW_GAP = 1.0
 PAGE = "tofino"
+
+# Hand-picked 2-image stacks per column. Picked to keep column heights
+# within ~30 % of each other (Tonfio 4 in col 1 paired with the
+# shortest landscape; tofino 2 in col 2 paired with another short;
+# col 3 gets two near-identical landscapes).
+STACKS = [
+    ["Tonfio 4",  "tonfio 1"],   # col 1
+    ["tofino 2",  "Tofino 9"],   # col 2
+    ["Tofino",    "Tonfio 3"],   # col 3
+]
 
 
 def auth_headers(extra=None):
@@ -67,34 +74,30 @@ def patch_row(row_id: str, patch: dict):
 
 def main():
     rows = fetch_rows()
-    print(f"Loaded {len(rows)} tiles from /murals/{PAGE}/")
+    by_alt = {r["alt"]: r for r in rows}
 
-    # Stable-sort by aspect: tallest (largest h:w ratio) first. Tied
-    # ratios stay in insertion order (original order_idx).
-    rows.sort(key=lambda r: (-(r["h"] / max(1.0, r["w"])), r["order_idx"]))
-
-    col_y = [TOP_START, TOP_START, TOP_START]
     plan = []
-    for r in rows:
-        col_i = min(range(3), key=lambda i: col_y[i])
+    for col_i, stack in enumerate(STACKS):
         col = COLS[col_i]
-        # Preserve aspect: rescale tile_w to column width, recompute h.
-        natural_h_over_w = r["h"] / max(1.0, r["w"])
-        new_w = col["w"]
-        new_h = new_w * natural_h_over_w
-        plan.append({
-            "id": r["id"],
-            "alt": r.get("alt"),
-            "old": (round(r["x"], 1), round(r["y"], 1), round(r["w"], 1), round(r["h"], 1)),
-            "new": (col["x"], round(col_y[col_i], 3), round(new_w, 3), round(new_h, 3)),
-            "col": col_i + 1,
-        })
-        col_y[col_i] += new_h + ROW_GAP
-
-    print(f"\nNew column heights: col1={col_y[0]:.1f}  col2={col_y[1]:.1f}  col3={col_y[2]:.1f}")
-    print("\nPer-tile plan (old -> new):")
-    for p in plan:
-        print(f"  {p['alt']:20s} col {p['col']}  ({p['old']}) -> ({p['new']})")
+        y = TOP_START
+        order_in_col = 0
+        for alt in stack:
+            row = by_alt.get(alt)
+            if row is None:
+                print(f"  WARN: tile alt={alt!r} not found in DB; skipping")
+                continue
+            natural = row["h"] / max(1.0, row["w"])  # h/w preserved
+            new_w = col["w"]
+            new_h = new_w * natural
+            plan.append({
+                "id": row["id"],
+                "alt": alt,
+                "new": (col["x"], round(y, 3), round(new_w, 3), round(new_h, 3)),
+                "col": col_i + 1,
+            })
+            y += new_h + ROW_GAP
+            order_in_col += 1
+        print(f"col {col_i + 1}: stops at y={y - ROW_GAP:.1f}")
 
     print("\nApplying...")
     for p in plan:
@@ -104,6 +107,7 @@ def main():
             "w": p["new"][2],
             "h": p["new"][3],
         })
+        print(f"  {p['alt']:18s} -> col {p['col']}  ({p['new']})")
     print("done.")
 
 
