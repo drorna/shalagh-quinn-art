@@ -195,8 +195,8 @@ const sections = [
               </a>
               <EditableText id={`home.section.${s.id}.subtitle`} tag="p" class="home-section__subtitle">{s.subtitle}</EditableText>
             </div>
-            <a href={s.href} class="home-section__enter" data-editable-text={`home.section.${s.id}.enter`}>
-              {h.enterLabel ?? "enter"} <span aria-hidden="true">&gt;</span>
+            <a href={s.href} class="home-section__enter" aria-label={`enter ${s.handAlt}`} data-editable-text={`home.section.${s.id}.enter`}>
+              <span aria-hidden="true">&gt;</span>
             </a>
           </div>
 
@@ -359,14 +359,13 @@ const sections = [
 
   .home-hero {
     position: relative;
-    padding: clamp(20px, 5vw, 32px) clamp(16px, 5vw, 24px) 0;
+    padding: clamp(16px, 4vw, 24px) clamp(16px, 5vw, 24px) clamp(20px, 6vw, 32px);
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Each section gets its own full mobile viewport — no peek into
-       the next, per drorna's spec. The cue to scroll is the fact that
-       the hero image isn't pinned to the top edge. */
-    min-height: 100vh;
+    /* A bit shorter than a full mobile viewport so the gap between
+       trust-the-process and Shalagh is comfortable but not empty. */
+    min-height: 78vh;
   }
 
   /* ---------- Top bar (explore left, upload right) ---------- */
@@ -429,24 +428,22 @@ const sections = [
     .home-hero__variant--desktop { display: block; width: min(86vw, 860px); }
   }
 
-  /* ---------- Identity + contact (full-screen, blocks at top) ---------- */
+  /* ---------- Identity + contact ---------- */
 
-  /* Whole identity area = one mobile viewport. The three blocks
-     (name, contact, IG+handles) sit at the TOP of the screen with
-     tight spacing between them, and the rest of the viewport is
-     empty space below — that's the cue that "about" lives on a
-     separate, dedicated screen. */
+  /* Meta block sized so name → contact → IG step rhythm reads as
+     ladders descending: name + pron tight, generous gap to contact,
+     generous gap to IG. Bottom padding kept small so about doesn't
+     sit at a far-away offset. */
   .home-meta {
-    padding: clamp(40px, 12vw, 80px) clamp(20px, 6vw, 32px)
-             clamp(24px, 8vw, 64px);
+    padding: clamp(16px, 4vw, 24px) clamp(20px, 6vw, 32px)
+             clamp(16px, 4vw, 24px);
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    min-height: 100vh;
-    gap: clamp(16px, 5vw, 28px);
+    gap: clamp(40px, 10vw, 68px);
   }
 
   /* Each meta block is its own row; alignment switches per block. */
@@ -468,14 +465,16 @@ const sections = [
   .home-identity__name {
     margin: 0;
     font-family: var(--font-sans);
-    font-size: clamp(2.4rem, 9vw, 3.2rem);
+    font-size: clamp(3.4rem, 13vw, 4.6rem);
     font-weight: 700;
     letter-spacing: 0.01em;
     line-height: 1;
   }
 
+  /* Pronunciation sits on the line directly under "Shalagh" with
+     no top margin so they read as one stacked typographic unit. */
   .home-identity__pron {
-    margin: 6px 0 0;
+    margin: 0;
     font-family: var(--font-sans);
     font-style: italic;
     font-weight: 400;
@@ -540,18 +539,15 @@ const sections = [
     padding: 0 clamp(16px, 5vw, 24px) clamp(40px, 12vw, 80px);
     display: flex;
     flex-direction: column;
-    /* BIG gap between sections — ~20 vh on mobile — so the next
-       section's handwritten title image never peeks above the fold
-       of the current section. Matches the empty real estate at the
-       bottom of the meta block. */
-    gap: 20vh;
+    /* Roomy but not dramatic gap between sections — about ~12 vh
+       on a phone — so each section still has its own dedicated
+       viewport but transitions feel deliberate, not vast. */
+    gap: 12vh;
   }
 
   .home-section {
     display: flex;
     flex-direction: column;
-    /* Title block at the top, cover image at the bottom, with the
-       remaining viewport space distributed between them. */
     justify-content: space-between;
     gap: clamp(16px, 4vw, 28px);
     min-height: 100vh;
@@ -560,7 +556,9 @@ const sections = [
 
   .home-section__head {
     display: flex;
-    align-items: flex-end;
+    /* Top-align so the > arrow sits at the same baseline as the
+       handwritten logo, NOT the subtitle below it. */
+    align-items: flex-start;
     justify-content: space-between;
     gap: var(--sp-4);
   }
@@ -605,14 +603,16 @@ const sections = [
 
   .home-section__enter {
     font-family: var(--font-sans);
-    font-size: clamp(1rem, 4vw, 1.4rem);
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
     font-weight: 500;
     color: var(--color-ink);
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.3em;
     line-height: 1;
+    /* Lift the arrow to vertically centre against the handwritten
+       title image (which is taller than a single text line). */
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    padding-top: clamp(8px, 3vw, 16px);
   }
 
   .home-section__cover-link {
