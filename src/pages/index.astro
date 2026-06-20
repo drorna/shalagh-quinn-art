@@ -105,24 +105,28 @@ const sections = [
     <!-- Hero: trust the process (mobile) / the process (desktop) -->
     <section class="home-hero" aria-labelledby="hero-title">
       <h1 id="hero-title" class="home-hero__title">
-        <Image
-          src={trustTheProcess}
-          alt="trust the process"
-          widths={[480, 720, 960, 1200]}
-          sizes="(min-width: 900px) 860px, 86vw"
-          quality={92}
-          loading="eager"
-          class="home-hero__title-img home-hero__title-img--mobile"
-        />
-        <Image
-          src={theProcess}
-          alt="the process"
-          widths={[480, 720, 960, 1200]}
-          sizes="(min-width: 900px) 860px, 86vw"
-          quality={92}
-          loading="eager"
-          class="home-hero__title-img home-hero__title-img--desktop"
-        />
+        <div class="home-hero__variant home-hero__variant--mobile">
+          <Image
+            src={trustTheProcess}
+            alt="trust the process"
+            widths={[480, 720, 960, 1200]}
+            sizes="(min-width: 900px) 860px, 86vw"
+            quality={92}
+            loading="eager"
+            class="home-hero__title-img"
+          />
+        </div>
+        <div class="home-hero__variant home-hero__variant--desktop">
+          <Image
+            src={theProcess}
+            alt="the process"
+            widths={[480, 720, 960, 1200]}
+            sizes="(min-width: 900px) 860px, 86vw"
+            quality={92}
+            loading="eager"
+            class="home-hero__title-img"
+          />
+        </div>
       </h1>
     </section>
 
@@ -355,11 +359,8 @@ const sections = [
 
   .home-hero {
     position: relative;
-    /* Hero sits right under the top bar with breathing room above and a
-       smaller cap below — visually anchored to the title image, no
-       wasted vertical space. */
-    padding: clamp(20px, 6vw, 40px) clamp(16px, 5vw, 24px)
-             clamp(12px, 3vw, 20px);
+    padding: clamp(24px, 7vw, 40px) clamp(16px, 5vw, 24px)
+             clamp(28px, 8vw, 48px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -416,13 +417,13 @@ const sections = [
     display: block;
   }
 
-  /* Mobile-vs-desktop hero variants. On phones we show the original
-     "trust the process" piece; the wider canvas of "the process"
-     fits the desktop layout better. CSS toggles which paints. */
-  .home-hero__title-img--desktop { display: none; }
+  /* Mobile-vs-desktop hero variants. Wrap each <Image> in a div so
+     display:none collapses the editor's auto-tagged span wrapper too. */
+  .home-hero__variant { line-height: 0; width: min(68vw, 480px); }
+  .home-hero__variant--desktop { display: none; }
   @media (min-width: 1024px) {
-    .home-hero__title-img--mobile  { display: none; }
-    .home-hero__title-img--desktop { display: block; }
+    .home-hero__variant--mobile  { display: none; }
+    .home-hero__variant--desktop { display: block; width: min(86vw, 860px); }
   }
 
   /* ---------- Identity + contact (stacked, alternating alignment) ---------- */
