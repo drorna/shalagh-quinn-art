@@ -138,7 +138,16 @@ const sections = [
          to one side, top-to-bottom.  -->
     <header class="home-meta" aria-label="primary">
       <div class="home-meta-block home-meta-block--left">
-        <EditableText id="home.identity.name" tag="p" class="home-identity__name">{h.identityName ?? "@Shalagh"}</EditableText>
+        {(() => {
+          const raw = h.identityName ?? "@Shalagh";
+          const at = raw.startsWith("@") ? "@" : "";
+          const rest = at ? raw.slice(1) : raw;
+          return (
+            <p class="home-identity__name" data-editable-text="home.identity.name">
+              <span class="home-identity__name-at">{at}</span><span class="home-identity__name-word">{rest}</span>
+            </p>
+          );
+        })()}
         <EditableText id="home.identity.pron" tag="p" class="home-identity__pron">{h.identityPron ?? "pronounced shay - la"}</EditableText>
       </div>
 
@@ -359,11 +368,14 @@ const sections = [
 
   .home-hero {
     position: relative;
-    padding: clamp(24px, 7vw, 40px) clamp(16px, 5vw, 24px)
-             clamp(28px, 8vw, 48px);
+    padding: clamp(20px, 5vw, 32px) clamp(16px, 5vw, 24px) 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Each section ≈ one mobile screen. Hero is slightly shorter than
+       100 vh so the top of the @Shalagh block peeks at the bottom of
+       the first viewport — that's the cue to scroll for screen 2. */
+    min-height: 88vh;
   }
 
   /* ---------- Top bar (explore left, upload right) ---------- */
@@ -419,23 +431,29 @@ const sections = [
 
   /* Mobile-vs-desktop hero variants. Wrap each <Image> in a div so
      display:none collapses the editor's auto-tagged span wrapper too. */
-  .home-hero__variant { line-height: 0; width: min(68vw, 480px); }
+  .home-hero__variant { line-height: 0; width: min(82vw, 520px); }
   .home-hero__variant--desktop { display: none; }
   @media (min-width: 1024px) {
     .home-hero__variant--mobile  { display: none; }
     .home-hero__variant--desktop { display: block; width: min(86vw, 860px); }
   }
 
-  /* ---------- Identity + contact (stacked, alternating alignment) ---------- */
+  /* ---------- Identity + contact (full-screen rhythm) ---------- */
 
+  /* Whole identity area = one mobile viewport. Three blocks distribute
+     top-to-bottom so name lands near the top, contact in the middle,
+     IG + handles at the bottom. The very last lines of the IG block
+     touch the next section so "about" peeks at the bottom of screen 2. */
   .home-meta {
-    padding: clamp(8px, 3vw, 16px) clamp(16px, 5vw, 24px) clamp(24px, 7vw, 40px);
+    padding: clamp(28px, 8vw, 48px) clamp(20px, 6vw, 32px) clamp(20px, 6vw, 32px);
     max-width: 1280px;
     margin: 0 auto;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: clamp(20px, 6vw, 36px);
+    justify-content: space-between;
+    min-height: 100vh;
+    gap: clamp(28px, 9vw, 60px);
   }
 
   /* Each meta block is its own row; alignment switches per block. */
