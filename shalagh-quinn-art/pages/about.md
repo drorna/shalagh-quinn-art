@@ -4,7 +4,7 @@ subtitle: a trust in process
 stanza: |
   when I was 23
   I had a vision
-quote: |
+quote: |-
   enjoy the process
   of learning about yourself
   in everything you do
@@ -19,4 +19,4 @@ Everything shifted when I discovered yoga. Connecting back to my body revealed a
 
 I spent the rest of my twenties stepping into that unknown every single day. Seeing my time as a process rather than something to be planned or controlled reveals unknowns gifts to me everyday. Expressing a new side time is my hearts dream on this earth.
 
-This is a space to share everything that I have learned and created from time. Thank you for being a part of my dream here, we do this together.
+This is a space to share everything that I have learned and created from time. Thank you for being a part of my dream here
