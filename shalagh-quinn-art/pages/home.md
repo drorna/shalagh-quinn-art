@@ -1,7 +1,7 @@
 ---
 title: shalagh quinn
 identityName: shalagh
-uploadLabel: UPLOAD
+uploadLabel: upload
 navOfferings: offerings
 navAbout: about
 navInsideTime: inside time
