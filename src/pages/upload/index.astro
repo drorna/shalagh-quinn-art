@@ -54,27 +54,25 @@ const uploadCopy = uploadNote?.body?.trim()
             <div class="upload-form__field">
               <span class="upload-form__label" data-editable-text="upload.field.photo">photo</span>
               <div class="upload-form__filebox">
-                <label class="upload-form__filebtn" for="upload-camera">
-                  take a photo
-                  <input
+                <!-- Text kept on one line with the tags: the editor's
+                     [data-editable-text] white-space:pre-line rule turns
+                     source linebreaks into a phantom empty first line,
+                     pushing the label off-centre. -->
+                <label class="upload-form__filebtn" for="upload-camera">take a photo<input
                     id="upload-camera"
                     type="file"
                     name="Photo (camera)"
                     accept="image/*"
                     capture="environment"
                     hidden
-                  />
-                </label>
-                <label class="upload-form__filebtn" for="upload-gallery">
-                  choose from gallery
-                  <input
+                  /></label>
+                <label class="upload-form__filebtn" for="upload-gallery">choose from gallery<input
                     id="upload-gallery"
                     type="file"
                     name="Photo (gallery)"
                     accept="image/*"
                     hidden
-                  />
-                </label>
+                  /></label>
               </div>
               <p class="upload-form__filename" id="upload-filename" aria-live="polite"></p>
             </div>

@@ -1,13 +1,7 @@
 ---
-import { Image } from "astro:assets";
-import { getEntry, render } from "astro:content";
+import { getEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EditableText from "../../components/EditableText.astro";
-
-// Drawing of the yoga figure — Drorna's Layer 5 PNG with transparent background.
-import yogaImg from "../../assets/images/about/yoga-figure.png";
-// Handwritten title "its about TIME" — cropped from Drorna's design screenshot.
-import titleImg from "../../assets/images/about/hand-its-about-time.png";
 
 // Content lives in /content/pages/about.md so Drorna can edit it in
 // Obsidian. The browser editor's per-element overrides (site_text) still
@@ -31,36 +25,8 @@ const paragraphs = body
     </a>
 
     <article class="about-page__inner">
-      <!-- Figure floats to the right at the top of the article; the story
-           wraps around it on the left and continues full-width below. -->
-      <figure class="about-page__figure">
-        <Image
-          src={yogaImg}
-          alt="figure in a yoga pose with colourful raised hands"
-          widths={[400, 600, 800, 1000]}
-          sizes="(min-width: 800px) 36vw, 70vw"
-          quality={92}
-          loading="eager"
-          format="png"
-          class="about-page__figure-img"
-        />
-      </figure>
-
-      <h1 class="about-page__title">
-        <Image
-          src={titleImg}
-          alt="its about TIME"
-          widths={[300, 500, 700]}
-          sizes="(min-width: 800px) 280px, 55vw"
-          quality={92}
-          loading="eager"
-          format="png"
-          class="about-page__title-img"
-        />
-      </h1>
-
       {f.subtitle && (
-        <EditableText id="about.subtitle" tag="p" class="about-page__subtitle">{f.subtitle}</EditableText>
+        <EditableText id="about.subtitle" tag="h1" class="about-page__subtitle">{f.subtitle}</EditableText>
       )}
 
       <div class="about-page__story">
@@ -142,56 +108,25 @@ const paragraphs = body
     clear: both;
   }
 
-  /* ---------- Figure (floats right; text wraps around it) ---------- */
-  .about-page__figure {
-    margin: 0 0 var(--sp-3) var(--sp-4);
-    float: right;
-    width: clamp(220px, 38vw, 360px);
-  }
-
-  @media (max-width: 600px) {
-    .about-page__figure {
-      float: none;
-      margin: 0 auto var(--sp-4);
-      width: min(45vw, 220px);
-    }
-  }
-
-  .about-page__figure-img {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-
-  /* ---------- Title (handwritten image) ---------- */
-  .about-page__title {
-    margin: 0;
-    line-height: 0;
-  }
-
-  .about-page__title-img {
-    width: clamp(180px, 26vw, 280px);
-    height: auto;
-    display: block;
-  }
-
-  .about-page__subtitle {
-    margin: var(--sp-3) 0 var(--sp-4);
+  /* ---------- Lead word (SHALAGH) ---------- */
+  :global(.about-page__subtitle) {
+    margin: 0 0 var(--sp-4);
     font-family: "Times New Roman", Times, serif;
-    font-style: italic;
+    font-style: normal;
     font-weight: 400;
-    font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+    font-size: clamp(2.2rem, 4vw, 3rem);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
     color: #fff;
+    line-height: 1.1;
   }
 
-  /* ---------- Story text ---------- */
+  /* ---------- Story text (~2x the previous size) ---------- */
   .about-page__story {
     font-family: "Times New Roman", Times, serif;
-    font-size: clamp(0.95rem, 1.2vw, 1.05rem);
-    line-height: 1.55;
+    font-size: clamp(1.9rem, 2.4vw, 2.1rem);
+    line-height: 1.45;
     color: #fff;
-    /* No flex column — paragraphs need to flow naturally so they wrap
-       around the floated figure and then continue full-width below. */
   }
 
   .about-page__story p { margin: 0 0 var(--sp-3); }
