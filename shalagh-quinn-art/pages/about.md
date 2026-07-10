@@ -2,13 +2,6 @@
 title: about
 subtitle: Shalagh
 stanza: Pronounced shay- la
-quote: |-
-  enjoy the process
-  of learning about yourself
-  in everything you do
-tail: follow the jounrey...
-ctaLabel: mural
-ctaHref: /murals/
 ---
 
 when was I had a vision that changed my life 
