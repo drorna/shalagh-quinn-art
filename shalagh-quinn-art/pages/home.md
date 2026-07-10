@@ -20,7 +20,6 @@ insideTimeCtaHref: https://inside-time.com
 contactEmail: shalaghquinns@gmail.com
 handles:
   - "@shalagh"
-  - "@thetimeapttern"
   - "@iseeloveinyoureyes"
   - "@slowlyrememberingwhy"
   - "@30secondportraits"
