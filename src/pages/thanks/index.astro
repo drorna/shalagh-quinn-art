@@ -2,98 +2,129 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
+<!-- Landing page after an upload (FormSubmit redirects here). Styled in
+     the home page's unified language: white sheet, black ink, one
+     rounded pill box. Same --u proportional unit system as home. -->
 <BaseLayout
-  title="Thank you — Shalagh Quinn"
-  description="Your message was sent successfully."
+  title="thank you — shalagh quinn"
+  description="Your upload was sent successfully."
+  bare
 >
-  <section class="thanks">
-    <div class="container thanks__inner">
-      <h1 class="thanks__title">thank you.</h1>
-      <p class="thanks__lede italic">
-        your message has been sent. I read everything personally and usually
-        reply within a few days.
-      </p>
+  <div class="sheet">
+    <header class="sheet-top" aria-label="site header">
+      <a href="/" class="sheet-top__logo" aria-label="back home">shalagh</a>
+    </header>
 
-      <div class="thanks__actions">
-        <a href="/" class="thanks__link">
-          <span class="thanks__arrow" aria-hidden="true">‹</span>
-          <span>back to home</span>
-        </a>
-        <a href="/#work" class="thanks__link">
-          <span>browse the work</span>
-          <span class="thanks__arrow" aria-hidden="true">›</span>
-        </a>
-      </div>
-    </div>
-  </section>
+    <main class="sheet-main">
+      <section class="pill">
+        <div class="pill__head">
+          <h1 class="pill__label" data-editable-text="thanks.title">thank you</h1>
+        </div>
+        <div class="pill__content">
+          <p class="pill__copy" data-editable-text="thanks.copy">
+            your photo has been sent. thank you for sharing your piece.
+          </p>
+
+          <a href="/" class="pill__row">
+            <span data-editable-text="thanks.back">back home</span>
+            <span class="pill__arrow" aria-hidden="true">&gt;</span>
+          </a>
+        </div>
+      </section>
+    </main>
+  </div>
 </BaseLayout>
 
 <style>
-  .thanks {
-    min-height: 60vh;
-    padding-block: var(--sp-12) var(--sp-16);
+  /* Same sheet system as home / upload. */
+
+  :global(body.is-bare) {
+    background: #fff;
+    color: #000;
+    font-family: Arial, "Helvetica Neue", sans-serif;
+  }
+
+  .sheet {
+    --u: calc(min(100vw, 720px) / 1080);
+    width: min(100vw, 720px);
+    margin: 0 auto;
+    min-height: 100vh;
+    background: #fff;
+    color: #000;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: calc(220 * var(--u));
+  }
+
+  .sheet-top {
+    display: flex;
+    align-items: baseline;
+    padding: calc(17 * var(--u)) calc(44 * var(--u)) 0 calc(36 * var(--u));
+  }
+
+  .sheet-top__logo {
+    font-family: "Times New Roman", Times, serif;
+    font-weight: 400;
+    font-size: calc(62 * var(--u));
+    letter-spacing: 0.015em;
+    line-height: 1.15;
+    color: #000;
+    text-decoration: none;
+  }
+
+  .sheet-main {
+    margin-top: calc(120 * var(--u));
+    padding: 0 calc(96 * var(--u)) 0 calc(79 * var(--u));
+  }
+
+  .pill {
+    border: max(2px, calc(3 * var(--u))) solid #000;
+    border-radius: calc(48 * var(--u));
+    background: #fff;
+  }
+
+  .pill__head {
     display: flex;
     align-items: center;
+    min-height: calc(102.5 * var(--u));
+    padding: 0 calc(66 * var(--u));
   }
 
-  .thanks__inner {
-    max-width: 640px;
-  }
-
-  .thanks__title {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    color: var(--color-ink);
-    line-height: 1;
-    letter-spacing: -0.01em;
-    margin: 0 0 var(--sp-3);
-    font-size: clamp(2.5rem, 7vw, 5rem);
-  }
-
-  .thanks__lede {
-    font-family: var(--font-serif);
-    font-size: var(--fs-md);
-    line-height: 1.6;
-    color: var(--color-ink-soft);
-    margin: 0 0 var(--sp-6);
-    max-width: 52ch;
-  }
-
-  .thanks__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-4);
-  }
-
-  .thanks__link {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.3em;
-    font-family: var(--font-serif);
+  .pill__label {
+    margin: 0;
+    font-family: Arial, "Helvetica Neue", sans-serif;
     font-style: italic;
-    font-size: var(--fs-md);
-    color: var(--color-ink);
-    border-bottom: 1px solid var(--color-line);
-    padding-bottom: 2px;
-    transition: border-color var(--duration-fast) var(--ease-out);
+    font-weight: 400;
+    font-size: calc(66.5 * var(--u));
+    line-height: 1;
+    position: relative;
+    top: calc(-3 * var(--u));
   }
 
-  .thanks__link:hover {
-    border-bottom-color: var(--color-ink);
+  .pill__content {
+    padding: calc(2 * var(--u)) calc(88 * var(--u)) calc(70 * var(--u))
+      calc(73 * var(--u));
   }
 
-  .thanks__arrow {
-    font-weight: 300;
-    font-style: normal;
-    transition: transform var(--duration-base) var(--ease-out);
-    display: inline-block;
+  .pill__copy {
+    margin: 0 0 calc(60 * var(--u));
+    font-family: "Times New Roman", Times, serif;
+    font-style: italic;
+    font-size: calc(40 * var(--u));
+    line-height: 1.5;
   }
 
-  .thanks__link:hover .thanks__arrow {
-    transform: translateX(4px);
+  .pill__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: "Times New Roman", Times, serif;
+    font-size: calc(46.6 * var(--u));
+    line-height: calc(72 * var(--u));
+    color: #000;
+    text-decoration: none;
   }
 
-  .thanks__link:first-child:hover .thanks__arrow {
-    transform: translateX(-4px);
+  .pill__arrow {
+    font-family: "Times New Roman", Times, serif;
   }
 </style>

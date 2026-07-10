@@ -18,254 +18,299 @@ const uploadCopy = uploadNote?.body?.trim()
     ];
 ---
 
+<!-- Styled in the home page's unified language: white sheet, black ink,
+     one rounded pill box holding the whole form. Same --u proportional
+     unit system as the home page (1080-unit artboard). -->
 <BaseLayout title="upload — shalagh quinn" bare>
-  <div class="upload-page">
-    <a href="/" class="upload-page__back" aria-label="back home">
-      <span aria-hidden="true">&lt;</span>
-    </a>
+  <div class="sheet">
+    <header class="sheet-top" aria-label="site header">
+      <a href="/" class="sheet-top__logo" aria-label="back home">shalagh</a>
+      <span class="sheet-top__page" data-editable-text="upload.top.label">UPLOAD +</span>
+    </header>
 
-    <main class="upload-page__inner">
-      <h1 class="upload-page__title">hi —</h1>
-
-      {uploadCopy.map((p) => (
-        <p class="upload-page__copy">{p}</p>
-      ))}
-
-      <form
-        class="upload-form"
-        action={FORM_ENDPOINT}
-        method="POST"
-        enctype="multipart/form-data"
-      >
-        <input type="hidden" name="_subject" value="New upload from shalagh.com/upload" />
-        <input type="hidden" name="_template" value="table" />
-        <input type="hidden" name="_captcha" value="false" />
-        <input type="hidden" name="_next" value={THANK_YOU_URL} />
-
-        <label class="upload-form__field">
-          <span class="upload-form__label">your name (optional)</span>
-          <input type="text" name="Name" autocomplete="name" />
-        </label>
-
-        <label class="upload-form__field">
-          <span class="upload-form__label">tag — instagram handle, etc. (optional)</span>
-          <input type="text" name="Tag" placeholder="@yourhandle" />
-        </label>
-
-        <div class="upload-form__field">
-          <span class="upload-form__label">photo</span>
-          <div class="upload-form__filebox">
-            <label class="upload-form__filebtn" for="upload-camera">
-              take a photo
-              <input
-                id="upload-camera"
-                type="file"
-                name="Photo (camera)"
-                accept="image/*"
-                capture="environment"
-                hidden
-              />
-            </label>
-            <label class="upload-form__filebtn" for="upload-gallery">
-              choose from gallery
-              <input
-                id="upload-gallery"
-                type="file"
-                name="Photo (gallery)"
-                accept="image/*"
-                hidden
-              />
-            </label>
-          </div>
-          <p class="upload-form__filename" id="upload-filename" aria-live="polite"></p>
+    <main class="sheet-main">
+      <section class="pill">
+        <div class="pill__head">
+          <h1 class="pill__label" data-editable-text="upload.title">hi —</h1>
         </div>
+        <div class="pill__content">
+          {uploadCopy.map((p) => (
+            <p class="pill__copy">{p}</p>
+          ))}
 
-        <div class="upload-form__submit-row">
-          <button type="submit" class="upload-form__submit">
-            <span>upload</span>
-            <span class="upload-form__submit-arrow" aria-hidden="true">&gt;</span>
-          </button>
+          <form
+            class="upload-form"
+            action={FORM_ENDPOINT}
+            method="POST"
+            enctype="multipart/form-data"
+          >
+            <input type="hidden" name="_subject" value="New upload from shalagh.com/upload" />
+            <input type="hidden" name="_template" value="table" />
+            <input type="hidden" name="_captcha" value="false" />
+            <input type="hidden" name="_next" value={THANK_YOU_URL} />
+
+            <label class="upload-form__field">
+              <span class="upload-form__label" data-editable-text="upload.field.name">your name (optional)</span>
+              <input type="text" name="Name" autocomplete="name" />
+            </label>
+
+            <label class="upload-form__field">
+              <span class="upload-form__label" data-editable-text="upload.field.tag">tag — instagram handle, etc. (optional)</span>
+              <input type="text" name="Tag" placeholder="@yourhandle" />
+            </label>
+
+            <div class="upload-form__field">
+              <span class="upload-form__label" data-editable-text="upload.field.photo">photo</span>
+              <div class="upload-form__filebox">
+                <label class="upload-form__filebtn" for="upload-camera">
+                  take a photo
+                  <input
+                    id="upload-camera"
+                    type="file"
+                    name="Photo (camera)"
+                    accept="image/*"
+                    capture="environment"
+                    hidden
+                  />
+                </label>
+                <label class="upload-form__filebtn" for="upload-gallery">
+                  choose from gallery
+                  <input
+                    id="upload-gallery"
+                    type="file"
+                    name="Photo (gallery)"
+                    accept="image/*"
+                    hidden
+                  />
+                </label>
+              </div>
+              <p class="upload-form__filename" id="upload-filename" aria-live="polite"></p>
+            </div>
+
+            <button type="submit" class="upload-form__submit">
+              <span data-editable-text="upload.submit">upload</span>
+              <span class="upload-form__submit-arrow" aria-hidden="true">&gt;</span>
+            </button>
+          </form>
         </div>
-      </form>
+      </section>
     </main>
-
-    <script>
-      const inputs = document.querySelectorAll<HTMLInputElement>(
-        '#upload-camera, #upload-gallery'
-      );
-      const nameEl = document.getElementById('upload-filename');
-      inputs.forEach((inp) => {
-        inp.addEventListener('change', () => {
-          const f = inp.files?.[0];
-          if (f && nameEl) {
-            nameEl.textContent = `selected: ${f.name}`;
-          }
-        });
-      });
-    </script>
   </div>
+
+  <script>
+    const inputs = document.querySelectorAll<HTMLInputElement>(
+      '#upload-camera, #upload-gallery'
+    );
+    const nameEl = document.getElementById('upload-filename');
+    inputs.forEach((inp) => {
+      inp.addEventListener('change', () => {
+        const f = inp.files?.[0];
+        if (f && nameEl) {
+          nameEl.textContent = `selected: ${f.name}`;
+        }
+      });
+    });
+  </script>
 </BaseLayout>
 
 <style>
+  /* =========================================================
+     Unified site sheet — mirrors the home page's system.
+     ========================================================= */
+
   :global(body.is-bare) {
-    background: #000;
-    color: #fff;
-    font-family: var(--font-sans);
+    background: #fff;
+    color: #000;
+    font-family: Arial, "Helvetica Neue", sans-serif;
   }
 
-  .upload-page {
-    background: #000;
-    color: #fff;
-    min-height: 100vh;
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    padding: clamp(var(--sp-4), 5vw, var(--sp-8)) clamp(var(--sp-3), 4vw, var(--sp-8)) var(--sp-16);
-    position: relative;
-  }
-
-  .upload-page__back {
-    position: absolute;
-    top: clamp(var(--sp-3), 4vw, var(--sp-6));
-    left: clamp(var(--sp-3), 4vw, var(--sp-6));
-    color: #fff;
-    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
-    font-weight: 700;
-    font-size: clamp(1.5rem, 3vw, 2.25rem);
-    line-height: 1;
-    opacity: 0.85;
-    transition: opacity var(--duration-fast) var(--ease-out);
-  }
-
-  .upload-page__back:hover { opacity: 1; }
-
-  .upload-page__inner {
-    max-width: 560px;
+  .sheet {
+    --u: calc(min(100vw, 720px) / 1080);
+    width: min(100vw, 720px);
     margin: 0 auto;
-    padding-top: var(--sp-8);
+    min-height: 100vh;
+    background: #fff;
+    color: #000;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: calc(220 * var(--u));
   }
 
-  .upload-page__title {
-    margin: 0 0 var(--sp-3);
-    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
-    font-weight: 700;
-    font-size: clamp(2.5rem, 5vw, 3.5rem);
-    line-height: 1;
+  /* ---------- Top bar (same face as home) ---------- */
+
+  .sheet-top {
+    display: flex;
+    align-items: baseline;
+    padding: calc(17 * var(--u)) calc(44 * var(--u)) 0 calc(36 * var(--u));
   }
 
-  .upload-page__copy {
-    margin: 0 0 var(--sp-3);
+  .sheet-top__logo {
     font-family: "Times New Roman", Times, serif;
-    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
-    line-height: 1.55;
-    color: #fff;
-    max-width: 38ch;
+    font-weight: 400;
+    font-size: calc(62 * var(--u));
+    letter-spacing: 0.015em;
+    line-height: 1.15;
+    color: #000;
+    text-decoration: none;
   }
 
-  .upload-page__copy:last-of-type {
-    margin-bottom: var(--sp-6);
+  .sheet-top__page {
+    margin-left: auto;
+    font-family: "Times New Roman", Times, serif;
+    font-weight: 400;
+    font-size: calc(35.4 * var(--u));
+    letter-spacing: 0.015em;
+    line-height: 1.15;
+    position: relative;
+    top: calc(5 * var(--u));
+  }
+
+  /* ---------- Pill box ---------- */
+
+  .sheet-main {
+    margin-top: calc(120 * var(--u));
+    padding: 0 calc(96 * var(--u)) 0 calc(79 * var(--u));
+  }
+
+  .pill {
+    border: max(2px, calc(3 * var(--u))) solid #000;
+    border-radius: calc(48 * var(--u));
+    background: #fff;
+  }
+
+  .pill__head {
+    display: flex;
+    align-items: center;
+    min-height: calc(102.5 * var(--u));
+    padding: 0 calc(66 * var(--u));
+  }
+
+  .pill__label {
+    margin: 0;
+    font-family: Arial, "Helvetica Neue", sans-serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: calc(66.5 * var(--u));
+    line-height: 1;
+    position: relative;
+    top: calc(-3 * var(--u));
+  }
+
+  .pill__content {
+    padding: calc(2 * var(--u)) calc(88 * var(--u)) calc(70 * var(--u))
+      calc(73 * var(--u));
+  }
+
+  .pill__copy {
+    margin: 0 0 calc(28 * var(--u));
+    font-family: "Times New Roman", Times, serif;
+    font-style: italic;
+    font-size: calc(40 * var(--u));
+    line-height: 1.5;
+  }
+
+  .pill__copy:last-of-type {
+    margin-bottom: calc(70 * var(--u));
   }
 
   /* ---------- Form ---------- */
+
   .upload-form {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-4);
+    gap: calc(60 * var(--u));
   }
 
   .upload-form__field {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: calc(14 * var(--u));
   }
 
   .upload-form__label {
-    font-family: var(--font-sans);
+    font-family: "Times New Roman", Times, serif;
     font-style: italic;
-    font-size: clamp(0.9rem, 1.1vw, 1rem);
-    color: #fff;
-    opacity: 0.75;
+    font-size: calc(36 * var(--u));
+    line-height: 1.3;
+    opacity: 0.7;
   }
 
   .upload-form input[type="text"] {
     border: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+    border-bottom: max(1px, calc(2 * var(--u))) solid #000;
     background: transparent;
-    padding: 10px 0;
-    font-family: var(--font-sans);
-    font-size: clamp(1rem, 1.2vw, 1.1rem);
-    color: #fff;
-    transition: border-color var(--duration-fast) var(--ease-out);
+    padding: calc(12 * var(--u)) 0;
+    font-family: "Times New Roman", Times, serif;
+    font-size: calc(46.6 * var(--u));
+    color: #000;
     border-radius: 0;
   }
 
   .upload-form input[type="text"]:focus {
     outline: 0;
-    border-bottom-color: #fff;
+    border-bottom-width: max(2px, calc(3 * var(--u)));
+  }
+
+  .upload-form input[type="text"]::placeholder {
+    color: #000;
+    opacity: 0.35;
   }
 
   .upload-form__filebox {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sp-2);
-    margin-top: 6px;
+    gap: calc(24 * var(--u));
+    margin-top: calc(8 * var(--u));
   }
 
+  /* Mini pills — same rounded-border language as the nav boxes. */
   .upload-form__filebtn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 14px 22px;
-    border: 1px solid #fff;
-    color: #fff;
-    font-family: var(--font-sans);
-    font-size: clamp(0.95rem, 1.2vw, 1.05rem);
-    font-weight: 500;
+    padding: calc(22 * var(--u)) calc(44 * var(--u));
+    border: max(2px, calc(3 * var(--u))) solid #000;
+    border-radius: calc(48 * var(--u));
+    color: #000;
+    font-family: Arial, "Helvetica Neue", sans-serif;
+    font-style: italic;
+    font-size: calc(40 * var(--u));
+    line-height: 1;
     cursor: pointer;
-    transition:
-      background var(--duration-fast) var(--ease-out),
-      color var(--duration-fast) var(--ease-out);
+    background: #fff;
   }
 
-  .upload-form__filebtn:hover {
-    background: #fff;
-    color: #000;
+  .upload-form__filebtn:active {
+    background: #000;
+    color: #fff;
   }
 
   .upload-form__filename {
-    margin: 6px 0 0;
-    font-family: var(--font-sans);
+    margin: calc(10 * var(--u)) 0 0;
+    font-family: "Times New Roman", Times, serif;
     font-style: italic;
-    font-size: 0.95rem;
-    color: #fff;
-    opacity: 0.8;
+    font-size: calc(36 * var(--u));
+    opacity: 0.7;
     min-height: 1.2em;
   }
 
-  .upload-form__submit-row {
-    display: flex;
-    justify-content: flex-start;
-    margin-top: var(--sp-3);
-  }
-
+  /* Submit reads like an offerings row: Times text + > */
   .upload-form__submit {
-    display: inline-flex;
+    display: flex;
+    justify-content: space-between;
     align-items: baseline;
-    gap: 0.4em;
-    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
-    font-weight: 700;
-    font-size: clamp(1.4rem, 2vw, 1.75rem);
-    color: #fff;
+    width: 100%;
+    background: transparent;
+    border: none;
     padding: 0;
-    transition: opacity var(--duration-fast) var(--ease-out);
+    font-family: "Times New Roman", Times, serif;
+    font-size: calc(46.6 * var(--u));
+    line-height: calc(72 * var(--u));
+    color: #000;
+    cursor: pointer;
+    text-align: left;
   }
 
   .upload-form__submit-arrow {
-    font-weight: 700;
-    font-size: 0.9em;
-    transition: transform var(--duration-base) var(--ease-out);
-    display: inline-block;
+    font-family: "Times New Roman", Times, serif;
   }
-
-  .upload-form__submit:hover { opacity: 0.75; }
-  .upload-form__submit:hover .upload-form__submit-arrow { transform: translateX(6px); }
 </style>
