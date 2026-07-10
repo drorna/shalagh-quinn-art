@@ -124,33 +124,27 @@ const prints = Object.entries(imports)
     color: #fff;
   }
 
-  /* 3-col masonry on desktop, 2 on mobile — same as portraits */
+  /* Row-based grid: 2 cols on mobile, 3 on desktop.
+     Prints share a consistent aspect ratio, so rows align cleanly
+     and both columns end at the same height. */
   .prints-grid {
-    column-count: 2;
-    column-gap: clamp(var(--sp-2), 1vw, var(--sp-3));
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(var(--sp-2), 1vw, var(--sp-3));
     max-width: 1280px;
     margin: 0 auto;
   }
 
   @media (min-width: 1000px) {
     .prints-grid {
-      column-count: 3;
-      column-gap: clamp(var(--sp-3), 1.4vw, var(--sp-4));
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(var(--sp-3), 1.4vw, var(--sp-4));
     }
   }
 
   .prints-grid__figure {
-    margin: 0 0 clamp(var(--sp-2), 1vw, var(--sp-3));
-    break-inside: avoid;
-    -webkit-column-break-inside: avoid;
-    page-break-inside: avoid;
+    margin: 0;
     overflow: hidden;
-  }
-
-  @media (min-width: 1000px) {
-    .prints-grid__figure {
-      margin-bottom: clamp(var(--sp-3), 1.4vw, var(--sp-4));
-    }
   }
 
   .prints-grid__img {
@@ -162,5 +156,23 @@ const prints = Object.entries(imports)
 
   .prints-grid__figure:hover .prints-grid__img {
     opacity: 0.88;
+  }
+
+  /* If the last row has an orphan, span it across the row at half-width
+     so both columns still end on the same row. */
+  @media (max-width: 999px) {
+    .prints-grid__figure:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: calc(50% - clamp(var(--sp-2), 1vw, var(--sp-3)) / 2);
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .prints-grid__figure:last-child:nth-child(3n + 1) {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: calc(33.333% - clamp(var(--sp-3), 1.4vw, var(--sp-4)) * 2 / 3);
+    }
   }
 </style>
