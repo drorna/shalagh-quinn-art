@@ -31,7 +31,15 @@ const offerings =
     { label: "prints", href: "/prints/" },
   ];
 
-const insideTimeText = h.insideTimeText ?? ["inside time is my astrology project."];
+// The pill body comes from the plain Obsidian note "Inside Time.md" at
+// the vault root — Sheila edits it as a free note, no frontmatter. The
+// note's text continues the pill's title ("inside time" … "is a space
+// to explore…"), so it renders as-is right under the label.
+const insideTimeEntry = await getEntry("notes", "inside-time");
+const insideTimeBody = insideTimeEntry?.body?.trim();
+const insideTimeText = insideTimeBody
+  ? insideTimeBody.split(/\n\s*\n/)
+  : h.insideTimeText ?? ["inside time is my astrology project."];
 const insideTimeCtaLabel = h.insideTimeCtaLabel ?? "enter inside time";
 const insideTimeCtaHref = h.insideTimeCtaHref ?? "https://inside-time.com";
 

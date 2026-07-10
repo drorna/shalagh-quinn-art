@@ -15,8 +15,6 @@ offerings:
   - label: 30 second portraits
   - label: prints
     href: /prints/
-insideTimeText:
-  - inside time is my astrology project.
 insideTimeCtaLabel: enter inside time
 insideTimeCtaHref: https://inside-time.com
 contactEmail: shalaghquinns@gmail.com

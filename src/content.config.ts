@@ -53,4 +53,14 @@ const pages = defineCollection({
   }),
 });
 
-export const collections = { pages };
+/**
+ * Loose notes at the vault root (outside pages/). Sheila writes these as
+ * plain Obsidian notes with no frontmatter — the site reads only the body.
+ * "Inside Time.md" feeds the home page's inside-time pill.
+ */
+const notes = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./shalagh-quinn-art" }),
+  schema: z.object({}).passthrough(),
+});
+
+export const collections = { pages, notes };
