@@ -25,4 +25,4 @@ I'm curious about what it really is trying to show us,
 since I have decided to follow this process
 I have been taken on a journey
 that has revealed many mysterious gifts 
-I would Lik
+I would like to share here 

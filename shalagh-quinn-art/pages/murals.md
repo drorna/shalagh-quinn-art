@@ -3,7 +3,5 @@ title: Murals
 subtitle: the jounrey
 end: enjoy the journey
 ---
-
-since 2020 I have been travelling and painitng walls through exchanges.
-
-I have let the art be my guide moving me through many wordls painting cafes, restuaurants, hostels, and guesthouses.
+**available for commission** 
+explore the world I've traveled through my art. Since 2020 I have been travelling the world painting walls. Each piece is a expression of the energy the space gives me. I have never planned the art, it is purely a process unfolding. 
