@@ -1,10 +1,21 @@
 ---
+import { getEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 // Form submissions go through FormSubmit (no account required).
 // Visitors are redirected to /thanks/ after upload.
 const FORM_ENDPOINT = "https://formsubmit.co/shalaghquinns@gmail.com";
 const THANK_YOU_URL = "https://shalagh.com/thanks/";
+
+// Page copy lives in the vault-root Obsidian note "Upload.md" — a plain
+// note with no frontmatter, same pattern as Inside Time.md. Blank lines
+// split paragraphs.
+const uploadNote = await getEntry("notes", "upload");
+const uploadCopy = uploadNote?.body?.trim()
+  ? uploadNote.body.trim().split(/\n\s*\n/)
+  : [
+      "you can upload a photo of your piece so it can be shared on social media. tagging is optional.",
+    ];
 ---
 
 <BaseLayout title="upload — shalagh quinn" bare>
@@ -16,10 +27,9 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
     <main class="upload-page__inner">
       <h1 class="upload-page__title">hi —</h1>
 
-      <p class="upload-page__copy">
-        you can upload a photo of your piece so it can be shared
-        on social media. tagging is optional.
-      </p>
+      {uploadCopy.map((p) => (
+        <p class="upload-page__copy">{p}</p>
+      ))}
 
       <form
         class="upload-form"
@@ -143,12 +153,16 @@ const THANK_YOU_URL = "https://shalagh.com/thanks/";
   }
 
   .upload-page__copy {
-    margin: 0 0 var(--sp-6);
+    margin: 0 0 var(--sp-3);
     font-family: "Times New Roman", Times, serif;
     font-size: clamp(1.05rem, 1.4vw, 1.2rem);
     line-height: 1.55;
     color: #fff;
     max-width: 38ch;
+  }
+
+  .upload-page__copy:last-of-type {
+    margin-bottom: var(--sp-6);
   }
 
   /* ---------- Form ---------- */
