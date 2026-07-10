@@ -1,1 +1,1 @@
-is a space to explore the time pattern within. Using an astrological lens that explores the degrees into your chart- it moves away from characters and personality traits and explores unpack the inner process that create our experience. 
+is a space to explore the time pattern within. Using an astrological lens that explores the degrees into your chart- it moves away from characters and personality traits and explores unpack the inner process that create our experience. click the star.
