@@ -11,10 +11,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   bare
 >
   <div class="sheet">
-    <header class="sheet-top" aria-label="site header">
-      <a href="/" class="sheet-top__logo" aria-label="back home">shalagh</a>
-    </header>
-
     <main class="sheet-main">
       <section class="pill">
         <div class="pill__head">
@@ -55,24 +51,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     padding-bottom: calc(220 * var(--u));
   }
 
-  .sheet-top {
-    display: flex;
-    align-items: baseline;
-    padding: calc(17 * var(--u)) calc(44 * var(--u)) 0 calc(36 * var(--u));
-  }
-
-  .sheet-top__logo {
-    font-family: "Times New Roman", Times, serif;
-    font-weight: 400;
-    font-size: calc(62 * var(--u));
-    letter-spacing: 0.015em;
-    line-height: 1.15;
-    color: #000;
-    text-decoration: none;
-  }
-
   .sheet-main {
-    margin-top: calc(120 * var(--u));
+    margin-top: calc(140 * var(--u));
     padding: 0 calc(96 * var(--u)) 0 calc(79 * var(--u));
   }
 
