@@ -288,7 +288,9 @@ const handles = h.handles ?? ["@shalagh"];
     text-decoration: none;
     border: max(2px, calc(3 * var(--u))) solid #000;
     border-radius: calc(48 * var(--u));
-    min-height: calc(102.5 * var(--u));
+    /* border-box: add the two border widths so the OUTER height equals
+       a nav pill's (102.5u content + borders). */
+    min-height: calc(102.5 * var(--u) + 2 * max(2px, 3 * var(--u)));
     padding: 0 calc(44 * var(--u));
   }
 
