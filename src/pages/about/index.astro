@@ -1,157 +1,143 @@
 ---
+import { Image } from "astro:assets";
 import { getEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import EditableText from "../../components/EditableText.astro";
 
-// Content lives in /content/pages/about.md so Drorna can edit it in
-// Obsidian. The browser editor's per-element overrides (site_text) still
-// apply on top — markdown is the default, Supabase wins when present.
+// Sheila painting a mural — the photo drorna picked for the July 2026
+// about redesign (processed from "painting shay.png").
+import paintingShay from "../../assets/images/about/painting-shay.jpg";
+
+// Content lives in shalagh-quinn-art/pages/about.md so Sheila edits it
+// in Obsidian. The browser editor's per-element overrides (site_text)
+// still apply on top — markdown is the default, Supabase wins.
 const entry = await getEntry("pages", "about");
 const f = entry?.data ?? { title: "about" };
-// Paragraphs after the frontmatter are split by blank lines and rendered
-// as the body of the story. Empty string → no body, only the structured
-// pieces (stanza / quote / tail) display.
 const body = entry?.body ?? "";
 const paragraphs = body
   .split(/\n\s*\n/)
   .map((p) => p.trim())
   .filter(Boolean);
+
+// Render Obsidian-style *emphasis* as real italics. Text is escaped
+// first so only the asterisk markers become markup.
+const esc = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const emphasize = (p: string) =>
+  esc(p).replace(/\*([^*\n][^*]*)\*/g, "<em>$1</em>");
 ---
 
+<!-- July 2026 about redesign — white sheet, black ink, photo on top,
+     Times title + Arial bold-italic pronunciation, Times story with
+     italic stanzas. Same --u proportional system as the home page. -->
 <BaseLayout title="about — shalagh quinn" bare>
-  <div class="about-page">
-    <a href="/" class="about-page__back" aria-label="back home">
+  <div class="sheet">
+    <a href="/" class="sheet__back" aria-label="back home">
       <span aria-hidden="true">&lt;</span>
     </a>
 
-    <article class="about-page__inner">
-      {f.subtitle && (
-        <EditableText id="about.subtitle" tag="h1" class="about-page__subtitle">{f.subtitle}</EditableText>
+    <article class="about">
+      <Image
+        src={paintingShay}
+        alt="Shalagh painting a mural"
+        widths={[600, 900, 1200, 1402]}
+        sizes="(min-width: 720px) 604px, 84vw"
+        quality={88}
+        loading="eager"
+        class="about__photo"
+      />
+
+      <h1 class="about__title" data-editable-text="about.subtitle">{f.subtitle ?? "shalagh"}</h1>
+      {f.stanza && (
+        <p class="about__pron" data-editable-text="about.story.stanza">{f.stanza.trim()}</p>
       )}
 
-      <div class="about-page__story">
-        {f.stanza && (
-          <EditableText id="about.story.stanza" tag="p" class="about-page__story-stanza">{f.stanza.trim()}</EditableText>
-        )}
-
-        {f.quote && (
-          <EditableText id="about.story.quote" tag="p" class="about-page__story-quote">{f.quote.trim()}</EditableText>
-        )}
-
+      <div class="about__story">
         {paragraphs.map((p, i) => (
-          <EditableText id={`about.story.p${i + 1}`} tag="p">{p}</EditableText>
+          <p data-editable-text={`about.story.p${i + 1}`} set:html={emphasize(p)} />
         ))}
-
-        {(f.tail || f.ctaLabel) && (
-          <p class="about-page__story-tail">
-            {f.tail && (
-              <>
-                <EditableText id="about.story.tail" tag="span">{f.tail}</EditableText><br />
-              </>
-            )}
-            {f.ctaLabel && (
-              <a href={f.ctaHref || "/murals/"} class="about-page__forward">
-                <EditableText id="about.story.cta" tag="span">{f.ctaLabel}</EditableText>
-              </a>
-            )}
-          </p>
-        )}
       </div>
     </article>
   </div>
-
 </BaseLayout>
 
 <style>
   :global(body.is-bare) {
-    background: #000;
-    color: #fff;
-    font-family: var(--font-sans);
+    background: #fff;
+    color: #000;
+    font-family: Arial, "Helvetica Neue", sans-serif;
   }
 
-  .about-page {
-    background: #000;
-    color: #fff;
+  .sheet {
+    --u: calc(min(100vw, 720px) / 1080);
+    width: min(100vw, 720px);
+    margin: 0 auto;
     min-height: 100vh;
-    font-family: var(--font-sans);
+    background: #fff;
+    color: #000;
     -webkit-font-smoothing: antialiased;
-    padding: clamp(var(--sp-4), 5vw, var(--sp-8)) clamp(var(--sp-3), 4vw, var(--sp-8)) var(--sp-16);
+    padding-bottom: calc(220 * var(--u));
     position: relative;
   }
 
-  .about-page__back {
+  .sheet__back {
     position: absolute;
-    top: clamp(var(--sp-3), 4vw, var(--sp-6));
-    left: clamp(var(--sp-3), 4vw, var(--sp-6));
-    color: #fff;
-    font-family: Arial, "Arial Hebrew", "Helvetica Neue", sans-serif;
+    top: calc(30 * var(--u));
+    left: calc(36 * var(--u));
+    color: #000;
+    font-family: Arial, "Helvetica Neue", sans-serif;
     font-weight: 700;
-    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-size: calc(50 * var(--u));
     line-height: 1;
-    opacity: 0.85;
-    transition: opacity var(--duration-fast) var(--ease-out);
-    z-index: 5;
+    text-decoration: none;
   }
 
-  .about-page__back:hover { opacity: 1; }
-
-  .about-page__inner {
-    max-width: 900px;
-    margin: 0 auto;
-    padding-top: clamp(var(--sp-4), 4vw, var(--sp-6));
+  /* Content column shares the pill margins from home (x 79 → 984). */
+  .about {
+    padding: 0 calc(96 * var(--u)) 0 calc(79 * var(--u));
   }
 
-  /* Clearfix so the article wraps around the floated figure cleanly */
-  .about-page__inner::after {
-    content: "";
+  .about__photo {
     display: block;
-    clear: both;
+    width: 100%;
+    height: auto;
+    margin-top: calc(130 * var(--u));
   }
 
-  /* ---------- Lead word (SHALAGH) ---------- */
-  :global(.about-page__subtitle) {
-    margin: 0 0 var(--sp-4);
+  .about__title {
+    margin: calc(100 * var(--u)) 0 0;
     font-family: "Times New Roman", Times, serif;
-    font-style: normal;
     font-weight: 400;
-    font-size: clamp(2.2rem, 4vw, 3rem);
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    color: #fff;
+    font-size: calc(63 * var(--u));
+    letter-spacing: 0.015em;
     line-height: 1.1;
+    text-transform: lowercase;
   }
 
-  /* ---------- Story text (~2x the previous size) ---------- */
-  .about-page__story {
-    font-family: "Times New Roman", Times, serif;
-    font-size: clamp(1.9rem, 2.4vw, 2.1rem);
-    line-height: 1.45;
-    color: #fff;
-  }
-
-  .about-page__story p { margin: 0 0 var(--sp-3); }
-
-  .about-page__story-stanza {
-    line-height: 1.4;
-  }
-
-  .about-page__story-quote {
+  .about__pron {
+    margin: calc(22 * var(--u)) 0 0;
+    font-family: Arial, "Helvetica Neue", sans-serif;
     font-style: italic;
-    line-height: 1.4;
+    font-weight: 700;
+    font-size: calc(40 * var(--u));
+    line-height: 1.2;
+    text-transform: lowercase;
   }
 
-  .about-page__story-tail {
-    margin-top: var(--sp-3);
+  .about__story {
+    margin-top: calc(80 * var(--u));
+    font-family: "Times New Roman", Times, serif;
+    font-size: calc(36 * var(--u));
     line-height: 1.55;
   }
 
-  .about-page__forward {
-    color: #fff;
-    font-family: "Times New Roman", Times, serif;
-    font-style: italic;
-    border-bottom: 1px solid transparent;
-    transition: border-color var(--duration-fast) var(--ease-out);
+  .about__story p {
+    margin: 0 0 calc(48 * var(--u));
+    /* Obsidian single linebreaks are real breaks in her stanzas —
+       keep them (the editor applies the same rule to editable text). */
+    white-space: pre-line;
   }
 
-  .about-page__forward:hover { border-bottom-color: #fff; }
+  .about__story em {
+    font-style: italic;
+  }
 </style>
