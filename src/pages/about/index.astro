@@ -31,10 +31,6 @@ const emphasize = (p: string) =>
      italic stanzas. Same --u proportional system as the home page. -->
 <BaseLayout title="about — shalagh quinn" bare>
   <div class="sheet">
-    <a href="/" class="sheet__back" aria-label="back home">
-      <span aria-hidden="true">&lt;</span>
-    </a>
-
     <article class="about">
       <Image
         src={paintingShay}
@@ -77,18 +73,6 @@ const emphasize = (p: string) =>
     -webkit-font-smoothing: antialiased;
     padding-bottom: calc(220 * var(--u));
     position: relative;
-  }
-
-  .sheet__back {
-    position: absolute;
-    top: calc(30 * var(--u));
-    left: calc(36 * var(--u));
-    color: #000;
-    font-family: Arial, "Helvetica Neue", sans-serif;
-    font-weight: 700;
-    font-size: calc(50 * var(--u));
-    line-height: 1;
-    text-decoration: none;
   }
 
   /* Content column shares the pill margins from home (x 79 → 984). */
