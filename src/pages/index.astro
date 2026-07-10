@@ -264,7 +264,7 @@ const handles = h.handles ?? ["@shalagh"];
      room added above. */
   .home-top {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     padding: calc(48 * var(--u)) calc(44 * var(--u)) 0 calc(36 * var(--u));
     font-family: Arial, "Helvetica Neue", sans-serif;
     font-style: italic;
@@ -277,21 +277,13 @@ const handles = h.handles ?? ["@shalagh"];
     font-weight: 400;
   }
 
-  /* Framed like a nav pill — same border, radius AND height (108.5
-     units total, matching the boxes below). */
   .home-top__upload {
     display: inline-flex;
-    align-items: center;
+    align-items: baseline;
     gap: calc(14 * var(--u));
     font-weight: 400;
     color: #000;
     text-decoration: none;
-    border: max(2px, calc(3 * var(--u))) solid #000;
-    border-radius: calc(48 * var(--u));
-    /* border-box: add the two border widths so the OUTER height equals
-       a nav pill's (102.5u content + borders). */
-    min-height: calc(102.5 * var(--u) + 2 * max(2px, 3 * var(--u)));
-    padding: 0 calc(44 * var(--u));
   }
 
   .home-top__upload-plus {
