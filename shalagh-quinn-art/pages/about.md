@@ -1,9 +1,7 @@
 ---
 title: about
-subtitle: a trust in process
-stanza: |-
-  when I was 23
-  I had a vision
+subtitle: Shalagh
+stanza: Pronounced shay- la
 quote: |-
   enjoy the process
   of learning about yourself
