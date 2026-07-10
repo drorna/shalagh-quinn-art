@@ -135,11 +135,11 @@ const handles = h.handles ?? ["@shalagh"];
         </div>
       </section>
 
-      <!-- about: inert for now, expands like offerings later -->
-      <section class="home-pill" data-pill>
-        <button type="button" class="home-pill__head" data-pill-toggle aria-expanded="false">
+      <!-- about: navigates to the dedicated page -->
+      <section class="home-pill home-pill--armed">
+        <a href="/about/" class="home-pill__head">
           <span class="home-pill__label" data-editable-text="home.nav.about">{h.navAbout ?? "about"}</span>
-        </button>
+        </a>
       </section>
 
       <!-- inside time: short text ending in a link out to the
@@ -358,6 +358,8 @@ const handles = h.handles ?? ["@shalagh"];
     text-align: left;
     cursor: default;
     color: #000;
+    text-decoration: none;
+    box-sizing: border-box;
   }
 
   .home-pill--armed .home-pill__head {
