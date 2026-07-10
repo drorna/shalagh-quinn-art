@@ -274,14 +274,16 @@ const handles = h.handles ?? ["@shalagh"];
     line-height: 1.15;
   }
 
+  /* Same face as the shalagh logo — Times, regular, upright. */
   .home-top__upload {
     margin-left: auto;
     display: inline-flex;
     align-items: baseline;
     gap: calc(14 * var(--u));
-    font-family: Arial, "Helvetica Neue", sans-serif;
-    font-style: italic;
+    font-family: "Times New Roman", Times, serif;
+    font-weight: 400;
     font-size: calc(35.4 * var(--u));
+    letter-spacing: 0.015em;
     line-height: 1.15;
     color: #000;
     text-decoration: none;
@@ -290,8 +292,7 @@ const handles = h.handles ?? ["@shalagh"];
   }
 
   .home-top__upload-plus {
-    font-style: normal;
-    font-weight: 700;
+    font-weight: 400;
   }
 
   /* ---------- Hero ---------- */
