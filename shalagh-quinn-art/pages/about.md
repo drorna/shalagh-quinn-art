@@ -13,8 +13,13 @@ ctaLabel: mural
 ctaHref: /murals/
 ---
 
+when was I had a vision that changed my life 
+enjoy the process of learning about yourself in everything you do
+
+the idea changed everything I saw into a unfolding process I was meant to follow. 
 since that time my life has been unplanned, 
-each day is an unknown journey I am following from inside. 
+each day is an unknown journey 
+and my
 a process that emerges from inside 
 all my art is an expression of what the moment reveals, 
 
