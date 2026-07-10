@@ -32,6 +32,16 @@ const pages = defineCollection({
     identityPron: z.string().optional(),
     exploreLabel: z.string().optional(),
     uploadLabel: z.string().optional(),
+    navOfferings: z.string().optional(),
+    navAbout: z.string().optional(),
+    navInsideTime: z.string().optional(),
+    navContact: z.string().optional(),
+    offerings: z
+      .array(z.object({ label: z.string(), href: z.string().optional() }))
+      .optional(),
+    insideTimeText: z.array(z.string()).optional(),
+    insideTimeCtaLabel: z.string().optional(),
+    insideTimeCtaHref: z.string().optional(),
     enterLabel: z.string().optional(),
     contactLabel: z.string().optional(),
     contactEmail: z.string().optional(),
