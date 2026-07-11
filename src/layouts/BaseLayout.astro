@@ -111,16 +111,8 @@ const absoluteOgImage = new URL(ogImage, siteUrl).toString();
       document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
     </script>
 
-    <!-- Site-wide editors: every page using BaseLayout becomes editable.
-         No per-page wiring needed for new pages. -->
     <script>
-      import { initTextEditor } from "../scripts/text-editor";
-      import { initImageEditor } from "../scripts/image-editor";
-      import { initEditNav } from "../scripts/edit-nav";
       import { initLightbox } from "../scripts/lightbox";
-      initTextEditor();
-      initImageEditor();
-      initEditNav();
       initLightbox();
     </script>
   </body>

@@ -2,9 +2,9 @@
 import { Image } from "astro:assets";
 import { getEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import EditableText from "../../components/EditableText.astro";
 import handMurals from "../../assets/images/murals/_hand-murals.png";
 import { tilesFor, type MuralTile } from "../../lib/mural-tiles";
+import "../../styles/mural-tiles.css";
 
 // Intro copy lives in /content/pages/murals.md so Drorna can edit it
 // from Obsidian. site_text overrides still win at runtime if set.
@@ -84,14 +84,14 @@ function tileStyle(t: MuralTile): string {
         />
       </h1>
       {mf.subtitle && (
-        <EditableText id="murals.intro.journey" tag="p" class="murals-intro__journey">{mf.subtitle}</EditableText>
+        <p class="murals-intro__journey">{mf.subtitle}</p>
       )}
       <div class="murals-intro__copy">
         {muralsIntroParas.map((p, i) => (
-          <EditableText id={`murals.intro.p${i + 1}`} tag="p">{p}</EditableText>
+          <p>{p}</p>
         ))}
         {mf.end && (
-          <EditableText id="murals.intro.end" tag="p" class="murals-intro__copy-end">{mf.end}</EditableText>
+          <p class="murals-intro__copy-end">{mf.end}</p>
         )}
       </div>
     </section>
@@ -212,11 +212,8 @@ function tileStyle(t: MuralTile): string {
   .murals-intro__copy-end { margin-top: var(--sp-4) !important; }
 
   /* ---------- Free-positioning canvas ----------
-     Tile + handle styles live in murals-board.ts (JS-injected, global)
-     because Astro's scoped CSS doesn't reach DOM created dynamically.
-     The canvas itself sets container-type: inline-size so tiles' cqw
-     units track its width — uniform layout across every viewport, no
-     horizontal scroll. */
+     Tile styles live in src/styles/mural-tiles.css (imported above);
+     tile geometry comes inline from the committed tile data. */
   .murals-canvas-wrap {
     position: relative;
     /* Full-bleed breakout: pull the wrap outside the .murals-page

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { allSlugs, tilesFor, type MuralTile } from "../../../lib/mural-tiles";
+import "../../../styles/mural-tiles.css";
 
 // Pre-render every distinct page slug in the committed tile snapshot, and
 // ALSO any slug that can be derived from a tile's label — a tile labelled
@@ -60,7 +61,7 @@ function tileStyle(t: MuralTile): string {
     </a>
 
     <header class="murals-sub-header">
-      <h1 class="murals-sub-title" data-editable-text={`murals.${slug}.title`}>{displayTitle}</h1>
+      <h1 class="murals-sub-title">{displayTitle}</h1>
     </header>
 
     <div class="murals-canvas-wrap">

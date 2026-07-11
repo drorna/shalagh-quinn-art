@@ -2,7 +2,6 @@
 import { Image } from "astro:assets";
 import { getEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import EditableText from "../../components/EditableText.astro";
 import type { ImageMetadata } from "astro";
 import handPrints from "../../assets/images/prints/_hand-prints.png";
 
@@ -42,7 +41,7 @@ const prints = Object.entries(imports)
         />
       </h1>
       {prf.subtitle && (
-        <EditableText id="prints.subtitle" tag="p" class="prints-page__subtitle">{prf.subtitle}</EditableText>
+        <p class="prints-page__subtitle">{prf.subtitle}</p>
       )}
     </header>
 

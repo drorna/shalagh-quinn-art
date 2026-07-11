@@ -1,7 +1,6 @@
 ---
 import { getEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import EditableText from "../../components/EditableText.astro";
 
 // All copy comes from /content/pages/writing.md — drorna writes prose
 // in Obsidian, each blank-line-separated chunk becomes its own paragraph.
@@ -21,15 +20,15 @@ const paragraphs = (entry?.body ?? "")
 
     <article class="writing-page__inner">
       <header class="writing-page__header">
-        <EditableText id="writing.title" tag="h1" class="writing-page__title">{f.title}</EditableText>
+        <h1 class="writing-page__title">{f.title}</h1>
         {f.subtitle && (
-          <EditableText id="writing.subtitle" tag="p" class="writing-page__subtitle">{f.subtitle}</EditableText>
+          <p class="writing-page__subtitle">{f.subtitle}</p>
         )}
       </header>
 
       <div class="writing-page__body">
         {paragraphs.map((p, i) => (
-          <EditableText id={`writing.p${i + 1}`} tag="p">{p}</EditableText>
+          <p>{p}</p>
         ))}
       </div>
     </article>
