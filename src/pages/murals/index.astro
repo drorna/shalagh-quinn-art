@@ -4,7 +4,7 @@ import { getEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EditableText from "../../components/EditableText.astro";
 import handMurals from "../../assets/images/murals/_hand-murals.png";
-import { supabase, type MuralTile } from "../../lib/supabase";
+import { tilesFor, type MuralTile } from "../../lib/mural-tiles";
 
 // Intro copy lives in /content/pages/murals.md so Drorna can edit it
 // from Obsidian. site_text overrides still win at runtime if set.
@@ -15,25 +15,10 @@ const muralsIntroParas = (muralsEntry?.body ?? "")
   .map((p) => p.trim())
   .filter(Boolean);
 
-// Build-time tile fetch so the page paints with content on first byte —
-// no "loading…" flicker, no client-side round trip to Supabase before
-// anything appears. The JS still runs and updates if data changed since
-// the last build (realtime sync), but the visitor sees the murals
-// immediately.
-let ssrTiles: MuralTile[] = [];
-try {
-  const { data, error } = await supabase
-    .from("mural_tiles")
-    .select("*")
-    .eq("page", "home")
-    .order("y", { ascending: true })
-    .order("x", { ascending: true })
-    .order("order_idx", { ascending: true });
-  if (error) console.warn("[murals SSR] fetch error", error);
-  ssrTiles = (data || []) as MuralTile[];
-} catch (e) {
-  console.warn("[murals SSR] Supabase unreachable; falling back to JS render", e);
-}
+// Tiles come from the committed snapshot (src/data/mural-tiles.json) —
+// no Supabase dependency at build or runtime. The layout is rendered
+// entirely at build time.
+const ssrTiles: MuralTile[] = tilesFor("home");
 
 function autoHref(t: MuralTile): string | null {
   if (t.href) return t.href;
@@ -47,8 +32,6 @@ function autoHref(t: MuralTile): string | null {
   return slug ? `/murals/${slug}/` : null;
 }
 function transformedSrc(src: string | null | undefined): string {
-  // Pass through — Supabase's render endpoint requires Image Transforms
-  // to be enabled on the project and was returning 403 on this account.
   return src || "";
 }
 // Stretch the tile bounding box to fill the canvas edge-to-edge: the
@@ -113,10 +96,8 @@ function tileStyle(t: MuralTile): string {
       </div>
     </section>
 
-    <!-- Free-positioning canvas. Tiles are SSR'd with cqw units so the
-         layout scales with the canvas width — no client-side math
-         needed for first paint. JS hydrates afterward to handle realtime
-         updates + the editor. -->
+    <!-- Free-positioning canvas, rendered fully at build time from the
+         committed tile snapshot. -->
     <div class="murals-canvas-wrap">
       <section
         class="murals-canvas"
@@ -165,10 +146,6 @@ function tileStyle(t: MuralTile): string {
     </div>
   </div>
 
-  <script>
-    import { initMuralsBoard } from "../../scripts/murals-board";
-    initMuralsBoard("home");
-  </script>
 </BaseLayout>
 
 <style>
