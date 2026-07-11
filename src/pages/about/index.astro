@@ -92,9 +92,11 @@ const emphasize = (p: string) =>
 
   /* ---------- Header: < left, handwritten shalagh right ---------- */
 
+  /* Arrow vertically centred against the handwriting's height so the
+     two read as one aligned header row. */
   .about-top {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     padding: calc(36 * var(--u)) calc(30 * var(--u)) 0 calc(36 * var(--u));
   }
