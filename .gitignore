@@ -23,10 +23,12 @@ pnpm-debug.log*
 .idea/
 .claude/
 
-# Obsidian workspace state (per-user UI prefs, plugin data, plugin
-# install state). The vault content itself — pages/*.md, README.md —
-# is the source of truth and IS in git.
-shalagh-quinn-art/.obsidian/
+# Site text content now lives in its OWN private repo (drorna/shalagh-content)
+# and is pulled into ./shalagh-quinn-art/ at build time by
+# scripts/fetch-content.mjs (see package.json "prebuild"). Keeping it out of
+# this code repo is what lets an editor's machine hold only the words, never
+# the source. The whole folder is therefore generated, not tracked here.
+shalagh-quinn-art/
 
 # Source images (working files, not for deployment)
 source-images/
